@@ -12,3 +12,7 @@ API for recipe and meal planning written using FastAPI, SqlAlchemy, and Alembic.
 ## Run dockerized container
 
 `docker compose up --build`
+
+## Connect to swagger API docs
+
+[http://localhost:8000/docs](http://localhost:8000/docs)

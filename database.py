@@ -6,9 +6,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # Define the database URL.
-# For SQLite, it's "sqlite:///./your_database_name.db"
-# The "./" indicates that the file is in the same directory.
-SQLALCHEMY_DATABASE_URL = "sqlite:///./recipes.db"
+# For SQLite, it's "sqlite:///db/your_database_name.db"
+# The "db/" indicates that the file is in the db directory.
+SQLALCHEMY_DATABASE_URL = "sqlite:///db/recipes.db"
 
 # Create the SQLAlchemy engine.
 # The 'connect_args' is needed only for SQLite to allow multithreading.

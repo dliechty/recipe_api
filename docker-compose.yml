@@ -1,0 +1,22 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  # The FastAPI application service
+  api:
+    # Build the image from the Dockerfile in the current directory
+    build: .
+    # Map port 8000 on the host to port 8000 in the container
+    ports:
+      - "8000:8000"
+    # Mount the 'database-data' volume to the /app directory in the container.
+    # This ensures that the recipes.db file persists even if the container is removed.
+    volumes:
+      - database-data:/app/db
+    # Set the container name for easier reference
+    container_name: recipe_api_app
+
+# Define the named volume for persistent database storage
+volumes:
+  database-data:

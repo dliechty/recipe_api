@@ -1,9 +1,11 @@
 # main.py
 # Main application file for the FastAPI recipe service.
 
-from fastapi import FastAPI, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
 import uvicorn
+
+# Import the CORS middleware
+from fastapi.middleware.cors import CORSMiddleware
 
 # Import local modules
 from database import engine, get_db
@@ -22,6 +24,24 @@ app = FastAPI(
     description="API for managing recipes, users, and meal plans.",
     version="1.0.0",
 )
+
+# --- Add CORS Middleware ---
+# Define the list of origins that are allowed to make requests.
+# In your case, this is the URL of your React frontend.
+# TODO should update this list when deploying for real
+origins = [
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Allows specified origins
+    allow_credentials=True,  # Allows cookies to be included in requests
+    allow_methods=["*"],  # Allows all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
+
+# --- End of CORS Middleware Section ---
 
 # Include API routers
 # This makes the endpoints defined in the 'auth' and 'recipes' modules available.

@@ -8,11 +8,8 @@ API for recipe and meal planning written using FastAPI, SqlAlchemy, and Alembic.
 3. Install python dependencies: `pip install -r ./requirements.txt`
 4. Run alembic migration: `alembic upgrade head`
 5. Run main file: `python3 main.py`
+6. Connect to swagger API docs for testing: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ## Run dockerized container
 
 `docker compose up --build`
-
-## Connect to swagger API docs
-
-[http://localhost:8000/docs](http://localhost:8000/docs)

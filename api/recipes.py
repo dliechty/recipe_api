@@ -1,7 +1,8 @@
 # api/recipes.py
 # Handles all API endpoints related to recipes.
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import logging
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -15,6 +16,9 @@ from api.auth import get_current_active_user
 # Create an API router
 router = APIRouter()
 
+# Get a logger instance
+logger = logging.getLogger(__name__)
+
 
 @router.post("/", response_model=schemas.Recipe)
 def create_recipe(
@@ -25,6 +29,7 @@ def create_recipe(
     """
     Create a new recipe for the currently authenticated user.
     """
+    logger.debug(f"User {current_user.email} is creating a new recipe.")
     return crud.create_user_recipe(db=db, recipe=recipe, user_id=current_user.id)
 
 
@@ -33,6 +38,7 @@ def read_recipes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
     """
     Retrieve a list of all recipes. This endpoint is public.
     """
+    logger.debug(f"Fetching all recipes with skip={skip}, limit={limit}.")
     recipes = crud.get_recipes(db, skip=skip, limit=limit)
     return recipes
 
@@ -42,9 +48,12 @@ def read_recipe(recipe_id: int, db: Session = Depends(get_db)):
     """
     Retrieve a single recipe by its ID. This endpoint is public.
     """
+    logger.debug(f"Fetching recipe with ID: {recipe_id}")
     db_recipe = crud.get_recipe(db, recipe_id=recipe_id)
     if db_recipe is None:
+        logger.warning(f"Recipe with ID {recipe_id} not found.")
         raise HTTPException(status_code=404, detail="Recipe not found")
+    logger.debug(f"Recipe with ID {recipe_id} found: {db_recipe}")
     return db_recipe
 
 
@@ -58,10 +67,13 @@ def update_recipe(
     """
     Update a recipe. Only the owner of the recipe can perform this action.
     """
+    logger.debug(f"User {current_user.email} is updating recipe with ID: {recipe_id}")
     db_recipe = crud.get_recipe(db, recipe_id=recipe_id)
     if db_recipe is None:
+        logger.warning(f"Recipe with ID {recipe_id} not found for update.")
         raise HTTPException(status_code=404, detail="Recipe not found")
     if db_recipe.owner_id != current_user.id:
+        logger.error(f"User {current_user.email} is not authorized to update recipe with ID: {recipe_id}")
         raise HTTPException(status_code=403, detail="Not authorized to update this recipe")
 
     return crud.update_recipe(db=db, recipe_id=recipe_id, recipe_update=recipe)
@@ -76,10 +88,13 @@ def delete_recipe(
     """
     Delete a recipe. Only the owner of the recipe can perform this action.
     """
+    logger.debug(f"User {current_user.email} is deleting recipe with ID: {recipe_id}")
     db_recipe = crud.get_recipe(db, recipe_id=recipe_id)
     if db_recipe is None:
+        logger.warning(f"Recipe with ID: {recipe_id} not found for deletion.")
         raise HTTPException(status_code=404, detail="Recipe not found")
     if db_recipe.owner_id != current_user.id:
+        logger.error(f"User {current_user.email} is not authorized to delete recipe with ID: {recipe_id}")
         raise HTTPException(status_code=403, detail="Not authorized to delete this recipe")
 
     return crud.delete_recipe(db=db, recipe_id=recipe_id)

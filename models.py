@@ -52,6 +52,9 @@ class Recipe(Base):
     instructions = relationship("Instruction", back_populates="recipe", cascade="all, delete-orphan")
     tags = relationship("Tag", secondary=recipe_tag_association, back_populates="recipes")
 
+    def __str__(self):
+        return f"{self.id}: {self.name}, by {self.owner.email}"
+
 
 class Ingredient(Base):
     """

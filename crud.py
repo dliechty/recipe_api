@@ -1,6 +1,7 @@
 # crud.py
 # Contains the functions for Create, Read, Update, Delete (CRUD) operations.
 
+import logging
 from sqlalchemy.orm import Session, joinedload
 from passlib.context import CryptContext
 
@@ -8,6 +9,9 @@ import models
 import schemas
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Get a logger instance
+logger = logging.getLogger(__name__)
 
 
 def verify_password(plain_password, hashed_password):
@@ -45,6 +49,7 @@ def get_recipe(db: Session, recipe_id: int):
     """
     Retrieve a single recipe with its related ingredients, instructions, and tags.
     """
+    logger.debug(f"Retrieving recipe with id {recipe_id}")
     return (
         db.query(models.Recipe)
         .options(
@@ -61,6 +66,7 @@ def get_recipes(db: Session, skip: int = 0, limit: int = 100):
     """
     Retrieve a list of recipes.
     """
+    logger.debug(f"Retrieving all recipes skipping {skip}, up to limit {limit}")
     return db.query(models.Recipe).offset(skip).limit(limit).all()
 
 
@@ -68,6 +74,7 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: int):
     """
     Create a new recipe and its associated ingredients, instructions, and tags.
     """
+    logger.debug(f"Creating recipe: {recipe}")
     # Create the main recipe object
     db_recipe = models.Recipe(
         name=recipe.name,
@@ -128,9 +135,12 @@ def update_recipe(db: Session, recipe_id: int, recipe_update: schemas.RecipeCrea
     Update an existing recipe. This function replaces the recipe's details,
     ingredients, instructions, and tags with the new data provided.
     """
+    logger.debug(f"Updating recipe {recipe_id} with: {recipe_update}")
     db_recipe = get_recipe(db, recipe_id)
     if not db_recipe:
         return None
+
+    logger.debug(f"Recipe {recipe_id} prior to update: {db_recipe}")
 
     # 1. Update the base recipe fields
     update_data = recipe_update.model_dump(exclude={'ingredients', 'instructions', 'tags'})
@@ -188,6 +198,9 @@ def delete_recipe(db: Session, recipe_id: int):
     """
     db_recipe = get_recipe(db, recipe_id)
     if db_recipe:
+        logger.debug(f"Deleting recipe {recipe_id}")
         db.delete(db_recipe)
         db.commit()
+    else:
+        logger.debug(f"Recipe {recipe_id} not found - nothing to delete")
     return db_recipe

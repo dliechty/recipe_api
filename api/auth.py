@@ -1,6 +1,7 @@
 # api/auth.py
 # Handles user authentication, registration, and token generation.
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -25,6 +26,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 # Create an API router
 router = APIRouter()
+
+# Get a logger instance
+logger = logging.getLogger(__name__)
+
 
 
 # --- Utility Functions for JWT ---
@@ -59,14 +64,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
+            logger.error("Could not verify email")
             raise credentials_exception
         token_data = schemas.TokenData(email=email)
     except JWTError:
+        logger.error("Invalid Auth Token")
         raise credentials_exception
 
     user = crud.get_user_by_email(db, email=token_data.email)
     if user is None:
+        logger.error("Could not find user")
         raise credentials_exception
+    logger.debug(f"Found user: {user.email}")
     return user
 
 
@@ -75,6 +84,7 @@ async def get_current_active_user(current_user: models.User = Depends(get_curren
     Checks if the current user is active.
     """
     if not current_user.is_active:
+        logger.warning(f"User {current_user.email} is inactive")
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
@@ -88,6 +98,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     """
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
+        logger.warning(f"User {db_user.email} already registered")
         raise HTTPException(status_code=400, detail="Email already registered")
     return crud.create_user(db=db, user=user)
 
@@ -99,6 +110,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     """
     user = crud.get_user_by_email(db, email=form_data.username)
     if not user or not crud.verify_password(form_data.password, user.hashed_password):
+        logger.warning("Incorrect password")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

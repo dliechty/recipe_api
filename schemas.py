@@ -87,6 +87,9 @@ class RecipeBase(BaseModel):
     servings: int
     source: Optional[str] = None
 
+    def __str__(self):
+        return self.name
+
 
 class RecipeCreate(RecipeBase):
     ingredients: List[RecipeIngredientCreate]
@@ -100,6 +103,9 @@ class Recipe(RecipeBase):
     ingredients: List[RecipeIngredient] = []
     instructions: List[Instruction] = []
     tags: List[Tag] = []
+
+    def __str__(self):
+        return f"{self.id}: {self.name}, by owner with id {self.owner_id}"
 
     class Config:
         from_attributes = True

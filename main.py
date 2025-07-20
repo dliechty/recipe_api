@@ -1,6 +1,7 @@
 # main.py
 # Main application file for the FastAPI recipe service.
 
+import logging.config
 from fastapi import FastAPI
 import uvicorn
 
@@ -11,6 +12,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 import models
 from api import auth, recipes
+
+# Load logging configuration
+logging.config.fileConfig('logging.ini', disable_existing_loggers=False)
+
+# Get the logger instance
+logger = logging.getLogger(__name__)
+
 
 # Create all database tables
 # This line creates the 'recipes.db' file and the tables within it if they don't exist.
@@ -51,6 +59,7 @@ async def read_root():
     """
     Root endpoint to check if the API is running.
     """
+    logger.debug("Root endpoint accessed")
     return {"message": "Welcome to the Recipe Management API!"}
 
 if __name__ == "__main__":

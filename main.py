@@ -8,10 +8,8 @@ import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import local modules
-from database import engine, get_db
+from database import engine
 import models
-import schemas
-import crud
 from api import auth, recipes
 
 # Create all database tables

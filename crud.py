@@ -122,6 +122,64 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: int):
     return db_recipe
 
 
+def update_recipe(db: Session, recipe_id: int, recipe_update: schemas.RecipeCreate):
+    """
+    Update an existing recipe. This function replaces the recipe's details,
+    ingredients, instructions, and tags with the new data provided.
+    """
+    db_recipe = get_recipe(db, recipe_id)
+    if not db_recipe:
+        return None
+
+    # 1. Update the base recipe fields
+    update_data = recipe_update.model_dump(exclude={'ingredients', 'instructions', 'tags'})
+    for key, value in update_data.items():
+        setattr(db_recipe, key, value)
+
+    # 2. Clear and replace instructions
+    db.query(models.Instruction).filter(models.Instruction.recipe_id == recipe_id).delete()
+    for item in recipe_update.instructions:
+        instruction = models.Instruction(
+            recipe_id=recipe_id,
+            step_number=item.step_number,
+            description=item.description
+        )
+        db.add(instruction)
+
+    # 3. Clear and replace ingredients
+    db.query(models.RecipeIngredient).filter(models.RecipeIngredient.recipe_id == recipe_id).delete()
+    for item in recipe_update.ingredients:
+        ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == item.ingredient_name).first()
+        if not ingredient:
+            ingredient = models.Ingredient(name=item.ingredient_name)
+            db.add(ingredient)
+            db.commit()
+            db.refresh(ingredient)
+
+        recipe_ingredient = models.RecipeIngredient(
+            recipe_id=recipe_id,
+            ingredient_id=ingredient.id,
+            quantity=item.quantity,
+            unit=item.unit
+        )
+        db.add(recipe_ingredient)
+
+    # 4. Clear and replace tags
+    db_recipe.tags.clear()
+    for tag_name in recipe_update.tags:
+        tag = db.query(models.Tag).filter(models.Tag.name == tag_name).first()
+        if not tag:
+            tag = models.Tag(name=tag_name)
+            db.add(tag)
+            db.commit()
+            db.refresh(tag)
+        db_recipe.tags.append(tag)
+
+    db.commit()
+    db.refresh(db_recipe)
+    return db_recipe
+
+
 def delete_recipe(db: Session, recipe_id: int):
     """
     Delete a recipe from the database.

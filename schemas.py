@@ -3,59 +3,116 @@
 
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
+from decimal import Decimal
 
-# --- Recipe Schemas ---
 
-class RecipeBase(BaseModel):
-    """
-    Base schema for a recipe, containing common attributes.
-    """
-    title: str
-    description: Optional[str] = None
-    ingredients: str
-    instructions: str
+# --- Ingredient Schemas ---
+class IngredientBase(BaseModel):
+    name: str
 
-class RecipeCreate(RecipeBase):
-    """
-    Schema used for creating a new recipe. Inherits from RecipeBase.
-    """
+
+class IngredientCreate(IngredientBase):
     pass
 
-class Recipe(RecipeBase):
-    """
-    Schema for returning a recipe from the API.
-    Includes the id and owner_id from the database model.
-    """
+
+class Ingredient(IngredientBase):
     id: int
-    owner_id: int
 
     class Config:
-        """
-        Pydantic's configuration class.
-        'from_attributes = True' allows Pydantic to read the data from ORM models.
-        """
+        from_attributes = True
+
+
+# --- RecipeIngredient Schemas ---
+class RecipeIngredientBase(BaseModel):
+    ingredient_name: str
+    quantity: Decimal
+    unit: str
+
+
+class RecipeIngredientCreate(RecipeIngredientBase):
+    pass
+
+
+class RecipeIngredient(BaseModel):
+    id: int
+    ingredient: Ingredient
+    quantity: Decimal
+    unit: str
+
+    class Config:
+        from_attributes = True
+
+
+# --- Instruction Schemas ---
+class InstructionBase(BaseModel):
+    step_number: int
+    description: str
+
+
+class InstructionCreate(InstructionBase):
+    pass
+
+
+class Instruction(InstructionBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+# --- Tag Schemas ---
+class TagBase(BaseModel):
+    name: str
+
+
+class TagCreate(TagBase):
+    pass
+
+
+class Tag(TagBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+# --- Recipe Schemas ---
+class RecipeBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    prep_time_minutes: int
+    cook_time_minutes: int
+    servings: int
+    source: Optional[str] = None
+
+
+class RecipeCreate(RecipeBase):
+    ingredients: List[RecipeIngredientCreate]
+    instructions: List[InstructionCreate]
+    tags: List[str] = []
+
+
+class Recipe(RecipeBase):
+    id: int
+    owner_id: int
+    ingredients: List[RecipeIngredient] = []
+    instructions: List[Instruction] = []
+    tags: List[Tag] = []
+
+    class Config:
         from_attributes = True
 
 
 # --- User Schemas ---
-
 class UserBase(BaseModel):
-    """
-    Base schema for a user, with the email address.
-    """
     email: EmailStr
 
+
 class UserCreate(UserBase):
-    """
-    Schema for creating a new user. Includes the password.
-    """
     password: str
 
+
 class User(UserBase):
-    """
-    Schema for returning a user from the API.
-    Excludes the password for security. Includes related recipes.
-    """
     id: int
     is_active: bool
     recipes: List[Recipe] = []
@@ -65,16 +122,10 @@ class User(UserBase):
 
 
 # --- Token Schemas for Authentication ---
-
 class Token(BaseModel):
-    """
-    Schema for the access token returned upon successful login.
-    """
     access_token: str
     token_type: str
 
+
 class TokenData(BaseModel):
-    """
-    Schema for the data contained within a JWT token.
-    """
     email: Optional[str] = None

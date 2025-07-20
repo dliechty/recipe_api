@@ -1,51 +1,37 @@
 # crud.py
 # Contains the functions for Create, Read, Update, Delete (CRUD) operations.
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from passlib.context import CryptContext
 
-# Import local modules
 import models
 import schemas
 
-# Setup password hashing context
-# We use bcrypt as the hashing algorithm.
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def verify_password(plain_password, hashed_password):
-    """Verifies a plain password against a hashed one."""
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password):
-    """Hashes a plain password."""
     return pwd_context.hash(password)
 
 
 # --- User CRUD Functions ---
-
 def get_user(db: Session, user_id: int):
-    """
-    Retrieve a single user by their ID.
-    """
     return db.query(models.User).filter(models.User.id == user_id).first()
 
+
 def get_user_by_email(db: Session, email: str):
-    """
-    Retrieve a single user by their email address.
-    """
     return db.query(models.User).filter(models.User.email == email).first()
 
+
 def get_users(db: Session, skip: int = 0, limit: int = 100):
-    """
-    Retrieve a list of users with pagination.
-    """
     return db.query(models.User).offset(skip).limit(limit).all()
 
+
 def create_user(db: Session, user: schemas.UserCreate):
-    """
-    Create a new user in the database.
-    Hashes the password before storing.
-    """
     hashed_password = get_password_hash(user.password)
     db_user = models.User(email=user.email, hashed_password=hashed_password)
     db.add(db_user)
@@ -55,45 +41,91 @@ def create_user(db: Session, user: schemas.UserCreate):
 
 
 # --- Recipe CRUD Functions ---
+def get_recipe(db: Session, recipe_id: int):
+    """
+    Retrieve a single recipe with its related ingredients, instructions, and tags.
+    """
+    return (
+        db.query(models.Recipe)
+        .options(
+            joinedload(models.Recipe.ingredients).joinedload(models.RecipeIngredient.ingredient),
+            joinedload(models.Recipe.instructions),
+            joinedload(models.Recipe.tags)
+        )
+        .filter(models.Recipe.id == recipe_id)
+        .first()
+    )
+
 
 def get_recipes(db: Session, skip: int = 0, limit: int = 100):
     """
-    Retrieve a list of recipes with pagination.
+    Retrieve a list of recipes.
     """
     return db.query(models.Recipe).offset(skip).limit(limit).all()
 
+
 def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: int):
     """
-    Create a new recipe associated with a specific user.
+    Create a new recipe and its associated ingredients, instructions, and tags.
     """
-    db_recipe = models.Recipe(**recipe.model_dump(), owner_id=user_id)
+    # Create the main recipe object
+    db_recipe = models.Recipe(
+        name=recipe.name,
+        description=recipe.description,
+        prep_time_minutes=recipe.prep_time_minutes,
+        cook_time_minutes=recipe.cook_time_minutes,
+        servings=recipe.servings,
+        source=recipe.source,
+        owner_id=user_id
+    )
     db.add(db_recipe)
+    db.commit()  # Commit to get the recipe ID
+
+    # Handle Ingredients
+    for item in recipe.ingredients:
+        # Find or create the master ingredient
+        ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == item.ingredient_name).first()
+        if not ingredient:
+            ingredient = models.Ingredient(name=item.ingredient_name)
+            db.add(ingredient)
+            db.commit()
+
+        # Create the recipe-ingredient link
+        recipe_ingredient = models.RecipeIngredient(
+            recipe_id=db_recipe.id,
+            ingredient_id=ingredient.id,
+            quantity=item.quantity,
+            unit=item.unit
+        )
+        db.add(recipe_ingredient)
+
+    # Handle Instructions
+    for item in recipe.instructions:
+        instruction = models.Instruction(
+            recipe_id=db_recipe.id,
+            step_number=item.step_number,
+            description=item.description
+        )
+        db.add(instruction)
+
+    # Handle Tags
+    for tag_name in recipe.tags:
+        tag = db.query(models.Tag).filter(models.Tag.name == tag_name).first()
+        if not tag:
+            tag = models.Tag(name=tag_name)
+            db.add(tag)
+            db.commit()
+        db_recipe.tags.append(tag)
+
     db.commit()
     db.refresh(db_recipe)
     return db_recipe
 
-def get_recipe(db: Session, recipe_id: int):
-    """
-    Retrieve a single recipe by its ID.
-    """
-    return db.query(models.Recipe).filter(models.Recipe.id == recipe_id).first()
-
-def update_recipe(db: Session, recipe_id: int, recipe_update: schemas.RecipeCreate):
-    """
-    Update an existing recipe.
-    """
-    db_recipe = get_recipe(db, recipe_id)
-    if db_recipe:
-        update_data = recipe_update.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_recipe, key, value)
-        db.commit()
-        db.refresh(db_recipe)
-    return db_recipe
 
 def delete_recipe(db: Session, recipe_id: int):
     """
     Delete a recipe from the database.
+    The cascade option in the model will handle deleting related items.
     """
     db_recipe = get_recipe(db, recipe_id)
     if db_recipe:

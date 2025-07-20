@@ -27,6 +27,7 @@ class RecipeIngredientBase(BaseModel):
     ingredient_name: str
     quantity: Decimal
     unit: str
+    notes: Optional[str]
 
 
 class RecipeIngredientCreate(RecipeIngredientBase):
@@ -38,6 +39,7 @@ class RecipeIngredient(BaseModel):
     ingredient: Ingredient
     quantity: Decimal
     unit: str
+    notes: Optional[str] = None
 
     class Config:
         from_attributes = True

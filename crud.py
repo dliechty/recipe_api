@@ -95,7 +95,8 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: int):
             recipe_id=db_recipe.id,
             ingredient_id=ingredient.id,
             quantity=item.quantity,
-            unit=item.unit
+            unit=item.unit,
+            notes=item.notes
         )
         db.add(recipe_ingredient)
 

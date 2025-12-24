@@ -52,7 +52,7 @@ def test_read_recipes(client: TestClient, db):
     client.post("/recipes/", json=recipe_data, headers=headers)
 
     # Read
-    response = client.get("/recipes/")
+    response = client.get("/recipes/", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) >= 1
@@ -71,7 +71,7 @@ def test_read_recipe_by_id(client: TestClient, db):
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["id"]
 
-    response = client.get(f"/recipes/{recipe_id}")
+    response = client.get(f"/recipes/{recipe_id}", headers=headers)
     assert response.status_code == 200
     assert response.json()["name"] == "Soup"
 
@@ -115,5 +115,5 @@ def test_delete_recipe(client: TestClient, db):
     assert response.status_code == 200
     
     # Verify it's gone
-    get_res = client.get(f"/recipes/{recipe_id}")
+    get_res = client.get(f"/recipes/{recipe_id}", headers=headers)
     assert get_res.status_code == 404

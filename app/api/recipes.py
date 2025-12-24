@@ -35,9 +35,14 @@ def create_recipe(
 
 
 @router.get("/", response_model=List[schemas.Recipe])
-def read_recipes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_recipes(
+        skip: int = 0,
+        limit: int = 100,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_active_user)
+):
     """
-    Retrieve a list of all recipes. This endpoint is public.
+    Retrieve a list of all recipes.
     """
     logger.debug(f"Fetching all recipes with skip={skip}, limit={limit}.")
     recipes = crud.get_recipes(db, skip=skip, limit=limit)
@@ -45,9 +50,13 @@ def read_recipes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
 
 
 @router.get("/{recipe_id}", response_model=schemas.Recipe)
-def read_recipe(recipe_id: int, db: Session = Depends(get_db)):
+def read_recipe(
+        recipe_id: int,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_active_user)
+):
     """
-    Retrieve a single recipe by its ID. This endpoint is public.
+    Retrieve a single recipe by its ID.
     """
     logger.debug(f"Fetching recipe with ID: {recipe_id}")
     db_recipe = crud.get_recipe(db, recipe_id=recipe_id)

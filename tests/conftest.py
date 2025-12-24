@@ -38,7 +38,11 @@ def db(db_engine) -> Generator:
     transaction.rollback()
     connection.close()
 
-@pytest.fixture(scope="module")
-def client() -> Generator:
+@pytest.fixture(scope="function")
+def client(db) -> Generator:
+    def override_get_db():
+        yield db
+    app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as c:
         yield c
+    app.dependency_overrides.clear()

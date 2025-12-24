@@ -68,3 +68,33 @@ To generate an updated `openapi.json` file reflecting the current API schema:
 ```bash
 python3 generate_openapi.py
 ```
+
+## Database Migrations (Alembic)
+
+This project uses [Alembic](https://alembic.sqlalchemy.org) for database migrations.
+
+### Creating Migrations
+
+When you make changes to the existing models in `app/models`, you need to generate a new migration script:
+
+```bash
+alembic revision --autogenerate -m "Description of changes"
+```
+
+This will create a new file in `alembic/versions`. **Always review the generated script** to ensure it accurately reflects your intended changes.
+
+### Applying Migrations
+
+To apply pending migrations to your database (upgrade to the latest version):
+
+```bash
+alembic upgrade head
+```
+
+### Downgrading
+
+If you need to revert the last migration:
+
+```bash
+alembic downgrade -1
+```

@@ -21,6 +21,8 @@ pytest
 
 ## Deployment
 
+For a detailed guide on deploying to a home server, please refer to [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ### Docker
 
 To run the application using Docker:

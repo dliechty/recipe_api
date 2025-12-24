@@ -1,7 +1,7 @@
 # schemas.py
 # Defines the Pydantic models (schemas) for data validation and serialization.
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import List, Optional
 from decimal import Decimal
 
@@ -18,8 +18,7 @@ class IngredientCreate(IngredientBase):
 class Ingredient(IngredientBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- RecipeIngredient Schemas ---
@@ -41,8 +40,7 @@ class RecipeIngredient(BaseModel):
     unit: str
     notes: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Instruction Schemas ---
@@ -58,8 +56,7 @@ class InstructionCreate(InstructionBase):
 class Instruction(InstructionBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Tag Schemas ---
@@ -74,8 +71,7 @@ class TagCreate(TagBase):
 class Tag(TagBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Recipe Schemas ---
@@ -107,8 +103,7 @@ class Recipe(RecipeBase):
     def __str__(self):
         return f"{self.id}: {self.name}, by owner with id {self.owner_id}"
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- User Schemas ---
@@ -125,8 +120,7 @@ class User(UserBase):
     is_active: bool
     recipes: List[Recipe] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Token Schemas for Authentication ---

@@ -53,14 +53,14 @@
         "tags": [
           "Authentication"
         ],
-        "summary": "Login For Access Token",
+        "summary": "Login",
         "description": "Endpoint to log in a user and get an access token.",
-        "operationId": "login_for_access_token_auth_token_post",
+        "operationId": "login_auth_token_post",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/Body_login_for_access_token_auth_token_post"
+                "$ref": "#/components/schemas/Body_login_auth_token_post"
               }
             }
           },
@@ -371,7 +371,7 @@
   },
   "components": {
     "schemas": {
-      "Body_login_for_access_token_auth_token_post": {
+      "Body_login_auth_token_post": {
         "properties": {
           "grant_type": {
             "anyOf": [
@@ -428,7 +428,7 @@
           "username",
           "password"
         ],
-        "title": "Body_login_for_access_token_auth_token_post"
+        "title": "Body_login_auth_token_post"
       },
       "HTTPValidationError": {
         "properties": {

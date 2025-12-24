@@ -21,4 +21,4 @@ EXPOSE 8000
 # 7. Define the command to run the application
 # This command will be executed when the container starts.
 # It runs the Alembic upgrade to apply migrations and then starts the Uvicorn server.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

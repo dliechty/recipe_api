@@ -9,9 +9,10 @@ import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import local modules
-from database import engine
-import models
-from api import auth, recipes
+from app.db.session import engine
+from app import models
+from app.api import auth, recipes
+from app.core.config import settings
 
 # Load logging configuration
 logging.config.fileConfig('logging.ini', disable_existing_loggers=False)
@@ -26,22 +27,18 @@ models.Base.metadata.create_all(bind=engine)
 
 # Initialize the FastAPI app
 app = FastAPI(
-    title="Recipe Management API",
+    title=settings.PROJECT_NAME,
     description="API for managing recipes, users, and meal plans.",
     version="1.0.0",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
 # --- Add CORS Middleware ---
-# Define the list of origins that are allowed to make requests.
-# In your case, this is the URL of your React frontend.
-# TODO should update this list when deploying for real
-origins = [
-    "http://localhost:5173",
-]
+# Origins loaded from settings
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Allows specified origins
+    allow_origins=settings.CORS_ORIGINS,  # Allows specified origins
     allow_credentials=True,  # Allows cookies to be included in requests
     allow_methods=["*"],  # Allows all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allows all headers

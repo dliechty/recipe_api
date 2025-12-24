@@ -5,8 +5,8 @@ import logging
 from sqlalchemy.orm import Session, joinedload
 from passlib.context import CryptContext
 
-import models
-import schemas
+from app import models
+from app import schemas
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

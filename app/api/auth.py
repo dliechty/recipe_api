@@ -10,16 +10,14 @@ from datetime import timedelta, datetime, timezone
 from jose import JWTError, jwt
 
 # Import local modules
-import crud
-import schemas
-import models
-from database import get_db
+from app import crud
+from app import schemas
+from app import models
+from app.db.session import get_db
+from app.core.config import settings
 
 # --- Configuration for JWT ---
-# In a production app, load these from a config file or environment variables.
-SECRET_KEY = "your-super-secret-key"  # Replace with a real secret key
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# Loaded from settings
 
 # OAuth2 scheme definition
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
@@ -44,7 +42,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
@@ -61,7 +59,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
             logger.error("Could not verify email")
@@ -116,7 +114,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )

@@ -5,7 +5,7 @@ from sqlalchemy import (
     Boolean, Column, ForeignKey, Integer, String, Text, Table, Numeric
 )
 from sqlalchemy.orm import relationship
-from database import Base
+from app.db.session import Base
 
 # Association Table for Recipe and Tag (Many-to-Many)
 recipe_tag_association = Table(

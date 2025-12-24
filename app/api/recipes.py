@@ -7,11 +7,12 @@ from sqlalchemy.orm import Session
 from typing import List
 
 # Import local modules
-import crud
-import schemas
-import models
-from database import get_db
-from api.auth import get_current_active_user
+# Import local modules
+from app import crud
+from app import schemas
+from app import models
+from app.db.session import get_db
+from app.api.auth import get_current_active_user
 
 # Create an API router
 router = APIRouter()

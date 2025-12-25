@@ -72,19 +72,19 @@ docker cp recipe_api_app:/app/db/recipes.db ./backup_recipes.db
 
 ## Deploying Behind a Context Root
 
-If you are deploying the API behind a reverse proxy (like Nginx, Traefik, or AWS ALB) under a specific path (e.g., `/recipe-api`), you need to configure the `ROOT_PATH` environment variable.
+If you are deploying the API behind a reverse proxy (like Nginx, Traefik, or AWS ALB) under a specific path (e.g., `/recipes-api`), you need to configure the `ROOT_PATH` environment variable.
 
 1. **Set the Environment Variable**:
    Add `ROOT_PATH` to your `.env` file or `docker-compose.yml` environment:
    ```bash
-   ROOT_PATH=/recipe-api
+   ROOT_PATH=/recipes-api
    ```
 
 2. **Proxy Configuration**:
    Ensure your reverse proxy strips the prefix before forwarding the request to the application.
    *   **Nginx Example**:
        ```nginx
-       location /recipe-api/ {
+       location /recipes-api/ {
            proxy_pass http://recipe_api_app:8000/;
            proxy_set_header Host $host;
            proxy_set_header X-Real-IP $remote_addr;
@@ -92,4 +92,4 @@ If you are deploying the API behind a reverse proxy (like Nginx, Traefik, or AWS
        ```
 
 3. **Effect**:
-   FastAPI will use this configuration to correctly generate URLs for the interactive documentation (Swagger UI) at `/docs` (e.g. `https://your-domain.com/recipe-api/docs`).
+   FastAPI will use this configuration to correctly generate URLs for the interactive documentation (Swagger UI) at `/docs` (e.g. `https://your-domain.com/recipes-api/docs`).

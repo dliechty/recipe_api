@@ -4,6 +4,7 @@ from typing import List
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Recipe Management API"
+    ROOT_PATH: str = ""
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = "your-super-secret-key"  # Default for dev, override in prod
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

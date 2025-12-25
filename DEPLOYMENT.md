@@ -69,3 +69,27 @@ docker cp recipe_api_app:/app/db/recipes.db ./backup_recipes.db
 
 - **Port Conflicts**: If port 8000 is already in use, edit `docker-compose.yml` and change the mapping (e.g., `"8080:8000"` to expose on port 8080).
 - **Database Issues**: If you need to reset the database completely, run `docker-compose down -v` (WARNING: This deletes all data).
+
+## Deploying Behind a Context Root
+
+If you are deploying the API behind a reverse proxy (like Nginx, Traefik, or AWS ALB) under a specific path (e.g., `/recipe-api`), you need to configure the `ROOT_PATH` environment variable.
+
+1. **Set the Environment Variable**:
+   Add `ROOT_PATH` to your `.env` file or `docker-compose.yml` environment:
+   ```bash
+   ROOT_PATH=/recipe-api
+   ```
+
+2. **Proxy Configuration**:
+   Ensure your reverse proxy strips the prefix before forwarding the request to the application.
+   *   **Nginx Example**:
+       ```nginx
+       location /recipe-api/ {
+           proxy_pass http://recipe_api_app:8000/;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+       }
+       ```
+
+3. **Effect**:
+   FastAPI will use this configuration to correctly generate URLs for the interactive documentation (Swagger UI) at `/docs` (e.g. `https://your-domain.com/recipe-api/docs`).

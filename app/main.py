@@ -30,6 +30,7 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description="API for managing recipes, users, and meal plans.",
     version="1.0.0",
+    root_path=settings.ROOT_PATH,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 

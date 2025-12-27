@@ -2,8 +2,10 @@
 # Contains the functions for Create, Read, Update, Delete (CRUD) operations.
 
 import logging
+import uuid
 from sqlalchemy.orm import Session, joinedload
 from passlib.context import CryptContext
+from uuid import UUID
 
 from app import models
 from app import schemas
@@ -23,7 +25,7 @@ def get_password_hash(password):
 
 
 # --- User CRUD Functions ---
-def get_user(db: Session, user_id: int):
+def get_user(db: Session, user_id: UUID): # Changed to UUID
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 
@@ -45,17 +47,17 @@ def create_user(db: Session, user: schemas.UserCreate):
 
 
 # --- Recipe CRUD Functions ---
-def get_recipe(db: Session, recipe_id: int):
+def get_recipe(db: Session, recipe_id: UUID): # Changed to UUID
     """
     Retrieve a single recipe with its related ingredients, instructions, and tags.
+    Now also loads components.
     """
     logger.debug(f"Retrieving recipe with id {recipe_id}")
     return (
         db.query(models.Recipe)
         .options(
-            joinedload(models.Recipe.ingredients).joinedload(models.RecipeIngredient.ingredient),
-            joinedload(models.Recipe.instructions),
-            joinedload(models.Recipe.tags)
+            joinedload(models.Recipe.components).joinedload(models.RecipeComponent.ingredients).joinedload(models.RecipeIngredient.ingredient),
+            joinedload(models.Recipe.instructions)
         )
         .filter(models.Recipe.id == recipe_id)
         .first()
@@ -70,128 +72,148 @@ def get_recipes(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Recipe).offset(skip).limit(limit).all()
 
 
-def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: int):
+def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID): # user_id is UUID
     """
-    Create a new recipe and its associated ingredients, instructions, and tags.
+    Create a new recipe and its associated ingredients, instructions.
     """
     logger.debug(f"Creating recipe: {recipe}")
+    
+    # Extract data from nested schema groups
+    core_data = recipe.core.model_dump()
+    # Remove owner_id from core_data (handled by user_id arg) or verify match?
+    # We'll use user_id argument as the authoritative source
+    if 'owner_id' in core_data:
+        del core_data['owner_id']
+    if 'id' in core_data: # If ID is provided (bad practice usually for create, but if it is..)
+        del core_data['id'] # Let DB/Model generate uuid
+
+    times_data = recipe.times.model_dump()
+    nutrition_data = recipe.nutrition.model_dump()
+    audit_data = recipe.audit.model_dump() if recipe.audit else {}
+    # But if there are fields we should set, we merge them.
+    
+    # Merge all flat fields
+    recipe_kwargs = {**core_data, **times_data, **nutrition_data}
+    
     # Create the main recipe object
     db_recipe = models.Recipe(
-        name=recipe.name,
-        description=recipe.description,
-        prep_time_minutes=recipe.prep_time_minutes,
-        cook_time_minutes=recipe.cook_time_minutes,
-        servings=recipe.servings,
-        source=recipe.source,
+        **recipe_kwargs,
         owner_id=user_id
+        # Audit fields are mostly defaults
     )
     db.add(db_recipe)
-    db.commit()  # Commit to get the recipe ID
+    db.commit()
+    db.refresh(db_recipe)
 
-    # Handle Ingredients
-    for item in recipe.ingredients:
-        # Find or create the master ingredient
-        ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == item.ingredient_name).first()
-        if not ingredient:
-            ingredient = models.Ingredient(name=item.ingredient_name)
-            db.add(ingredient)
-            db.commit()
-
-        # Create the recipe-ingredient link
-        recipe_ingredient = models.RecipeIngredient(
-            recipe_id=db_recipe.id,
-            ingredient_id=ingredient.id,
-            quantity=item.quantity,
-            unit=item.unit,
-            notes=item.notes
+    # Handle Components and Ingredients
+    for comp in recipe.components:
+        db_component = models.RecipeComponent(
+            name=comp.name,
+            recipe_id=db_recipe.id
         )
-        db.add(recipe_ingredient)
+        db.add(db_component)
+        db.commit() # Commit to get ID
+        
+        for item in comp.ingredients:
+            # Find or create the master ingredient
+             # item.item is the name due to our schema mapping? No, schema says `item`
+            ingredient_name = item.item 
+            ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == ingredient_name).first()
+            if not ingredient:
+                ingredient = models.Ingredient(name=ingredient_name)
+                db.add(ingredient)
+                db.commit()
+
+            # Create the recipe-ingredient link
+            recipe_ingredient = models.RecipeIngredient(
+                component_id=db_component.id,
+                ingredient_id=ingredient.id,
+                quantity=item.quantity,
+                unit=item.unit,
+                notes=item.notes
+            )
+            db.add(recipe_ingredient)
 
     # Handle Instructions
     for item in recipe.instructions:
         instruction = models.Instruction(
             recipe_id=db_recipe.id,
             step_number=item.step_number,
-            description=item.description
+            text=item.text # usage of 'text' field
         )
         db.add(instruction)
-
-    # Handle Tags
-    for tag_name in recipe.tags:
-        tag = db.query(models.Tag).filter(models.Tag.name == tag_name).first()
-        if not tag:
-            tag = models.Tag(name=tag_name)
-            db.add(tag)
-            db.commit()
-        db_recipe.tags.append(tag)
 
     db.commit()
     db.refresh(db_recipe)
     return db_recipe
 
 
-def update_recipe(db: Session, recipe_id: int, recipe_update: schemas.RecipeCreate):
+def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCreate):
     """
-    Update an existing recipe. This function replaces the recipe's details,
-    ingredients, instructions, and tags with the new data provided.
+    Update an existing recipe. 
+    Full replacement strategy for sub-resources is simplest for this complexity.
     """
     logger.debug(f"Updating recipe {recipe_id} with: {recipe_update}")
     db_recipe = get_recipe(db, recipe_id)
     if not db_recipe:
         return None
 
-    logger.debug(f"Recipe {recipe_id} prior to update: {db_recipe}")
-
-    # 1. Update the base recipe fields
-    update_data = recipe_update.model_dump(exclude={'ingredients', 'instructions', 'tags'})
+    # Merge updates
+    core_data = recipe_update.core.model_dump(exclude={'id', 'owner_id'}) 
+    times_data = recipe_update.times.model_dump()
+    nutrition_data = recipe_update.nutrition.model_dump()
+    
+    update_data = {**core_data, **times_data, **nutrition_data}
+    
     for key, value in update_data.items():
         setattr(db_recipe, key, value)
 
-    # 2. Clear and replace instructions
+    # Clear and replace components
+    # We might need to delete existing components
+    # Cascade delete should handle their ingredients
+    db.query(models.RecipeComponent).filter(models.RecipeComponent.recipe_id == recipe_id).delete()
+    
+    for comp in recipe_update.components:
+        db_component = models.RecipeComponent(
+            name=comp.name,
+            recipe_id=recipe_id
+        )
+        db.add(db_component)
+        db.commit() # Need ID
+        
+        for item in comp.ingredients:
+            ingredient_name = item.item
+            ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == ingredient_name).first()
+            if not ingredient:
+                ingredient = models.Ingredient(name=ingredient_name)
+                db.add(ingredient)
+                db.commit()
+
+            recipe_ingredient = models.RecipeIngredient(
+                component_id=db_component.id,
+                ingredient_id=ingredient.id,
+                quantity=item.quantity,
+                unit=item.unit,
+                notes=item.notes
+            )
+            db.add(recipe_ingredient)
+
+    # Clear and replace instructions
     db.query(models.Instruction).filter(models.Instruction.recipe_id == recipe_id).delete()
     for item in recipe_update.instructions:
         instruction = models.Instruction(
             recipe_id=recipe_id,
             step_number=item.step_number,
-            description=item.description
+            text=item.text
         )
         db.add(instruction)
-
-    # 3. Clear and replace ingredients
-    db.query(models.RecipeIngredient).filter(models.RecipeIngredient.recipe_id == recipe_id).delete()
-    for item in recipe_update.ingredients:
-        ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == item.ingredient_name).first()
-        if not ingredient:
-            ingredient = models.Ingredient(name=item.ingredient_name)
-            db.add(ingredient)
-            db.commit()
-            db.refresh(ingredient)
-
-        recipe_ingredient = models.RecipeIngredient(
-            recipe_id=recipe_id,
-            ingredient_id=ingredient.id,
-            quantity=item.quantity,
-            unit=item.unit
-        )
-        db.add(recipe_ingredient)
-
-    # 4. Clear and replace tags
-    db_recipe.tags.clear()
-    for tag_name in recipe_update.tags:
-        tag = db.query(models.Tag).filter(models.Tag.name == tag_name).first()
-        if not tag:
-            tag = models.Tag(name=tag_name)
-            db.add(tag)
-            db.commit()
-            db.refresh(tag)
-        db_recipe.tags.append(tag)
 
     db.commit()
     db.refresh(db_recipe)
     return db_recipe
 
 
-def delete_recipe(db: Session, recipe_id: int):
+def delete_recipe(db: Session, recipe_id: UUID):
     """
     Delete a recipe from the database.
     The cascade option in the model will handle deleting related items.

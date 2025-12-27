@@ -217,7 +217,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
+              "type": "string",
+              "format": "uuid",
               "title": "Recipe Id"
             }
           }
@@ -263,7 +264,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
+              "type": "string",
+              "format": "uuid",
               "title": "Recipe Id"
             }
           }
@@ -319,7 +321,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
+              "type": "string",
+              "format": "uuid",
               "title": "Recipe Id"
             }
           }
@@ -430,6 +433,57 @@
         ],
         "title": "Body_login_auth_token_post"
       },
+      "Component": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "ingredients": {
+            "items": {
+              "$ref": "#/components/schemas/RecipeIngredient"
+            },
+            "type": "array",
+            "title": "Ingredients"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "ingredients"
+        ],
+        "title": "Component"
+      },
+      "ComponentCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "ingredients": {
+            "items": {
+              "$ref": "#/components/schemas/RecipeIngredientCreate"
+            },
+            "type": "array",
+            "title": "Ingredients"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "ingredients"
+        ],
+        "title": "ComponentCreate"
+      },
+      "DifficultyLevel": {
+        "type": "string",
+        "enum": [
+          "Easy",
+          "Medium",
+          "Hard"
+        ],
+        "title": "DifficultyLevel"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -443,44 +497,21 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "Ingredient": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "id"
-        ],
-        "title": "Ingredient"
-      },
       "Instruction": {
         "properties": {
           "step_number": {
             "type": "integer",
             "title": "Step Number"
           },
-          "description": {
+          "text": {
             "type": "string",
-            "title": "Description"
-          },
-          "id": {
-            "type": "integer",
-            "title": "Id"
+            "title": "Text"
           }
         },
         "type": "object",
         "required": [
           "step_number",
-          "description",
-          "id"
+          "text"
         ],
         "title": "Instruction"
       },
@@ -490,109 +521,118 @@
             "type": "integer",
             "title": "Step Number"
           },
-          "description": {
+          "text": {
             "type": "string",
-            "title": "Description"
+            "title": "Text"
           }
         },
         "type": "object",
         "required": [
           "step_number",
-          "description"
+          "text"
         ],
         "title": "InstructionCreate"
       },
       "Recipe": {
         "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
+          "core": {
+            "$ref": "#/components/schemas/RecipeCore"
           },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
+          "times": {
+            "$ref": "#/components/schemas/RecipeTimes"
           },
-          "prep_time_minutes": {
-            "type": "integer",
-            "title": "Prep Time Minutes"
-          },
-          "cook_time_minutes": {
-            "type": "integer",
-            "title": "Cook Time Minutes"
-          },
-          "servings": {
-            "type": "integer",
-            "title": "Servings"
-          },
-          "source": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source"
-          },
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "owner_id": {
-            "type": "integer",
-            "title": "Owner Id"
-          },
-          "ingredients": {
+          "components": {
             "items": {
-              "$ref": "#/components/schemas/RecipeIngredient"
+              "$ref": "#/components/schemas/Component"
             },
             "type": "array",
-            "title": "Ingredients",
-            "default": []
+            "title": "Components"
           },
           "instructions": {
             "items": {
               "$ref": "#/components/schemas/Instruction"
             },
             "type": "array",
-            "title": "Instructions",
-            "default": []
+            "title": "Instructions"
           },
-          "tags": {
-            "items": {
-              "$ref": "#/components/schemas/Tag"
-            },
-            "type": "array",
-            "title": "Tags",
-            "default": []
+          "nutrition": {
+            "$ref": "#/components/schemas/RecipeNutrition"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/RecipeAudit"
           }
         },
         "type": "object",
         "required": [
-          "name",
-          "prep_time_minutes",
-          "cook_time_minutes",
-          "servings",
-          "id",
-          "owner_id"
+          "core",
+          "times",
+          "components",
+          "instructions",
+          "nutrition",
+          "audit"
         ],
         "title": "Recipe"
       },
-      "RecipeCreate": {
+      "RecipeAudit": {
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "parent_recipe_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Recipe Id"
+          }
+        },
+        "type": "object",
+        "title": "RecipeAudit"
+      },
+      "RecipeCore": {
         "properties": {
           "name": {
             "type": "string",
             "title": "Name"
           },
-          "description": {
+          "slug": {
             "anyOf": [
               {
                 "type": "string"
@@ -601,19 +641,83 @@
                 "type": "null"
               }
             ],
-            "title": "Description"
+            "title": "Slug"
           },
-          "prep_time_minutes": {
-            "type": "integer",
-            "title": "Prep Time Minutes"
+          "description_short": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description Short"
           },
-          "cook_time_minutes": {
-            "type": "integer",
-            "title": "Cook Time Minutes"
+          "description_long": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description Long"
           },
-          "servings": {
-            "type": "integer",
-            "title": "Servings"
+          "yield_amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Amount"
+          },
+          "yield_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Unit"
+          },
+          "difficulty": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DifficultyLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cuisine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cuisine"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
           },
           "source": {
             "anyOf": [
@@ -626,12 +730,185 @@
             ],
             "title": "Source"
           },
-          "ingredients": {
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Owner Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "id",
+          "owner_id"
+        ],
+        "title": "RecipeCore"
+      },
+      "RecipeCoreCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "description_short": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description Short"
+          },
+          "description_long": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description Long"
+          },
+          "yield_amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Amount"
+          },
+          "yield_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Unit"
+          },
+          "difficulty": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DifficultyLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cuisine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cuisine"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "RecipeCoreCreate"
+      },
+      "RecipeCreate": {
+        "properties": {
+          "core": {
+            "$ref": "#/components/schemas/RecipeCoreCreate"
+          },
+          "times": {
+            "$ref": "#/components/schemas/RecipeTimes"
+          },
+          "nutrition": {
+            "$ref": "#/components/schemas/RecipeNutrition"
+          },
+          "audit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecipeAudit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "components": {
             "items": {
-              "$ref": "#/components/schemas/RecipeIngredientCreate"
+              "$ref": "#/components/schemas/ComponentCreate"
             },
             "type": "array",
-            "title": "Ingredients"
+            "title": "Components"
           },
           "instructions": {
             "items": {
@@ -639,43 +916,31 @@
             },
             "type": "array",
             "title": "Instructions"
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Tags",
-            "default": []
           }
         },
         "type": "object",
         "required": [
-          "name",
-          "prep_time_minutes",
-          "cook_time_minutes",
-          "servings",
-          "ingredients",
+          "core",
+          "times",
+          "nutrition",
+          "components",
           "instructions"
         ],
         "title": "RecipeCreate"
       },
       "RecipeIngredient": {
         "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "ingredient": {
-            "$ref": "#/components/schemas/Ingredient"
-          },
           "quantity": {
-            "type": "string",
+            "type": "number",
             "title": "Quantity"
           },
           "unit": {
             "type": "string",
             "title": "Unit"
+          },
+          "item": {
+            "type": "string",
+            "title": "Item"
           },
           "notes": {
             "anyOf": [
@@ -691,33 +956,25 @@
         },
         "type": "object",
         "required": [
-          "id",
-          "ingredient",
           "quantity",
-          "unit"
+          "unit",
+          "item"
         ],
         "title": "RecipeIngredient"
       },
       "RecipeIngredientCreate": {
         "properties": {
-          "ingredient_name": {
-            "type": "string",
-            "title": "Ingredient Name"
-          },
           "quantity": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "string"
-              }
-            ],
+            "type": "number",
             "title": "Quantity"
           },
           "unit": {
             "type": "string",
             "title": "Unit"
+          },
+          "ingredient_name": {
+            "type": "string",
+            "title": "Ingredient Name"
           },
           "notes": {
             "anyOf": [
@@ -733,29 +990,89 @@
         },
         "type": "object",
         "required": [
-          "ingredient_name",
           "quantity",
-          "unit"
+          "unit",
+          "ingredient_name"
         ],
         "title": "RecipeIngredientCreate"
       },
-      "Tag": {
+      "RecipeNutrition": {
         "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
+          "calories": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calories"
           },
-          "id": {
-            "type": "integer",
-            "title": "Id"
+          "serving_size": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serving Size"
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "id"
-        ],
-        "title": "Tag"
+        "title": "RecipeNutrition"
+      },
+      "RecipeTimes": {
+        "properties": {
+          "prep_time_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prep Time Minutes"
+          },
+          "cook_time_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cook Time Minutes"
+          },
+          "active_time_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Time Minutes"
+          },
+          "total_time_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Time Minutes"
+          }
+        },
+        "type": "object",
+        "title": "RecipeTimes"
       },
       "Token": {
         "properties": {
@@ -783,20 +1100,13 @@
             "title": "Email"
           },
           "id": {
-            "type": "integer",
+            "type": "string",
+            "format": "uuid",
             "title": "Id"
           },
           "is_active": {
             "type": "boolean",
             "title": "Is Active"
-          },
-          "recipes": {
-            "items": {
-              "$ref": "#/components/schemas/Recipe"
-            },
-            "type": "array",
-            "title": "Recipes",
-            "default": []
           }
         },
         "type": "object",

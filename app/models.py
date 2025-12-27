@@ -1,18 +1,20 @@
 # models.py
 # Defines the SQLAlchemy ORM models for the database tables.
 
+import uuid
 from sqlalchemy import (
-    Boolean, Column, ForeignKey, Integer, String, Text, Table, Numeric
+    Boolean, Column, ForeignKey, Integer, String, Text, Table, Numeric, Enum, DateTime, func, Float
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.types import Uuid
 from app.db.session import Base
+import enum
 
-# Association Table for Recipe and Tag (Many-to-Many)
-recipe_tag_association = Table(
-    'recipe_tag', Base.metadata,
-    Column('recipe_id', Integer, ForeignKey('recipes.id'), primary_key=True),
-    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
-)
+
+class DifficultyLevel(str, enum.Enum):
+    EASY = "Easy"
+    MEDIUM = "Medium"
+    HARD = "Hard"
 
 
 class User(Base):
@@ -21,7 +23,7 @@ class User(Base):
     """
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
@@ -32,28 +34,66 @@ class User(Base):
 class Recipe(Base):
     """
     Recipe model for the 'recipes' table.
-    This model is now normalized.
     """
     __tablename__ = "recipes"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    
+    # Core fields
     name = Column(String, index=True, nullable=False)
-    description = Column(Text, nullable=True)
-    prep_time_minutes = Column(Integer)
-    cook_time_minutes = Column(Integer)
-    servings = Column(Integer)
+    slug = Column(String, unique=True, index=True, nullable=True) 
+    description_short = Column(String, nullable=True)
+    description_long = Column(Text, nullable=True)
+    
+    yield_amount = Column(Float, nullable=True)
+    yield_unit = Column(String, nullable=True)
+    difficulty = Column(Enum(DifficultyLevel), nullable=True)
+    cuisine = Column(String, nullable=True)
+    category = Column(String, nullable=True)
     source = Column(String, nullable=True)
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    source_url = Column(String, nullable=True)
+    
+    owner_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"))
 
+    # Times
+    prep_time_minutes = Column(Integer, nullable=True)
+    cook_time_minutes = Column(Integer, nullable=True)
+    active_time_minutes = Column(Integer, nullable=True)
+    total_time_minutes = Column(Integer, nullable=True)
+
+    # Nutrition
+    calories = Column(Integer, nullable=True)
+    serving_size = Column(String, nullable=True)
+
+    # Audit
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    version = Column(Integer, default=1)
+    parent_recipe_id = Column(Uuid(as_uuid=True), nullable=True)
+
+    # Relationships
     owner = relationship("User", back_populates="recipes")
-
-    # Relationships to new normalized tables
-    ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
+    
+    components = relationship("RecipeComponent", back_populates="recipe", cascade="all, delete-orphan")
+    
     instructions = relationship("Instruction", back_populates="recipe", cascade="all, delete-orphan")
-    tags = relationship("Tag", secondary=recipe_tag_association, back_populates="recipes")
 
     def __str__(self):
         return f"{self.id}: {self.name}, by {self.owner.email}"
+
+
+class RecipeComponent(Base):
+    """
+    Grouping of ingredients (e.g. "Main", "Frosting").
+    """
+    __tablename__ = "recipe_components"
+    
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    name = Column(String, default="Main")
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"))
+    
+    recipe = relationship("Recipe", back_populates="components")
+    ingredients = relationship("RecipeIngredient", back_populates="component", cascade="all, delete-orphan")
 
 
 class Ingredient(Base):
@@ -61,23 +101,25 @@ class Ingredient(Base):
     Master list of ingredients.
     """
     __tablename__ = "ingredients"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
 
 
 class RecipeIngredient(Base):
     """
-    Association object between Recipe and Ingredient.
+    Association object between RecipeComponent and Ingredient.
     """
     __tablename__ = "recipe_ingredients"
-    id = Column(Integer, primary_key=True, index=True)
-    recipe_id = Column(Integer, ForeignKey("recipes.id"))
-    ingredient_id = Column(Integer, ForeignKey("ingredients.id"))
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    
+    component_id = Column(Uuid(as_uuid=True), ForeignKey("recipe_components.id"))
+    ingredient_id = Column(Uuid(as_uuid=True), ForeignKey("ingredients.id"))
+    
     quantity = Column(Numeric(10, 2), nullable=False)
     unit = Column(String, nullable=False)
     notes = Column(Text, nullable=True)
 
-    recipe = relationship("Recipe", back_populates="ingredients")
+    component = relationship("RecipeComponent", back_populates="ingredients")
     ingredient = relationship("Ingredient")
 
 
@@ -86,20 +128,9 @@ class Instruction(Base):
     An instruction step for a recipe.
     """
     __tablename__ = "instructions"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     step_number = Column(Integer, nullable=False)
-    description = Column(Text, nullable=False)
-    recipe_id = Column(Integer, ForeignKey("recipes.id"))
+    text = Column(Text, nullable=False)
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"))
 
     recipe = relationship("Recipe", back_populates="instructions")
-
-
-class Tag(Base):
-    """
-    A tag for categorizing recipes.
-    """
-    __tablename__ = "tags"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
-
-    recipes = relationship("Recipe", secondary=recipe_tag_association, back_populates="tags")

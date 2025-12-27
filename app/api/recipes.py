@@ -2,11 +2,11 @@
 # Handles all API endpoints related to recipes.
 
 import logging
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-# Import local modules
 # Import local modules
 from app import crud
 from app import schemas
@@ -51,7 +51,7 @@ def read_recipes(
 
 @router.get("/{recipe_id}", response_model=schemas.Recipe)
 def read_recipe(
-        recipe_id: int,
+        recipe_id: UUID,
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_active_user)
 ):
@@ -69,7 +69,7 @@ def read_recipe(
 
 @router.put("/{recipe_id}", response_model=schemas.Recipe)
 def update_recipe(
-        recipe_id: int,
+        recipe_id: UUID,
         recipe: schemas.RecipeCreate,
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_active_user)
@@ -91,7 +91,7 @@ def update_recipe(
 
 @router.delete("/{recipe_id}", response_model=schemas.Recipe)
 def delete_recipe(
-        recipe_id: int,
+        recipe_id: UUID,
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_active_user)
 ):

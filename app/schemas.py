@@ -131,6 +131,7 @@ class RecipeAudit(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     version: Optional[int] = None
+    checksum: Optional[str] = None
     parent_recipe_id: Optional[UUID] = None
 
 # --- Main Recipe Schemas ---
@@ -187,6 +188,7 @@ class Recipe(BaseModel):
                     "created_at": data.created_at,
                     "updated_at": data.updated_at,
                     "version": data.version,
+                    "checksum": data.checksum,
                     "parent_recipe_id": data.parent_recipe_id,
                 },
                 "components": data.components,

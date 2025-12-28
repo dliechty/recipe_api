@@ -4,6 +4,7 @@
 import logging
 import uuid
 from sqlalchemy.orm import Session, joinedload
+from datetime import datetime, timezone
 from passlib.context import CryptContext
 from uuid import UUID
 
@@ -11,6 +12,8 @@ from app import models
 from app import schemas
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+from app.core.hashing import calculate_recipe_checksum
 
 # Get a logger instance
 logger = logging.getLogger(__name__)
@@ -94,17 +97,26 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
 
     times_data = recipe.times.model_dump()
     nutrition_data = recipe.nutrition.model_dump()
-    audit_data = recipe.audit.model_dump() if recipe.audit else {}
-    # But if there are fields we should set, we merge them.
+    audit_data = recipe.audit.model_dump(exclude_unset=True) if recipe.audit else {}
     
+    # Explicit timestamp logic
+    if 'created_at' not in audit_data:
+        audit_data['created_at'] = datetime.now(timezone.utc)
+    if 'updated_at' not in audit_data:
+        audit_data['updated_at'] = datetime.now(timezone.utc)
+
+    # Calculate Checksum
+    checksum = calculate_recipe_checksum(recipe.model_dump(exclude={'audit'}))
+
     # Merge all flat fields
-    recipe_kwargs = {**core_data, **times_data, **nutrition_data}
+    recipe_kwargs = {**core_data, **times_data, **nutrition_data, **audit_data}
     
     # Create the main recipe object
     db_recipe = models.Recipe(
         **recipe_kwargs,
-        owner_id=user_id
-        # Audit fields are mostly defaults
+        owner_id=user_id,
+        checksum=checksum,
+        version=1
     )
     db.add(db_recipe)
     db.commit()
@@ -168,8 +180,19 @@ def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCre
     times_data = recipe_update.times.model_dump()
     nutrition_data = recipe_update.nutrition.model_dump()
     
-    update_data = {**core_data, **times_data, **nutrition_data}
+    audit_data = recipe_update.audit.model_dump(exclude_unset=True) if recipe_update.audit else {}
+    if 'updated_at' not in audit_data:
+        audit_data['updated_at'] = datetime.now(timezone.utc)
+
+    update_data = {**core_data, **times_data, **nutrition_data, **audit_data}
     
+    # Calculate new checksum
+    new_checksum = calculate_recipe_checksum(recipe_update.model_dump(exclude={'audit'}))
+    
+    if db_recipe.checksum != new_checksum:
+        db_recipe.version = (db_recipe.version or 1) + 1
+        db_recipe.checksum = new_checksum
+
     for key, value in update_data.items():
         setattr(db_recipe, key, value)
 

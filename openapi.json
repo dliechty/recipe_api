@@ -659,6 +659,17 @@
             ],
             "title": "Version"
           },
+          "checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum"
+          },
           "parent_recipe_id": {
             "anyOf": [
               {

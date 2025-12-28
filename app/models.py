@@ -73,6 +73,7 @@ class Recipe(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     version = Column(Integer, default=1)
+    checksum = Column(String, nullable=True)
     parent_recipe_id = Column(Uuid(as_uuid=True), nullable=True)
 
     # Relationships

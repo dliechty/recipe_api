@@ -1252,6 +1252,11 @@
             "format": "uuid",
             "title": "Id"
           },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
           "first_name": {
             "anyOf": [
               {
@@ -1277,7 +1282,8 @@
         },
         "type": "object",
         "required": [
-          "id"
+          "id",
+          "email"
         ],
         "title": "UserPublic"
       },

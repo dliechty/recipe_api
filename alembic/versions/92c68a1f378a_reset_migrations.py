@@ -1,8 +1,8 @@
-"""Initial migration with user fields
+"""reset_migrations
 
-Revision ID: 8cd665380261
+Revision ID: 92c68a1f378a
 Revises: 
-Create Date: 2025-12-27 18:24:53.513275
+Create Date: 2025-12-27 22:21:56.297932
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8cd665380261'
+revision: str = '92c68a1f378a'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -44,8 +44,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('slug', sa.String(), nullable=True),
-    sa.Column('description_short', sa.String(), nullable=True),
-    sa.Column('description_long', sa.Text(), nullable=True),
+    sa.Column('description', sa.Text(), nullable=True),
     sa.Column('yield_amount', sa.Float(), nullable=True),
     sa.Column('yield_unit', sa.String(), nullable=True),
     sa.Column('difficulty', sa.Enum('EASY', 'MEDIUM', 'HARD', name='difficultylevel'), nullable=True),
@@ -63,6 +62,7 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('version', sa.Integer(), nullable=True),
+    sa.Column('checksum', sa.String(), nullable=True),
     sa.Column('parent_recipe_id', sa.Uuid(), nullable=True),
     sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')

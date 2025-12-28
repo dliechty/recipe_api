@@ -7,7 +7,7 @@ def test_recipe_versioning_logic(client: TestClient, db):
     
     # 1. Create Recipe
     recipe_data = {
-        "core": {"name": "Version Test", "description_short": "v1"},
+        "core": {"name": "Version Test", "description": "v1"},
         "times": {},
         "nutrition": {},
         "components": [{"name": "Main", "ingredients": [{"ingredient_name": "Sugar", "quantity": 100, "unit": "g"}]}],
@@ -73,7 +73,7 @@ def test_timestamp_behavior(client: TestClient, db):
     
     # 1. Create Recipe (Default Timestamps)
     recipe_data = {
-        "core": {"name": "Time Test", "description_short": "Checking clocks"},
+        "core": {"name": "Time Test", "description": "Checking clocks"},
         "times": {},
         "nutrition": {},
         "components": [],

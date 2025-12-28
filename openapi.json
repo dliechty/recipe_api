@@ -703,7 +703,7 @@
             ],
             "title": "Slug"
           },
-          "description_short": {
+          "description": {
             "anyOf": [
               {
                 "type": "string"
@@ -712,18 +712,7 @@
                 "type": "null"
               }
             ],
-            "title": "Description Short"
-          },
-          "description_long": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description Long"
+            "title": "Description"
           },
           "yield_amount": {
             "anyOf": [
@@ -837,7 +826,7 @@
             ],
             "title": "Slug"
           },
-          "description_short": {
+          "description": {
             "anyOf": [
               {
                 "type": "string"
@@ -846,18 +835,7 @@
                 "type": "null"
               }
             ],
-            "title": "Description Short"
-          },
-          "description_long": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description Long"
+            "title": "Description"
           },
           "yield_amount": {
             "anyOf": [

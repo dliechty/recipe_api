@@ -101,8 +101,7 @@ class UserPublic(BaseModel):
 class RecipeCoreBase(BaseModel):
     name: str
     slug: Optional[str] = None
-    description_short: Optional[str] = None
-    description_long: Optional[str] = None
+    description: Optional[str] = None
     yield_amount: Optional[float] = None
     yield_unit: Optional[str] = None
     difficulty: Optional[DifficultyLevel] = None
@@ -164,8 +163,7 @@ class Recipe(BaseModel):
                     "id": data.id,
                     "name": data.name,
                     "slug": data.slug,
-                    "description_short": data.description_short,
-                    "description_long": data.description_long,
+                    "description": data.description,
                     "yield_amount": data.yield_amount,
                     "yield_unit": data.yield_unit,
                     "difficulty": data.difficulty,

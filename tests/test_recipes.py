@@ -20,7 +20,7 @@ def test_create_recipe(client: TestClient, db):
     recipe_data = {
         "core": {
             "name": "Pancakes",
-            "description_short": "Fluffy breakfast",
+            "description": "Fluffy breakfast",
             "difficulty": "Easy",
             "yield_amount": 4
         },

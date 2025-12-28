@@ -46,8 +46,7 @@ class Recipe(Base):
     # Core fields
     name = Column(String, index=True, nullable=False)
     slug = Column(String, unique=True, index=True, nullable=True) 
-    description_short = Column(String, nullable=True)
-    description_long = Column(Text, nullable=True)
+    description = Column(Text, nullable=True)
     
     yield_amount = Column(Float, nullable=True)
     yield_unit = Column(String, nullable=True)

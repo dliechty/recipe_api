@@ -28,6 +28,10 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
 
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    is_admin = Column(Boolean, default=False)
+
     recipes = relationship("Recipe", back_populates="owner")
 
 

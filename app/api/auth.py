@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
+from uuid import UUID
 
 from jose import JWTError, jwt
 
@@ -99,6 +100,21 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         logger.warning(f"User {db_user.email} already registered")
         raise HTTPException(status_code=400, detail="Email already registered")
     return crud.create_user(db=db, user=user)
+
+
+@router.get("/users/{user_id}", response_model=schemas.UserPublic)
+def get_user_name(
+    user_id: UUID, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Get user public information (name) by ID.
+    """
+    db_user = crud.get_user(db, user_id=user_id)
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return db_user
 
 
 @router.post("/token", response_model=schemas.Token)

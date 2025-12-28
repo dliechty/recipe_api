@@ -77,6 +77,8 @@ class Instruction(InstructionBase):
 # --- User Schemas ---
 class UserBase(BaseModel):
     email: EmailStr
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -84,6 +86,13 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: UUID
     is_active: bool
+    is_admin: bool = False
+    model_config = ConfigDict(from_attributes=True)
+
+class UserPublic(BaseModel):
+    id: UUID
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 # --- Nested Recipe Groups ---

@@ -106,6 +106,21 @@ def get_user_name(
     return db_user
 
 
+@router.get("/users", response_model=list[schemas.UserPublic])
+def list_active_users(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    List all active users. Admin only.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return crud.get_active_users(db, skip=skip, limit=limit)
+
+
 @router.post("/token", response_model=schemas.Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """

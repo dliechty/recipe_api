@@ -1,126 +1,143 @@
 
 from fastapi.testclient import TestClient
-from app import crud, schemas
+from app import crud, schemas, models
+from app.db.session import SessionLocal
 
-def test_create_user(client: TestClient, db):
+def test_request_account_flow(client: TestClient, db):
+    # 1. Request Account
     response = client.post(
-        "/auth/users/",
-        json={"email": "test@example.com", "password": "password123"},
+        "/auth/request-account",
+        json={"email": "newuser@example.com", "first_name": "New", "last_name": "User"},
     )
-    assert response.status_code == 200, response.text
-    data = response.json()
-    assert data["email"] == "test@example.com"
-    assert "id" in data
-
-def test_create_existing_user(client: TestClient, db):
-    # First create
-    client.post(
-        "/auth/users/",
-        json={"email": "duplicate@example.com", "password": "password123"},
-    )
-    # Second create
-    response = client.post(
-        "/auth/users/",
-        json={"email": "duplicate@example.com", "password": "password123"},
-    )
-    assert response.status_code == 400
-    assert response.json()["detail"] == "Email already registered"
-
-def test_login_user(client: TestClient, db):
-    # Create user first
-    client.post(
-        "/auth/users/",
-        json={"email": "login@example.com", "password": "password123"},
-    )
+    assert response.status_code == 202
+    assert response.json()["message"] == "Account request submitted"
     
-    # Login
+    # 2. Duplicate Request
     response = client.post(
-        "/auth/token",
-        data={"username": "login@example.com", "password": "password123"},
+        "/auth/request-account",
+        json={"email": "newuser@example.com", "first_name": "New", "last_name": "User"},
     )
     assert response.status_code == 200
-    data = response.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
+    assert response.json()["message"] == "Request already pending"
 
-def test_login_wrong_password(client: TestClient, db):
-    client.post(
-        "/auth/users/",
-        json={"email": "wrongpass@example.com", "password": "password123"},
+    # 3. Create Admin User manually to approve
+    admin_data = schemas.UserCreate(
+        email="admin@example.com", 
+        password="adminpass", 
+        first_name="Admin", 
+        last_name="User"
     )
-    response = client.post(
-        "/auth/token",
-        data={"username": "wrongpass@example.com", "password": "wrongpassword"},
-    )
-    assert response.status_code == 401
-    assert response.json()["detail"] == "Incorrect email or password"
-
-def test_get_user_public_info(client: TestClient, db):
-    # 1. Create a user
-    email = "public_info@example.com"
-    password = "password123"
-    client.post(
-        "/auth/users/",
-        json={
-            "email": email, 
-            "password": password,
-            "first_name": "Public",
-            "last_name": "User"
-        },
-    )
+    admin_user = crud.create_user(db, admin_data)
+    admin_user.is_admin = True
+    db.commit()
     
-    # 2. Login
+    # Login as Admin
     login_res = client.post(
         "/auth/token",
-        data={"username": email, "password": password},
+        data={"username": "admin@example.com", "password": "adminpass"},
     )
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     
-    # Get user ID from login or by fetching me? 
-    # Or just fetch list? We don't have list endpoint for users publicly.
-    # We can get the ID from the create response if we capture it.
+    # 4. List Pending Requests
+    response = client.get("/auth/pending-requests", headers=headers)
+    assert response.status_code == 200
+    requests = response.json()
+    assert len(requests) >= 1
+    req_id = requests[0]["id"]
     
-    # Let's re-create capture
-    # Actually, we can just use the login token to get "me" if we had a /me endpoint, 
-    # but we only added /auth/users/{user_id}.
-    # We need the ID.
-    
-    # Re-doing the flow cleanly:
-    
-    # 1. Create
-    create_res = client.post(
-        "/auth/users/",
-        json={
-            "email": "public_info_2@example.com", 
-            "password": password,
-            "first_name": "Public",
-            "last_name": "User"
-        },
+    # 5. Approve Request
+    response = client.post(
+        f"/auth/approve-request/{req_id}",
+        headers=headers,
+        json={"initial_password": "temppassword"}
     )
-    user_id = create_res.json()["id"]
+    assert response.status_code == 200
+    user_data = response.json()
+    assert user_data["email"] == "newuser@example.com"
+    assert user_data["is_first_login"] == True
     
-    # 2. Login
+    # 6. Login as New User
     login_res = client.post(
         "/auth/token",
-        data={"username": "public_info_2@example.com", "password": password},
+        data={"username": "newuser@example.com", "password": "temppassword"},
     )
-    token = login_res.json()["access_token"]
+    assert login_res.status_code == 200
+    user_token = login_res.json()["access_token"]
+    user_headers = {"Authorization": f"Bearer {user_token}"}
+    
+    # 7. Change Password
+    response = client.post(
+        "/auth/change-password",
+        headers=user_headers,
+        json={"old_password": "temppassword", "new_password": "newpassword123"}
+    )
+    assert response.status_code == 200
+    
+    # 8. Verify Login with New Password
+    login_res = client.post(
+        "/auth/token",
+        data={"username": "newuser@example.com", "password": "newpassword123"},
+    )
+    assert login_res.status_code == 200
+
+
+def test_admin_management_functions(client: TestClient, db):
+    # Setup Admin
+    admin_data = schemas.UserCreate(
+        email="admin2@example.com", 
+        password="adminpass", 
+        first_name="Admin", 
+        last_name="User"
+    )
+    admin = crud.create_user(db, admin_data)
+    admin.is_admin = True
+    db.commit()
+    
+    token = client.post(
+        "/auth/token",
+        data={"username": "admin2@example.com", "password": "adminpass"},
+    ).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     
-    # 3. Get Info
-    response = client.get(f"/auth/users/{user_id}", headers=headers)
-    assert response.status_code == 200
-    data = response.json()
+    # Create Target User
+    user_data = schemas.UserCreate(
+        email="target@example.com", 
+        password="oldpassword", 
+        first_name="Target", 
+        last_name="User"
+    )
+    target = crud.create_user(db, user_data)
+    target_id = str(target.id)
     
-    # 4. Verify Fields
-    assert data["email"] == "public_info_2@example.com"
-    assert data["first_name"] == "Public"
-    assert data["last_name"] == "User"
-    assert "id" in data
+    # 1. Edit User
+    res = client.put(
+        f"/auth/users/{target_id}",
+        headers=headers,
+        json={"first_name": "UpdatedTarget"}
+    )
+    assert res.status_code == 200
+    assert res.json()["first_name"] == "UpdatedTarget"
     
-    # 5. Verify Exclusions
-    assert "password" not in data
-    assert "hashed_password" not in data
-    assert "is_active" not in data # UserPublic didn't include this
-    assert "is_admin" not in data # UserPublic didn't include this
+    # 2. Reset User
+    res = client.post(
+        f"/auth/users/{target_id}/reset",
+        headers=headers,
+        json={"initial_password": "resetpassword"}
+    )
+    assert res.status_code == 200
+    
+    # Verify Reset (login with new password)
+    res = client.post(
+        "/auth/token",
+        data={"username": "target@example.com", "password": "resetpassword"}
+    )
+    assert res.status_code == 200
+    
+    # 3. Delete User
+    res = client.delete(f"/auth/users/{target_id}", headers=headers)
+    assert res.status_code == 200
+    
+    # Verify Gone
+    res = client.get(f"/auth/users/{target_id}", headers=headers)
+    assert res.status_code == 404

@@ -1,12 +1,17 @@
 
 from fastapi.testclient import TestClient
 
-def get_auth_headers(client: TestClient, email="user@example.com", password="password"):
-    # Register
-    client.post(
-        "/auth/users/",
-        json={"email": email, "password": password},
-    )
+from app import crud, schemas
+
+def get_auth_headers(client: TestClient, db, email="user@example.com", password="password"):
+    # Directly create user in DB
+    try:
+        user_in = schemas.UserCreate(email=email, password=password)
+        crud.create_user(db, user_in)
+    except Exception:
+        # Ignore duplicate email errors if user already exists
+        pass
+
     # Login
     response = client.post(
         "/auth/token",
@@ -16,7 +21,8 @@ def get_auth_headers(client: TestClient, email="user@example.com", password="pas
     return {"Authorization": f"Bearer {token}"}
 
 def test_create_recipe(client: TestClient, db):
-    headers = get_auth_headers(client)
+    headers = get_auth_headers(client, db)
+
     recipe_data = {
         "core": {
             "name": "Pancakes",
@@ -55,7 +61,8 @@ def test_create_recipe(client: TestClient, db):
 
 def test_read_recipes(client: TestClient, db):
     # Create a recipe first
-    headers = get_auth_headers(client)
+    headers = get_auth_headers(client, db)
+
     recipe_data = {
         "core": {"name": "Toast", "yield_amount": 1},
         "times": {"prep_time_minutes": 1},
@@ -73,7 +80,8 @@ def test_read_recipes(client: TestClient, db):
     assert data[0]["core"]["name"] == "Toast"
 
 def test_read_recipe_by_id(client: TestClient, db):
-    headers = get_auth_headers(client)
+    headers = get_auth_headers(client, db)
+
     recipe_data = {
         "core": {"name": "Soup", "yield_amount": 4},
         "times": {"prep_time_minutes": 10},
@@ -89,7 +97,8 @@ def test_read_recipe_by_id(client: TestClient, db):
     assert response.json()["core"]["name"] == "Soup"
 
 def test_update_recipe(client: TestClient, db):
-    headers = get_auth_headers(client)
+    headers = get_auth_headers(client, db)
+
     recipe_data = {
         "core": {"name": "Old Name", "yield_amount": 1},
         "times": {"prep_time_minutes": 5},
@@ -109,7 +118,8 @@ def test_update_recipe(client: TestClient, db):
     assert response.json()["core"]["name"] == "New Name"
 
 def test_delete_recipe(client: TestClient, db):
-    headers = get_auth_headers(client)
+    headers = get_auth_headers(client, db)
+
     recipe_data = {
         "core": {"name": "To Delete"},
         "times": {},

@@ -87,6 +87,7 @@ class User(UserBase):
     id: UUID
     is_active: bool
     is_admin: bool = False
+    is_first_login: bool = False
     model_config = ConfigDict(from_attributes=True)
 
 class UserPublic(BaseModel):
@@ -94,7 +95,35 @@ class UserPublic(BaseModel):
     email: EmailStr
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    is_first_login: bool = False # Useful for UI to redirect to change password
     model_config = ConfigDict(from_attributes=True)
+
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+class PasswordChange(BaseModel):
+    old_password: str
+    new_password: str
+
+# --- User Request Schemas ---
+class UserRequestBase(BaseModel):
+    email: EmailStr
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+class UserRequestCreate(UserRequestBase):
+    pass
+
+class UserRequest(UserRequestBase):
+    id: UUID
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class ApproveRequest(BaseModel):
+    initial_password: str
+
 
 # --- Nested Recipe Groups ---
 

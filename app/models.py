@@ -31,8 +31,22 @@ class User(Base):
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     is_admin = Column(Boolean, default=False)
+    is_first_login = Column(Boolean, default=False)
 
     recipes = relationship("Recipe", back_populates="owner")
+
+
+class UserRequest(Base):
+    """
+    Model for pending user registration requests.
+    """
+    __tablename__ = "user_requests"
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now())
 
 
 class Recipe(Base):

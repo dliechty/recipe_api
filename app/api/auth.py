@@ -90,17 +90,6 @@ async def get_current_active_user(current_user: models.User = Depends(get_curren
 
 # --- Authentication Endpoints ---
 
-@router.post("/users/", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    """
-    Endpoint to register a new user.
-    """
-    db_user = crud.get_user_by_email(db, email=user.email)
-    if db_user:
-        logger.warning(f"User {db_user.email} already registered")
-        raise HTTPException(status_code=400, detail="Email already registered")
-    return crud.create_user(db=db, user=user)
-
 
 @router.get("/users/{user_id}", response_model=schemas.UserPublic)
 def get_user_name(
@@ -135,3 +124,147 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+# --- New User Registration & Management Endpoints ---
+
+from fastapi.responses import JSONResponse
+
+@router.post("/request-account", status_code=status.HTTP_202_ACCEPTED)
+def request_account(request: schemas.UserRequestCreate, db: Session = Depends(get_db)):
+    """
+    Submit a request for a new user account.
+    """
+    # Check if user already exists
+    if crud.get_user_by_email(db, email=request.email):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check if request already exists
+    if crud.get_user_request_by_email(db, email=request.email):
+        return JSONResponse(status_code=200, content={"message": "Request already pending"})
+    
+    crud.create_user_request(db, request)
+    return {"message": "Account request submitted"}
+
+
+@router.get("/pending-requests", response_model=list[schemas.UserRequest])
+def list_pending_requests(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    List all pending account requests. Admin only.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return crud.get_user_requests(db)
+
+
+@router.post("/approve-request/{request_id}", response_model=schemas.User)
+def approve_request(
+    request_id: UUID,
+    approval: schemas.ApproveRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Approve a pending account request and create the user. Admin only.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    user_request = crud.get_user_request(db, request_id)
+    if not user_request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    # Create the user
+    user_create = schemas.UserCreate(
+        email=user_request.email,
+        password=approval.initial_password,
+        first_name=user_request.first_name,
+        last_name=user_request.last_name
+    )
+    new_user = crud.create_user(db, user_create)
+    
+    # Set first login flag
+    new_user.is_first_login = True
+    db.add(new_user)
+    
+    # Delete the request
+    crud.delete_user_request(db, request_id)
+    db.commit() # Commit all changes including delete
+    db.refresh(new_user)
+    
+    return new_user
+
+
+@router.post("/change-password")
+def change_password(
+    password_data: schemas.PasswordChange,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Change the current user's password.
+    """
+    if not crud.verify_password(password_data.old_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect old password")
+    
+    crud.change_password(db, current_user.id, password_data.new_password)
+    return {"message": "Password updated successfully"}
+
+
+@router.put("/users/{user_id}", response_model=schemas.UserPublic)
+def update_user(
+    user_id: UUID,
+    user_update: schemas.UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Update user profile. Users can update themselves; Admins can update anyone.
+    """
+    if user_id != current_user.id and not current_user.is_admin:
+         raise HTTPException(status_code=403, detail="Not authorized")
+    
+    updated_user = crud.update_user(db, user_id, user_update)
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return updated_user
+
+
+@router.delete("/users/{user_id}")
+def delete_user(
+    user_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Delete a user account. Admin only.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if crud.delete_user(db, user_id):
+        return {"message": "User deleted"}
+    raise HTTPException(status_code=404, detail="User not found")
+
+
+@router.post("/users/{user_id}/reset")
+def reset_user(
+    user_id: UUID,
+    approval: schemas.ApproveRequest, # Reusing schema for passing password
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Reset a user's password and set is_first_login to True. Admin only.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    user = crud.reset_user_password(db, user_id, approval.initial_password)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User reset successfully"}

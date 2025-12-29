@@ -3,7 +3,8 @@ from fastapi.testclient import TestClient
 from tests.test_recipes import get_auth_headers
 
 def test_recipe_versioning_logic(client: TestClient, db):
-    headers = get_auth_headers(client, email="version_tester@example.com")
+    headers = get_auth_headers(client, db, email="version_tester@example.com")
+
     
     # 1. Create Recipe
     recipe_data = {
@@ -69,7 +70,8 @@ def test_recipe_versioning_logic(client: TestClient, db):
 from datetime import datetime, timezone, timedelta
 
 def test_timestamp_behavior(client: TestClient, db):
-    headers = get_auth_headers(client, email="time_tester@example.com")
+    headers = get_auth_headers(client, db, email="time_tester@example.com")
+
     
     # 1. Create Recipe (Default Timestamps)
     recipe_data = {

@@ -54,6 +54,89 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 
+def update_user(db: Session, user_id: UUID, user_update: schemas.UserUpdate):
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return None
+    
+    update_data = user_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_user, key, value)
+    
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def delete_user(db: Session, user_id: UUID):
+    db_user = get_user(db, user_id)
+    if db_user:
+        db.delete(db_user)
+        db.commit()
+    return db_user
+
+
+def reset_user_password(db: Session, user_id: UUID, new_password: str):
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return None
+    
+    db_user.hashed_password = get_password_hash(new_password)
+    db_user.is_first_login = True
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def change_password(db: Session, user_id: UUID, new_password: str):
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return None
+    
+    db_user.hashed_password = get_password_hash(new_password)
+    db_user.is_first_login = False
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+# --- User Request CRUD Functions ---
+
+def get_user_request(db: Session, request_id: UUID):
+    return db.query(models.UserRequest).filter(models.UserRequest.id == request_id).first()
+
+
+def get_user_request_by_email(db: Session, email: str):
+    return db.query(models.UserRequest).filter(models.UserRequest.email == email).first()
+
+
+def get_user_requests(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.UserRequest).offset(skip).limit(limit).all()
+
+
+def create_user_request(db: Session, request: schemas.UserRequestCreate):
+    db_request = models.UserRequest(
+        email=request.email,
+        first_name=request.first_name,
+        last_name=request.last_name
+    )
+    db.add(db_request)
+    db.commit()
+    db.refresh(db_request)
+    return db_request
+
+
+def delete_user_request(db: Session, request_id: UUID):
+    db_request = get_user_request(db, request_id)
+    if db_request:
+        db.delete(db_request)
+        db.commit()
+    return db_request
+
+
 # --- Recipe CRUD Functions ---
 def get_recipe(db: Session, recipe_id: UUID): # Changed to UUID
     """

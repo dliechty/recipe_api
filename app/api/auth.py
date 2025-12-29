@@ -227,6 +227,11 @@ def update_user(
     if user_id != current_user.id and not current_user.is_admin:
          raise HTTPException(status_code=403, detail="Not authorized")
     
+    # Check if trying to update permissions
+    if user_update.is_admin is not None:
+        if not current_user.is_admin:
+             raise HTTPException(status_code=403, detail="Only admins can promote users")
+    
     updated_user = crud.update_user(db, user_id, user_update)
     if not updated_user:
         raise HTTPException(status_code=404, detail="User not found")

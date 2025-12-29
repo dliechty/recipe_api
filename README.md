@@ -61,6 +61,20 @@ Example:
 level=INFO
 ```
 
+## Admin Initial Setup
+
+To create the initial Superuser account:
+
+1. Configure `FIRST_SUPERUSER_EMAIL` and `FIRST_SUPERUSER_PASSWORD` in `.env` (optional, defaults to `admin@example.com` / `admin123`).
+2. Run the initialization script:
+
+```bash
+python3 -m app.initial_data
+```
+
+This will ensure a superuser exists. You can then log in and manage other users or requests.
+
+
 ## Generate OpenAPI Spec
 
 To generate an updated `openapi.json` file reflecting the current API schema:

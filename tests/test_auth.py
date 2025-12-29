@@ -141,3 +141,63 @@ def test_admin_management_functions(client: TestClient, db):
     # Verify Gone
     res = client.get(f"/auth/users/{target_id}", headers=headers)
     assert res.status_code == 404
+
+def test_admin_promotion(client: TestClient, db):
+    # Setup Admin
+    admin_data = schemas.UserCreate(
+        email="superadmin@example.com", 
+        password="adminpass", 
+        first_name="Super", 
+        last_name="Admin"
+    )
+    admin = crud.create_user(db, admin_data)
+    admin.is_admin = True
+    db.commit()
+    
+    admin_token = client.post(
+        "/auth/token",
+        data={"username": "superadmin@example.com", "password": "adminpass"},
+    ).json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    
+    # Setup Regular User
+    user_data = schemas.UserCreate(
+        email="promoteme@example.com", 
+        password="userpass", 
+        first_name="Regular", 
+        last_name="User"
+    )
+    user = crud.create_user(db, user_data)
+    user_id = str(user.id)
+    
+    user_token = client.post(
+        "/auth/token",
+        data={"username": "promoteme@example.com", "password": "userpass"},
+    ).json()["access_token"]
+    user_headers = {"Authorization": f"Bearer {user_token}"}
+    
+    # 1. User tries to promote themselves (Should Fail)
+    res = client.put(
+        f"/auth/users/{user_id}",
+        headers=user_headers,
+        json={"is_admin": True}
+    )
+    assert res.status_code == 403
+    
+    # 2. Admin promotes user (Should Succeed)
+    res = client.put(
+        f"/auth/users/{user_id}",
+        headers=admin_headers,
+        json={"is_admin": True}
+    )
+    assert res.status_code == 200
+    assert res.json()["is_admin"] == True # Depends if UserPublic shows it, actually it serves UserPublic which currently doesn't have is_admin
+    
+    # Verify DB state directly or via admin endpoint if UserPublic doesn't show it
+    # We didn't add is_admin to UserPublic in schemas.py, checking...
+    # Wait, we probably should if we want to confirm it via API. 
+    # But checking DB is fine for test.
+    
+    db.refresh(user)
+    assert user.is_admin == True
+

@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-super-secret-key"  # Default for dev, override in prod
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"
+
+    FIRST_SUPERUSER_EMAIL: str = "admin@example.com"
+    FIRST_SUPERUSER_PASSWORD: str = "admin123"
     
     # Database
     DATABASE_URL: str = "sqlite:///./db/recipes.db"

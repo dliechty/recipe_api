@@ -96,12 +96,14 @@ class UserPublic(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     is_first_login: bool = False # Useful for UI to redirect to change password
+    is_admin: bool = False
     model_config = ConfigDict(from_attributes=True)
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    is_admin: Optional[bool] = None
 
 class PasswordChange(BaseModel):
     old_password: str

@@ -12,6 +12,8 @@ class Settings(BaseSettings):
 
     FIRST_SUPERUSER_EMAIL: str = "admin@example.com"
     FIRST_SUPERUSER_PASSWORD: str = "admin123"
+    FIRST_SUPERUSER_FIRST_NAME: str = "Initial"
+    FIRST_SUPERUSER_LAST_NAME: str = "Superuser"
     
     # Database
     DATABASE_URL: str = "sqlite:///./db/recipes.db"

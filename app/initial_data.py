@@ -2,7 +2,7 @@
 import logging
 from sqlalchemy.orm import Session
 
-from app import crud, schemas
+from app import crud, schemas, models
 from app.db.session import SessionLocal
 from app.core.config import settings
 
@@ -16,15 +16,16 @@ def init_db(db: Session) -> None:
         logger.info(f"Superuser {settings.FIRST_SUPERUSER_EMAIL} already exists.")
     else:
         logger.info(f"Creating superuser {settings.FIRST_SUPERUSER_EMAIL}...")
-        user_in = schemas.UserCreate(
+        import uuid
+        user = models.User(
+            id=uuid.uuid4(),
             email=settings.FIRST_SUPERUSER_EMAIL,
-            password=settings.FIRST_SUPERUSER_PASSWORD,
-            first_name="Initial",
-            last_name="Superuser"
+            hashed_password=crud.get_password_hash(settings.FIRST_SUPERUSER_PASSWORD),
+            first_name=settings.FIRST_SUPERUSER_FIRST_NAME,
+            last_name=settings.FIRST_SUPERUSER_LAST_NAME,
+            is_admin=True,
+            is_active=True,
         )
-        user = crud.create_user(db, user_in)
-        user.is_admin = True
-        user.is_active = True
         db.add(user)
         db.commit()
         db.refresh(user)

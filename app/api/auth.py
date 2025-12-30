@@ -61,16 +61,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            logger.error("Could not verify email")
+        user_id_str: str = payload.get("sub")
+        if user_id_str is None:
+            logger.error("Could not verify user id")
             raise credentials_exception
-        token_data = schemas.TokenData(email=email)
-    except JWTError:
-        logger.error("Invalid Auth Token")
+        user_id = UUID(user_id_str)
+        token_data = schemas.TokenData(id=user_id)
+    except (JWTError, ValueError):
+        logger.error("Invalid Auth Token or User ID")
         raise credentials_exception
 
-    user = crud.get_user_by_email(db, email=token_data.email)
+    user = crud.get_user(db, user_id=token_data.id)
     if user is None:
         logger.error("Could not find user")
         raise credentials_exception
@@ -136,7 +137,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
+        data={"sub": str(user.id)}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

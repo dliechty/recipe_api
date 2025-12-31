@@ -26,7 +26,7 @@ from app.models import (
 )
 
 # Database path
-DB_PATH = "db/Recipes.accdb"
+DB_PATH = "migrate_data/Recipes.accdb"
 
 def run_mdb_export(table_name: str) -> pd.DataFrame:
     """Exports a table from the Access database to a Pandas DataFrame."""

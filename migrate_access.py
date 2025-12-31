@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 from io import StringIO
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import re
 import uuid
 
@@ -132,6 +132,16 @@ def should_skip_recipe(name: str) -> bool:
         return False
     s = name.strip()
     return s.startswith("<<") and s.endswith(">>")
+
+
+def normalize_ingredient(quantity: float, unit: str) -> Tuple[float, str]:
+    """
+    Normalizes ingredient quantity and unit.
+    specifically maps 0 quantity 'As Needed' to 'To Taste'.
+    """
+    if quantity == 0 and unit and unit.lower() == "as needed":
+        return 0, "To Taste"
+    return quantity, unit
 
 
 def migrate():
@@ -291,6 +301,9 @@ def migrate():
                         qty_val = float(s_val + '5')
 
                 unit_name = unit_map.get(unit_id, "")
+                
+                # Normalize Ingredient (Handle 'As Needed' -> 'To Taste')
+                qty_val, unit_name = normalize_ingredient(qty_val, unit_name)
                 prep_text = prep_map.get(prep_id)
                 
                 final_notes = []

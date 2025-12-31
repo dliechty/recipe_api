@@ -280,13 +280,15 @@ def migrate():
                         qty_val = 1
                         qty_note = f"Amount: {raw_amt}"
                 
-                # Fix precision for .33 and .66 to be .333 and .666
+                # Fix precision for .33, .66, and .12 to be .333, .666, and .125
                 if isinstance(qty_val, float):
                     s_val = str(qty_val)
                     if s_val.endswith('.33'):
                         qty_val = float(s_val + '3')
                     elif s_val.endswith('.66'):
                         qty_val = float(s_val + '6')
+                    elif s_val.endswith('.12'):
+                        qty_val = float(s_val + '5')
 
                 unit_name = unit_map.get(unit_id, "")
                 prep_text = prep_map.get(prep_id)

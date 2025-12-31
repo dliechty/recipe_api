@@ -253,3 +253,25 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     id: Optional[UUID] = None
+
+
+# --- Comment Schemas ---
+
+class CommentBase(BaseModel):
+    text: str
+
+class CommentCreate(CommentBase):
+    pass
+
+class CommentUpdate(CommentBase):
+    pass
+
+class Comment(CommentBase):
+    id: UUID
+    recipe_id: UUID
+    user_id: UUID
+    user: UserPublic # Embed basic user info
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)

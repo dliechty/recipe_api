@@ -3,7 +3,7 @@
 
 import uuid
 from sqlalchemy import (
-    Boolean, Column, ForeignKey, Integer, String, Text, Table, Numeric, Enum, DateTime, func, Float
+    Boolean, Column, ForeignKey, Integer, String, Text, Table, Numeric, Enum, DateTime, func, Float, desc
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import Uuid
@@ -34,6 +34,7 @@ class User(Base):
     is_first_login = Column(Boolean, default=False)
 
     recipes = relationship("Recipe", back_populates="owner")
+    comments = relationship("Comment", back_populates="user")
 
 
 class UserRequest(Base):
@@ -95,6 +96,8 @@ class Recipe(Base):
     components = relationship("RecipeComponent", back_populates="recipe", cascade="all, delete-orphan")
     
     instructions = relationship("Instruction", back_populates="recipe", cascade="all, delete-orphan", order_by="Instruction.step_number")
+    
+    comments = relationship("Comment", back_populates="recipe", cascade="all, delete-orphan", order_by="desc(Comment.created_at)")
 
     def __str__(self):
         return f"{self.id}: {self.name}, by {self.owner.email}"
@@ -152,3 +155,19 @@ class Instruction(Base):
     recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"))
 
     recipe = relationship("Recipe", back_populates="instructions")
+
+
+class Comment(Base):
+    """
+    Comments on recipes.
+    """
+    __tablename__ = "comments"
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=False)
+    user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    text = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    recipe = relationship("Recipe", back_populates="comments")
+    user = relationship("User", back_populates="comments")

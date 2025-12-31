@@ -343,3 +343,63 @@ def delete_recipe(db: Session, recipe_id: UUID):
     else:
         logger.debug(f"Recipe {recipe_id} not found - nothing to delete")
     return db_recipe
+
+
+# --- Comment CRUD Functions ---
+
+def get_comment(db: Session, comment_id: UUID):
+    return db.query(models.Comment).filter(models.Comment.id == comment_id).first()
+
+
+def get_comments(db: Session, recipe_id: UUID, skip: int = 0, limit: int = 100):
+    """
+    Retrieve comments for a specific recipe.
+    """
+    # Assuming we want to show latest first? 
+    # Logic in User story didn't specify, but models has order_by desc(created_at).
+    # Relationship loading usually respects that, but explicit query is safer if we access directly.
+    return (
+        db.query(models.Comment)
+        .filter(models.Comment.recipe_id == recipe_id)
+        .order_by(models.Comment.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def create_comment(db: Session, comment: schemas.CommentCreate, user_id: UUID, recipe_id: UUID):
+    db_comment = models.Comment(
+        text=comment.text,
+        user_id=user_id,
+        recipe_id=recipe_id
+    )
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment
+
+
+def update_comment(db: Session, comment_id: UUID, comment_update: schemas.CommentUpdate):
+    db_comment = get_comment(db, comment_id)
+    if not db_comment:
+        return None
+    
+    db_comment.text = comment_update.text
+    # created_at/updated_at handles itself via onupdate in model?
+    # actually only if we use server_onupdate. 
+    # Our model says: updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    # So SQLAlchemy should handle it on flush.
+    
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment
+
+
+def delete_comment(db: Session, comment_id: UUID):
+    db_comment = get_comment(db, comment_id)
+    if db_comment:
+        db.delete(db_comment)
+        db.commit()
+    return db_comment

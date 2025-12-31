@@ -110,3 +110,90 @@ def delete_recipe(
         raise HTTPException(status_code=403, detail="Not authorized to delete this recipe")
 
     return crud.delete_recipe(db=db, recipe_id=recipe_id)
+
+
+# --- Comment Endpoints ---
+
+@router.post("/{recipe_id}/comments", response_model=schemas.Comment)
+def create_comment(
+    recipe_id: UUID,
+    comment: schemas.CommentCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Add a comment to a recipe.
+    """
+    # Verify recipe exists
+    db_recipe = crud.get_recipe(db, recipe_id=recipe_id)
+    if not db_recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+        
+    return crud.create_comment(db=db, comment=comment, user_id=current_user.id, recipe_id=recipe_id)
+
+
+@router.get("/{recipe_id}/comments", response_model=List[schemas.Comment])
+def read_comments(
+    recipe_id: UUID,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Get comments for a recipe.
+    """
+    # Verify recipe exists
+    db_recipe = crud.get_recipe(db, recipe_id=recipe_id)
+    if not db_recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    return crud.get_comments(db=db, recipe_id=recipe_id, skip=skip, limit=limit)
+
+
+@router.put("/{recipe_id}/comments/{comment_id}", response_model=schemas.Comment)
+def update_comment(
+    recipe_id: UUID,
+    comment_id: UUID,
+    comment_update: schemas.CommentUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Update a comment. Only the author of the comment or an admin can update it.
+    """
+    db_comment = crud.get_comment(db, comment_id=comment_id)
+    if not db_comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+        
+    if db_comment.recipe_id != recipe_id:
+         raise HTTPException(status_code=400, detail="Comment does not belong to this recipe")
+
+    if db_comment.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to update this comment")
+
+    return crud.update_comment(db=db, comment_id=comment_id, comment_update=comment_update)
+
+
+@router.delete("/{recipe_id}/comments/{comment_id}")
+def delete_comment(
+    recipe_id: UUID,
+    comment_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Delete a comment. Only the author of the comment or an admin can delete it.
+    """
+    db_comment = crud.get_comment(db, comment_id=comment_id)
+    if not db_comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+        
+    if db_comment.recipe_id != recipe_id:
+         raise HTTPException(status_code=400, detail="Comment does not belong to this recipe")
+
+    if db_comment.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
+
+    crud.delete_comment(db=db, comment_id=comment_id)
+    return {"message": "Comment deleted successfully"}

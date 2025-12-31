@@ -164,7 +164,9 @@ def get_recipes(db: Session, skip: int = 0, limit: int = 100):
     Retrieve a list of recipes.
     """
     logger.debug(f"Retrieving all recipes skipping {skip}, up to limit {limit}")
-    return db.query(models.Recipe).order_by(models.Recipe.name).offset(skip).limit(limit).all()
+    total_count = db.query(models.Recipe).count()
+    recipes = db.query(models.Recipe).order_by(models.Recipe.name).offset(skip).limit(limit).all()
+    return recipes, total_count
 
 
 def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID): # user_id is UUID

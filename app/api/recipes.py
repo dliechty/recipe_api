@@ -3,7 +3,7 @@
 
 import logging
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -36,6 +36,7 @@ def create_recipe(
 
 @router.get("/", response_model=List[schemas.Recipe])
 def read_recipes(
+        response: Response,
         skip: int = 0,
         limit: int = 100,
         db: Session = Depends(get_db),
@@ -45,7 +46,8 @@ def read_recipes(
     Retrieve a list of all recipes.
     """
     logger.debug(f"Fetching all recipes with skip={skip}, limit={limit}.")
-    recipes = crud.get_recipes(db, skip=skip, limit=limit)
+    recipes, total_count = crud.get_recipes(db, skip=skip, limit=limit)
+    response.headers["X-Total-Count"] = str(total_count)
     return recipes
 
 

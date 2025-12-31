@@ -75,6 +75,8 @@ def test_read_recipes(client: TestClient, db):
     # Read
     response = client.get("/recipes/", headers=headers)
     assert response.status_code == 200
+    assert response.headers["X-Total-Count"]
+    assert int(response.headers["X-Total-Count"]) >= 1
     data = response.json()
     assert len(data) >= 1
     assert data[0]["core"]["name"] == "Toast"

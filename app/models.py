@@ -94,7 +94,7 @@ class Recipe(Base):
     
     components = relationship("RecipeComponent", back_populates="recipe", cascade="all, delete-orphan")
     
-    instructions = relationship("Instruction", back_populates="recipe", cascade="all, delete-orphan")
+    instructions = relationship("Instruction", back_populates="recipe", cascade="all, delete-orphan", order_by="Instruction.step_number")
 
     def __str__(self):
         return f"{self.id}: {self.name}, by {self.owner.email}"

@@ -84,7 +84,7 @@ def update_recipe(
     if db_recipe is None:
         logger.warning(f"Recipe with ID {recipe_id} not found for update.")
         raise HTTPException(status_code=404, detail="Recipe not found")
-    if db_recipe.owner_id != current_user.id:
+    if db_recipe.owner_id != current_user.id and not current_user.is_admin:
         logger.error(f"User {current_user.email} is not authorized to update recipe with ID: {recipe_id}")
         raise HTTPException(status_code=403, detail="Not authorized to update this recipe")
 
@@ -105,7 +105,7 @@ def delete_recipe(
     if db_recipe is None:
         logger.warning(f"Recipe with ID: {recipe_id} not found for deletion.")
         raise HTTPException(status_code=404, detail="Recipe not found")
-    if db_recipe.owner_id != current_user.id:
+    if db_recipe.owner_id != current_user.id and not current_user.is_admin:
         logger.error(f"User {current_user.email} is not authorized to delete recipe with ID: {recipe_id}")
         raise HTTPException(status_code=403, detail="Not authorized to delete this recipe")
 

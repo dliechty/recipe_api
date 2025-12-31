@@ -136,7 +136,7 @@ class RecipeIngredient(Base):
     component_id = Column(Uuid(as_uuid=True), ForeignKey("recipe_components.id"))
     ingredient_id = Column(Uuid(as_uuid=True), ForeignKey("ingredients.id"))
     
-    quantity = Column(Numeric(10, 2), nullable=False)
+    quantity = Column(Float, nullable=False)
     unit = Column(String, nullable=False)
     notes = Column(Text, nullable=True)
 

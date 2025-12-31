@@ -144,6 +144,24 @@ def normalize_ingredient(quantity: float, unit: str) -> Tuple[float, str]:
     return quantity, unit
 
 
+def fix_ingredient_precision(qty_val: float) -> float:
+    """
+    Fixes precision issues from Access migration.
+    Converts .33 -> .333
+    Converts .66 -> .666
+    Converts .12 -> .125
+    """
+    if isinstance(qty_val, float):
+        s_val = str(qty_val)
+        if s_val.endswith('.33'):
+            return float(s_val + '3')
+        elif s_val.endswith('.66'):
+            return float(s_val + '6')
+        elif s_val.endswith('.12'):
+            return float(s_val + '5')
+    return qty_val
+
+
 def migrate():
     if not os.path.exists(DB_PATH):
         print(f"Database file not found at {DB_PATH}")
@@ -291,14 +309,7 @@ def migrate():
                         qty_note = f"Amount: {raw_amt}"
                 
                 # Fix precision for .33, .66, and .12 to be .333, .666, and .125
-                if isinstance(qty_val, float):
-                    s_val = str(qty_val)
-                    if s_val.endswith('.33'):
-                        qty_val = float(s_val + '3')
-                    elif s_val.endswith('.66'):
-                        qty_val = float(s_val + '6')
-                    elif s_val.endswith('.12'):
-                        qty_val = float(s_val + '5')
+                qty_val = fix_ingredient_precision(qty_val)
 
                 unit_name = unit_map.get(unit_id, "")
                 

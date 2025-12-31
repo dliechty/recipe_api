@@ -43,6 +43,7 @@ app.add_middleware(
     allow_credentials=True,  # Allows cookies to be included in requests
     allow_methods=["*"],  # Allows all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allows all headers
+    expose_headers=["X-Total-Count"],  # Expose custom headers
 )
 
 # --- End of CORS Middleware Section ---

@@ -33,7 +33,7 @@ def get_user(db: Session, user_id: UUID): # Changed to UUID
 
 
 def get_user_by_email(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
+    return db.query(models.User).filter(models.User.email == email.lower()).first()
 
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
@@ -114,7 +114,7 @@ def get_user_request(db: Session, request_id: UUID):
 
 
 def get_user_request_by_email(db: Session, email: str):
-    return db.query(models.UserRequest).filter(models.UserRequest.email == email).first()
+    return db.query(models.UserRequest).filter(models.UserRequest.email == email.lower()).first()
 
 
 def get_user_requests(db: Session, skip: int = 0, limit: int = 100):

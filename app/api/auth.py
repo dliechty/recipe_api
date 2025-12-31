@@ -127,7 +127,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     """
     Endpoint to log in a user and get an access token.
     """
-    user = crud.get_user_by_email(db, email=form_data.username)
+    user = crud.get_user_by_email(db, email=form_data.username.lower())
     if not user or not crud.verify_password(form_data.password, user.hashed_password):
         logger.warning("Incorrect password")
         raise HTTPException(

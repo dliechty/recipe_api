@@ -1,7 +1,7 @@
 # schemas.py
 # Defines the Pydantic models (schemas) for data validation and serialization.
 
-from pydantic import BaseModel, EmailStr, ConfigDict, Field, model_validator
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, model_validator, field_validator
 from typing import List, Optional, Any
 from decimal import Decimal
 from uuid import UUID
@@ -80,6 +80,11 @@ class UserBase(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
 
+    @field_validator('email')
+    @classmethod
+    def lowercase_email(cls, v: str) -> str:
+        return v.lower()
+
 class UserCreate(UserBase):
     password: str
 
@@ -105,6 +110,13 @@ class UserUpdate(BaseModel):
     last_name: Optional[str] = None
     is_admin: Optional[bool] = None
 
+    @field_validator('email')
+    @classmethod
+    def lowercase_email(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return v.lower()
+
 class PasswordChange(BaseModel):
     old_password: str
     new_password: str
@@ -114,6 +126,11 @@ class UserRequestBase(BaseModel):
     email: EmailStr
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+
+    @field_validator('email')
+    @classmethod
+    def lowercase_email(cls, v: str) -> str:
+        return v.lower()
 
 class UserRequestCreate(UserRequestBase):
     pass

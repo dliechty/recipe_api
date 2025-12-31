@@ -17,6 +17,8 @@ def verify():
             print(f"\nVerifying Recipe: {recipe.name}")
             print(f"Description: {recipe.description}")
             print(f"Yield: {recipe.yield_amount} {recipe.yield_unit}")
+            print(f"Category: {recipe.category}")
+            print(f"Source: {recipe.source}")
             
             print(f"Components: {len(recipe.components)}")
             for comp in recipe.components:

@@ -99,7 +99,10 @@ def migrate():
     df_units = run_mdb_export("tblUnits")
     df_preparations = run_mdb_export("tblPreparations")
     df_complexity = run_mdb_export("tblComplexityLevels")
-    df_categories = run_mdb_export("tblFoodCategories")
+    df_complexity = run_mdb_export("tblComplexityLevels")
+    # df_categories = run_mdb_export("tblFoodCategories") # No longer mapping this to category
+    df_types = run_mdb_export("tblRecipeTypes")
+    df_sources = run_mdb_export("tblRecipeSources")
 
     # 2. Prepare Maps
     # Amount ID -> Value/Desc
@@ -121,8 +124,14 @@ def migrate():
     # Complexity ID -> Description
     complexity_map = df_complexity.set_index('Complexity_Level_ID')['Complexity_Level_Description'].to_dict()
     
-    # Category ID -> Name
-    category_map = df_categories.set_index('Food_Category_ID')['Food_Category'].to_dict() if not df_categories.empty else {}
+    # Category ID -> Name (now unused for Recipe.category, replaced by Type)
+    # category_map = df_categories.set_index('Food_Category_ID')['Food_Category'].to_dict() if not df_categories.empty else {}
+    
+    # Type ID -> Name (New Category)
+    type_map = df_types.set_index('Recipe_Type_ID')['Recipe_Type'].to_dict() if not df_types.empty else {}
+
+    # Source ID -> Name
+    source_map = df_sources.set_index('Recipe_Source_ID')['Recipe_Source'].to_dict() if not df_sources.empty else {}
 
     # Ingredient ID -> Name
     ingredient_map = df_ingredients.set_index('Ingredient_ID')['Ingredient'].to_dict()
@@ -156,12 +165,12 @@ def migrate():
                 yield_amount=pd.to_numeric(row.get('Recipe_Servings'), errors='coerce'),
                 yield_unit="servings",
                 difficulty=map_difficulty(row.get('Complexity_Level_ID'), complexity_map),
-                category=category_map.get(row.get('Food_Category_ID')),
+                category=type_map.get(row.get('Recipe_Type_ID')),
                 prep_time_minutes=pd.to_numeric(row.get('Recipe_Prep_Time'), errors='coerce'),
                 cook_time_minutes=pd.to_numeric(row.get('Recipe_Cook_Time'), errors='coerce'),
                 calories=pd.to_numeric(row.get('Recipe_Calories'), errors='coerce'),
                 owner_id=user.id,
-                source="Access Migration"
+                source=source_map.get(row.get('Recipe_Source_ID'))
             )
             session.add(recipe)
             session.flush() # Get ID

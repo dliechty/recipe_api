@@ -126,6 +126,14 @@ def parse_time_minutes(time_str: str) -> Optional[int]:
     except:
         return None
 
+def should_skip_recipe(name: str) -> bool:
+    """Checks if a recipe name indicates it's a meta-recipe (<<name>>)."""
+    if not name:
+        return False
+    s = name.strip()
+    return s.startswith("<<") and s.endswith(">>")
+
+
 def migrate():
     if not os.path.exists(DB_PATH):
         print(f"Database file not found at {DB_PATH}")
@@ -199,6 +207,11 @@ def migrate():
             if existing_recipe:
                 print(f"Skipping existing recipe: {name}")
                 continue
+
+            if should_skip_recipe(name):
+                print(f"Skipping meta-recipe: {name}")
+                continue
+
 
             print(f"Migrating: {name}")
 

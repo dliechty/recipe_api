@@ -24,6 +24,7 @@ from app.models import (
     Instruction,
     User,
     DifficultyLevel,
+    Comment,
 )
 
 # Database path
@@ -145,6 +146,7 @@ def migrate():
     # df_categories = run_mdb_export("tblFoodCategories") # No longer mapping this to category
     df_types = run_mdb_export("tblRecipeTypes")
     df_sources = run_mdb_export("tblRecipeSources")
+    df_notes = run_mdb_export("tblRecipeNotes")
 
     # 2. Prepare Maps
     # Amount ID -> Value/Desc
@@ -308,7 +310,22 @@ def migrate():
                     text=full_text,
                     recipe_id=recipe.id
                 )
+
                 session.add(instruction)
+
+            # Process Notes as Comments
+            recipe_notes = df_notes[df_notes['Recipe_ID'] == recipe_id_old].sort_values('Recipe_Note_Num')
+            for _, note_row in recipe_notes.iterrows():
+                note_text = clean_text(note_row.get('Recipe_Note'))
+                if not note_text:
+                    continue
+                
+                comment = Comment(
+                    text=f"Migrated Note: {note_text}",
+                    user_id=user.id,
+                    recipe_id=recipe.id
+                )
+                session.add(comment)
 
             session.commit()
             print(f"Migrated {name} successfully.")

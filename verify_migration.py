@@ -12,13 +12,18 @@ def verify():
         print(f"Total Recipes in DB: {count}")
         
         # Check a specific recipe
-        recipe = session.query(Recipe).filter(Recipe.name == "Lentil Soup").first()
+        recipe_name = "Oven Roasted Yukon Gold Potatoes"
+        recipe = session.query(Recipe).filter(Recipe.name == recipe_name).first()
         if recipe:
             print(f"\nVerifying Recipe: {recipe.name}")
             print(f"Description: {recipe.description}")
             print(f"Yield: {recipe.yield_amount} {recipe.yield_unit}")
             print(f"Category: {recipe.category}")
+            print(f"Category: {recipe.category}")
             print(f"Source: {recipe.source}")
+            print(f"Prep Time: {recipe.prep_time_minutes} min")
+            print(f"Cook Time: {recipe.cook_time_minutes} min")
+            print(f"Total Time: {recipe.total_time_minutes} min")
             
             print(f"Components: {len(recipe.components)}")
             for comp in recipe.components:
@@ -30,7 +35,7 @@ def verify():
             for step in recipe.instructions:
                 print(f"  {step.step_number}. {step.text}")
         else:
-            print("Lentil Soup not found!")
+            print(f"{recipe_name} not found!")
 
     finally:
         session.close()

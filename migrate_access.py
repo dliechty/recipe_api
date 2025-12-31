@@ -5,6 +5,7 @@ import subprocess
 import sys
 from io import StringIO
 from typing import Dict, List, Optional
+import re
 import uuid
 
 import pandas as pd
@@ -82,6 +83,47 @@ def map_difficulty(complexity_id: int, complexity_map: Dict[int, str]) -> Option
     if "difficult" in desc_lower or "complex" in desc_lower:
         return DifficultyLevel.HARD
     return DifficultyLevel.MEDIUM
+
+def parse_time_minutes(time_str: str) -> Optional[int]:
+    """Parses time strings like '10min', '1hr 30min', '5 mn' into total minutes."""
+    if not isinstance(time_str, str):
+        return None
+    
+    s = time_str.lower().strip()
+    if not s:
+        return None
+
+    # Regex for number and unit
+    p_hour = r'(?:h|hr|hrs|hour|hours)'
+    p_min = r'(?:m|mn|min|mins|minute|minutes)'
+    
+    # Pattern: number followed optionally by space, then unit
+    pattern = re.compile(f'(\d+(?:\.\d+)?)\s*({p_hour}|{p_min})')
+    
+    matches = pattern.findall(s)
+    
+    total_minutes = 0
+    match_found = False
+    
+    for val, unit in matches:
+        match_found = True
+        try:
+            v = float(val)
+            if any(h in unit for h in ['h', 'hour']):
+                total_minutes += v * 60
+            else:
+                total_minutes += v
+        except ValueError:
+            pass
+            
+    if match_found:
+        return int(total_minutes)
+    
+    # Try parsing just as number if regex failed
+    try:
+        return int(float(s))
+    except:
+        return None
 
 def migrate():
     if not os.path.exists(DB_PATH):
@@ -166,12 +208,20 @@ def migrate():
                 yield_unit="servings",
                 difficulty=map_difficulty(row.get('Complexity_Level_ID'), complexity_map),
                 category=type_map.get(row.get('Recipe_Type_ID')),
-                prep_time_minutes=pd.to_numeric(row.get('Recipe_Prep_Time'), errors='coerce'),
-                cook_time_minutes=pd.to_numeric(row.get('Recipe_Cook_Time'), errors='coerce'),
+
+                prep_time_minutes=parse_time_minutes(row.get('Recipe_Prep_Time')),
+                cook_time_minutes=parse_time_minutes(row.get('Recipe_Cook_Time')),
                 calories=pd.to_numeric(row.get('Recipe_Calories'), errors='coerce'),
                 owner_id=user.id,
                 source=source_map.get(row.get('Recipe_Source_ID'))
             )
+            
+            # Calculate Total Time
+            p = recipe.prep_time_minutes or 0
+            c = recipe.cook_time_minutes or 0
+            if p > 0 or c > 0:
+                recipe.total_time_minutes = p + c
+
             session.add(recipe)
             session.flush() # Get ID
 

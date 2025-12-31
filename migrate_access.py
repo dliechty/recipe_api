@@ -264,6 +264,14 @@ def migrate():
                         # If amount is text like "1-2", default 1 and put in notes
                         qty_val = 1
                         qty_note = f"Amount: {raw_amt}"
+                
+                # Fix precision for .33 and .66 to be .333 and .666
+                if isinstance(qty_val, float):
+                    s_val = str(qty_val)
+                    if s_val.endswith('.33'):
+                        qty_val = float(s_val + '3')
+                    elif s_val.endswith('.66'):
+                        qty_val = float(s_val + '6')
 
                 unit_name = unit_map.get(unit_id, "")
                 prep_text = prep_map.get(prep_id)

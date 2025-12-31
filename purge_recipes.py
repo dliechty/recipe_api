@@ -3,7 +3,7 @@ import os
 sys.path.append(os.getcwd())
 
 from app.db.session import SessionLocal
-from app.models import Recipe, RecipeComponent, RecipeIngredient, Instruction, Ingredient
+from app.models import Recipe, RecipeComponent, RecipeIngredient, Instruction, Ingredient, Comment
 from sqlalchemy import text
 
 def purge_recipes():
@@ -13,6 +13,10 @@ def purge_recipes():
         
         # Order matters for Foreign Keys
         
+        # 0. Comments (depends on Recipe and User)
+        deleted_c = session.query(Comment).delete()
+        print(f"Deleted {deleted_c} Comments")
+
         # 1. RecipeIngredient (depends on Component and Ingredient)
         deleted_ri = session.query(RecipeIngredient).delete()
         print(f"Deleted {deleted_ri} RecipeIngredients")

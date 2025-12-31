@@ -139,7 +139,7 @@ def normalize_ingredient(quantity: float, unit: str) -> Tuple[float, str]:
     Normalizes ingredient quantity and unit.
     specifically maps 0 quantity 'As Needed' to 'To Taste'.
     """
-    if quantity == 0 and unit and unit.lower() == "as needed":
+    if quantity == 0 and unit and unit.lower() in ["as needed", "as desired"]:
         return 0, "To Taste"
     return quantity, unit
 

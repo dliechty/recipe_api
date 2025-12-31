@@ -5,6 +5,8 @@ def test_normalize_ingredient():
     assert normalize_ingredient(0, "As Needed") == (0, "To Taste")
     assert normalize_ingredient(0, "as needed") == (0, "To Taste")
     assert normalize_ingredient(0.0, "AS NEEDED") == (0, "To Taste")
+    assert normalize_ingredient(0, "As Desired") == (0, "To Taste")
+    assert normalize_ingredient(0, "as desired") == (0, "To Taste")
     
     # Non-matching cases
     assert normalize_ingredient(1, "As Needed") == (1, "As Needed")

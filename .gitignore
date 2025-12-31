@@ -208,3 +208,6 @@ __marimo__/
 
 # sqllite db file
 *.db
+
+# Access db file
+*.accdb

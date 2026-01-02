@@ -277,7 +277,7 @@ def migrate():
             # Filter ingredients for this recipe
             recipe_ings = df_recipe_ingredients[df_recipe_ingredients['Recipe_ID'] == recipe_id_old]
             
-            for _, ing_row in recipe_ings.iterrows():
+            for idx, (_, ing_row) in enumerate(recipe_ings.iterrows()):
                 ing_id_old = ing_row['Ingredient_ID']
                 ing_name = ingredient_map.get(ing_id_old, "Unknown Ingredient")
                 
@@ -326,7 +326,8 @@ def migrate():
                     ingredient_id=db_ingredient.id,
                     quantity=qty_val,
                     unit=unit_name,
-                    notes=", ".join(final_notes) if final_notes else None
+                    notes=", ".join(final_notes) if final_notes else None,
+                    order=idx
                 )
                 session.add(ri)
 

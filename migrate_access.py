@@ -365,7 +365,7 @@ def migrate():
             if migrated_notes:
                 combined_notes = "\n".join(migrated_notes)
                 comment = Comment(
-                    text=f"Migrated Note:\n{combined_notes}",
+                    text=f"Migrated Note:\n\n{combined_notes}",
                     user_id=user.id,
                     recipe_id=recipe.id
                 )

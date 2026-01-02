@@ -220,7 +220,7 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
         db.add(db_component)
         db.commit() # Commit to get ID
         
-        for item in comp.ingredients:
+        for idx, item in enumerate(comp.ingredients):
             # Find or create the master ingredient
              # item.item is the name due to our schema mapping? No, schema says `item`
             ingredient_name = item.item 
@@ -236,7 +236,8 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
                 ingredient_id=ingredient.id,
                 quantity=item.quantity,
                 unit=item.unit,
-                notes=item.notes
+                notes=item.notes,
+                order=idx
             )
             db.add(recipe_ingredient)
 
@@ -298,7 +299,7 @@ def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCre
         db.add(db_component)
         db.commit() # Need ID
         
-        for item in comp.ingredients:
+        for idx, item in enumerate(comp.ingredients):
             ingredient_name = item.item
             ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == ingredient_name).first()
             if not ingredient:
@@ -311,7 +312,8 @@ def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCre
                 ingredient_id=ingredient.id,
                 quantity=item.quantity,
                 unit=item.unit,
-                notes=item.notes
+                notes=item.notes,
+                order=idx
             )
             db.add(recipe_ingredient)
 

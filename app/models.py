@@ -114,7 +114,7 @@ class RecipeComponent(Base):
     recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"))
     
     recipe = relationship("Recipe", back_populates="components")
-    ingredients = relationship("RecipeIngredient", back_populates="component", cascade="all, delete-orphan")
+    ingredients = relationship("RecipeIngredient", back_populates="component", cascade="all, delete-orphan", order_by="RecipeIngredient.order")
 
 
 class Ingredient(Base):
@@ -139,6 +139,7 @@ class RecipeIngredient(Base):
     quantity = Column(Float, nullable=False)
     unit = Column(String, nullable=False)
     notes = Column(Text, nullable=True)
+    order = Column(Integer, default=0, nullable=False)
 
     component = relationship("RecipeComponent", back_populates="ingredients")
     ingredient = relationship("Ingredient")

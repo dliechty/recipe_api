@@ -1703,6 +1703,11 @@
               }
             ],
             "title": "Notes"
+          },
+          "order": {
+            "type": "integer",
+            "title": "Order",
+            "default": 0
           }
         },
         "type": "object",

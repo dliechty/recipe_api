@@ -36,6 +36,7 @@ class RecipeIngredient(BaseModel):
     unit: str
     item: str
     notes: Optional[str] = None
+    order: int = 0
 
     @model_validator(mode='before')
     @classmethod

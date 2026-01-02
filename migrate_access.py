@@ -355,13 +355,17 @@ def migrate():
 
             # Process Notes as Comments
             recipe_notes = df_notes[df_notes['Recipe_ID'] == recipe_id_old].sort_values('Recipe_Note_Num')
+            
+            migrated_notes = []
             for _, note_row in recipe_notes.iterrows():
                 note_text = clean_text(note_row.get('Recipe_Note'))
-                if not note_text:
-                    continue
-                
+                if note_text:
+                    migrated_notes.append(note_text)
+            
+            if migrated_notes:
+                combined_notes = "\n".join(migrated_notes)
                 comment = Comment(
-                    text=f"Migrated Note: {note_text}",
+                    text=f"Migrated Note:\n{combined_notes}",
                     user_id=user.id,
                     recipe_id=recipe.id
                 )

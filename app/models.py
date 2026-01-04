@@ -17,6 +17,20 @@ class DifficultyLevel(str, enum.Enum):
     HARD = "Hard"
 
 
+class DietType(str, enum.Enum):
+    DIABETIC = "diabetic"
+    GLUTEN_FREE = "gluten-free"
+    HALAL = "halal"
+    HINDU = "hindu"
+    KOSHER = "kosher"
+    LOW_CALORIE = "low-calorie"
+    LOW_FAT = "low-fat"
+    LOW_LACTOSE = "low-lactose"
+    LOW_SALT = "low-salt"
+    VEGAN = "vegan"
+    VEGETARIAN = "vegetarian"
+
+
 class User(Base):
     """
     User model for the 'users' table.
@@ -100,6 +114,8 @@ class Recipe(Base):
     
     comments = relationship("Comment", back_populates="recipe", cascade="all, delete-orphan", order_by="desc(Comment.created_at)")
 
+    diets = relationship("RecipeDiet", back_populates="recipe", cascade="all, delete-orphan")
+
     def __str__(self):
         return f"{self.id}: {self.name}, by {self.owner.email}"
 
@@ -173,3 +189,15 @@ class Comment(Base):
     
     recipe = relationship("Recipe", back_populates="comments")
     user = relationship("User", back_populates="comments")
+
+
+class RecipeDiet(Base):
+    """
+    Dietary suitabilities for a recipe.
+    """
+    __tablename__ = "recipe_diets"
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=False)
+    diet_type = Column(Enum(DietType), nullable=False)
+
+    recipe = relationship("Recipe", back_populates="diets")

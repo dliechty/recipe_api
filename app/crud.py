@@ -152,7 +152,8 @@ def get_recipe(db: Session, recipe_id: UUID): # Changed to UUID
         db.query(models.Recipe)
         .options(
             joinedload(models.Recipe.components).joinedload(models.RecipeComponent.ingredients).joinedload(models.RecipeIngredient.ingredient),
-            joinedload(models.Recipe.instructions)
+            joinedload(models.Recipe.instructions),
+            joinedload(models.Recipe.diets)
         )
         .filter(models.Recipe.id == recipe_id)
         .first()
@@ -250,6 +251,14 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
         )
         db.add(instruction)
 
+    # Handle Diets
+    for diet in recipe.suitable_for_diet:
+        recipe_diet = models.RecipeDiet(
+            recipe_id=db_recipe.id,
+            diet_type=diet
+        )
+        db.add(recipe_diet)
+
     db.commit()
     db.refresh(db_recipe)
     return db_recipe
@@ -326,6 +335,15 @@ def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCre
             text=item.text
         )
         db.add(instruction)
+
+    # Clear and replace diets
+    db.query(models.RecipeDiet).filter(models.RecipeDiet.recipe_id == recipe_id).delete()
+    for diet in recipe_update.suitable_for_diet:
+        recipe_diet = models.RecipeDiet(
+            recipe_id=recipe_id,
+            diet_type=diet
+        )
+        db.add(recipe_diet)
 
     db.commit()
     db.refresh(db_recipe)

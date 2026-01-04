@@ -6,7 +6,7 @@ from typing import List, Optional, Any
 from decimal import Decimal
 from uuid import UUID
 from datetime import datetime
-from app.models import DifficultyLevel
+from app.models import DifficultyLevel, DietType
 
 # --- Basic Enums/Types ---
 
@@ -195,6 +195,7 @@ class RecipeCreate(BaseModel):
     audit: Optional[RecipeAudit] = None 
     components: List[ComponentCreate]
     instructions: List[InstructionCreate]
+    suitable_for_diet: List[DietType] = []
 
 
 class Recipe(BaseModel):
@@ -202,7 +203,10 @@ class Recipe(BaseModel):
     times: RecipeTimes
     components: List[Component]
     instructions: List[Instruction]
+    components: List[Component]
+    instructions: List[Instruction]
     nutrition: RecipeNutrition
+    suitable_for_diet: List[DietType]
     audit: RecipeAudit
 
     @model_validator(mode='before')
@@ -244,6 +248,7 @@ class Recipe(BaseModel):
                 },
                 "components": data.components,
                 "instructions": data.instructions,
+                "suitable_for_diet": [d.diet_type for d in data.diets] if data.diets else [],
             }
         return data
 

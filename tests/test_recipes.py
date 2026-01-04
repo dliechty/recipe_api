@@ -50,7 +50,8 @@ def test_create_recipe(client: TestClient, db):
         "instructions": [
             {"step_number": 1, "text": "Mix ingredients"},
             {"step_number": 2, "text": "Cook on pan"}
-        ]
+        ],
+        "suitable_for_diet": ["vegetarian", "low-calorie"]
     }
     response = client.post("/recipes/", json=recipe_data, headers=headers)
     assert response.status_code == 200, response.text
@@ -59,6 +60,8 @@ def test_create_recipe(client: TestClient, db):
     assert len(data["components"]) == 1
     assert len(data["components"][0]["ingredients"]) == 2
     assert len(data["instructions"]) == 2
+    assert "vegetarian" in data["suitable_for_diet"]
+    assert "low-calorie" in data["suitable_for_diet"]
 
 def test_read_recipes(client: TestClient, db):
     # Create a recipe first
@@ -114,11 +117,13 @@ def test_update_recipe(client: TestClient, db):
 
     update_data = recipe_data.copy()
     update_data["core"]["name"] = "New Name"
+    update_data["suitable_for_diet"] = ["vegan"]
     # Need to send all required fields. Pydantic schema validation!
     
     response = client.put(f"/recipes/{recipe_id}", json=update_data, headers=headers)
     assert response.status_code == 200
     assert response.json()["core"]["name"] == "New Name"
+    assert response.json()["suitable_for_diet"] == ["vegan"]
 
 def test_delete_recipe(client: TestClient, db):
     headers = get_auth_headers(client, db)

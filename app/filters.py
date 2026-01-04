@@ -28,6 +28,7 @@ ALLOWED_FIELDS = {
     'calories': models.Recipe.calories,
     'prep_time_minutes': models.Recipe.prep_time_minutes,
     'cook_time_minutes': models.Recipe.cook_time_minutes,
+    'active_time_minutes': models.Recipe.active_time_minutes,
     'total_time_minutes': models.Recipe.total_time_minutes,
     # 'owner': models.User.email, # Special handling for relationships often needed
     # 'ingredients': 'ingredients', # Special handling

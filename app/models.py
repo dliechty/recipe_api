@@ -89,9 +89,9 @@ class Recipe(Base):
     owner_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"))
 
     # Times
-    prep_time_minutes = Column(Integer, nullable=True)
-    cook_time_minutes = Column(Integer, nullable=True)
-    active_time_minutes = Column(Integer, nullable=True)
+    prep_time_minutes = Column(Integer, nullable=True, index=True)
+    cook_time_minutes = Column(Integer, nullable=True, index=True)
+    active_time_minutes = Column(Integer, nullable=True, index=True)
     total_time_minutes = Column(Integer, nullable=True, index=True)
 
     # Nutrition

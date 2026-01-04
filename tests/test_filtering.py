@@ -56,6 +56,18 @@ def test_filter_recipes_by_name(db: Session):
     recipes, _ = crud.get_recipes(db, filters_list=filters_list)
     assert isinstance(recipes, list)
 
+def test_filter_recipes_by_time(db: Session):
+    # Test all time fields
+    filters_list = [
+        Filter("total_time_minutes", "lt", 60),
+        Filter("prep_time_minutes", "lt", 30),
+        Filter("cook_time_minutes", "lt", 30),
+        # Active time might be null for some, so gt 0 checks existence
+        Filter("active_time_minutes", "gte", 0) 
+    ]
+    recipes, _ = crud.get_recipes(db, filters_list=filters_list)
+    assert isinstance(recipes, list)
+
 def test_sort_recipes(db: Session):
     recipes, _ = crud.get_recipes(db, sort_by="-created_at")
     assert isinstance(recipes, list)

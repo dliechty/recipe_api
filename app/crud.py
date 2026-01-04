@@ -8,8 +8,10 @@ from datetime import datetime, timezone
 from passlib.context import CryptContext
 from uuid import UUID
 
-from app import models
 from app import schemas
+from app import filters
+from app import models
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -160,14 +162,51 @@ def get_recipe(db: Session, recipe_id: UUID): # Changed to UUID
     )
 
 
-def get_recipes(db: Session, skip: int = 0, limit: int = 100):
+def get_recipes(db: Session, skip: int = 0, limit: int = 100, filters_list: list = None, sort_by: str = None):
     """
-    Retrieve a list of recipes.
+    Retrieve a list of recipes with filtering and sorting.
     """
-    logger.debug(f"Retrieving all recipes skipping {skip}, up to limit {limit}")
-    total_count = db.query(models.Recipe).count()
-    recipes = db.query(models.Recipe).order_by(models.Recipe.name).offset(skip).limit(limit).all()
+    logger.debug(f"Retrieving recipes skip={skip}, limit={limit}, filters={filters_list}, sort={sort_by}")
+    
+    query = db.query(models.Recipe)
+    
+    if filters_list:
+        query = filters.apply_filters(query, filters_list)
+
+    # Perform counting before pagination, but AFTER filtering
+    total_count = query.distinct().count() # distinct important if joins were added by filters
+
+    # Apply sorting
+    query = filters.apply_sorting(query, sort_by)
+
+    # Apply pagination
+    recipes = query.offset(skip).limit(limit).all()
+    
     return recipes, total_count
+
+def get_unique_values(db: Session, field: str):
+    """
+    Retrieve unique values for a specific field for metadata usage.
+    """
+    if field == 'category':
+        return [r[0] for r in db.query(models.Recipe.category).distinct().filter(models.Recipe.category != None).order_by(models.Recipe.category).all()]
+    elif field == 'cuisine':
+        return [r[0] for r in db.query(models.Recipe.cuisine).distinct().filter(models.Recipe.cuisine != None).order_by(models.Recipe.cuisine).all()]
+    elif field == 'difficulty':
+        return [r[0].value for r in db.query(models.Recipe.difficulty).distinct().filter(models.Recipe.difficulty != None).all()]
+    elif field == 'suitable_for_diet':
+        # Many-to-Many logic? No, RecipeDiet is a table
+        return [r[0].value for r in db.query(models.RecipeDiet.diet_type).distinct().all()]
+    elif field == 'owner':
+         # Return list of dicts? or just names? 
+         # Plan said "return user emails or names"
+         # Let's return objects `{"id": uuid, "name": "First Last"}` or similar?
+         # Simplest for now: List of names
+         users = db.query(models.User).join(models.Recipe).distinct().all()
+         return [{"id": u.id, "name": f"{u.first_name} {u.last_name}" if u.first_name else u.email} for u in users]
+    
+    return []
+
 
 
 def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID): # user_id is UUID

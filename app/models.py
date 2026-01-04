@@ -77,13 +77,13 @@ class Recipe(Base):
     slug = Column(String, unique=True, index=True, nullable=True) 
     description = Column(Text, nullable=True)
     
-    yield_amount = Column(Float, nullable=True)
+    yield_amount = Column(Float, nullable=True, index=True)
     yield_unit = Column(String, nullable=True)
-    difficulty = Column(Enum(DifficultyLevel), nullable=True)
-    cuisine = Column(String, nullable=True)
-    category = Column(String, nullable=True)
+    difficulty = Column(Enum(DifficultyLevel), nullable=True, index=True)
+    cuisine = Column(String, nullable=True, index=True)
+    category = Column(String, nullable=True, index=True)
     source = Column(String, nullable=True)
-    protein = Column(String, nullable=True)
+    protein = Column(String, nullable=True, index=True)
     source_url = Column(String, nullable=True)
     
     owner_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"))
@@ -92,10 +92,10 @@ class Recipe(Base):
     prep_time_minutes = Column(Integer, nullable=True)
     cook_time_minutes = Column(Integer, nullable=True)
     active_time_minutes = Column(Integer, nullable=True)
-    total_time_minutes = Column(Integer, nullable=True)
+    total_time_minutes = Column(Integer, nullable=True, index=True)
 
     # Nutrition
-    calories = Column(Integer, nullable=True)
+    calories = Column(Integer, nullable=True, index=True)
     serving_size = Column(String, nullable=True)
 
     # Audit

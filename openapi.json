@@ -545,7 +545,7 @@
           "Recipes"
         ],
         "summary": "Read Recipes",
-        "description": "Retrieve a list of all recipes.",
+        "description": "Retrieve a list of all recipes with optional filtering and sorting.\nFilters: field[eq]=value, field[gt]=value, etc.\nSort: sort=field1,-field2",
         "operationId": "read_recipes_recipes__get",
         "security": [
           {
@@ -572,6 +572,15 @@
               "default": 100,
               "title": "Limit"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Sort"
+            }
           }
         ],
         "responses": {
@@ -585,6 +594,56 @@
                     "$ref": "#/components/schemas/Recipe"
                   },
                   "title": "Response Read Recipes Recipes  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipes/meta/{field}": {
+      "get": {
+        "tags": [
+          "Recipes"
+        ],
+        "summary": "Get Meta Values",
+        "description": "Retrieve unique values for a specific field for metadata usage.",
+        "operationId": "get_meta_values_recipes_meta__field__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Field"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {},
+                  "title": "Response Get Meta Values Recipes Meta  Field  Get"
                 }
               }
             }

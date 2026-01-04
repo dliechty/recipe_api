@@ -5,7 +5,7 @@ import logging
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Any
 
 # Import local modules
 from app import crud
@@ -13,6 +13,9 @@ from app import schemas
 from app import models
 from app.db.session import get_db
 from app.api.auth import get_current_active_user
+from app.filters import parse_filters
+from fastapi import Request
+
 
 # Create an API router
 router = APIRouter()
@@ -36,19 +39,40 @@ def create_recipe(
 
 @router.get("/", response_model=List[schemas.Recipe])
 def read_recipes(
+        request: Request,
         response: Response,
         skip: int = 0,
         limit: int = 100,
+        sort: str = None,
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_active_user)
 ):
     """
-    Retrieve a list of all recipes.
+    Retrieve a list of all recipes with optional filtering and sorting.
+    Filters: field[eq]=value, field[gt]=value, etc.
+    Sort: sort=field1,-field2
     """
-    logger.debug(f"Fetching all recipes with skip={skip}, limit={limit}.")
-    recipes, total_count = crud.get_recipes(db, skip=skip, limit=limit)
+    filters_list = parse_filters(request.query_params)
+    logger.debug(f"Fetching recipes with skip={skip}, limit={limit}, filters={filters_list}, sort={sort}")
+    recipes, total_count = crud.get_recipes(db, skip=skip, limit=limit, filters_list=filters_list, sort_by=sort)
     response.headers["X-Total-Count"] = str(total_count)
     return recipes
+
+@router.get("/meta/{field}", response_model=List[Any]) # Any because it could be string or dict? Pydantic might complain if List[Any] not generic enough.
+def get_meta_values(
+        field: str,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Retrieve unique values for a specific field for metadata usage.
+    """
+    valid_fields = ['category', 'cuisine', 'difficulty', 'suitable_for_diet', 'owner']
+    if field not in valid_fields:
+        raise HTTPException(status_code=400, detail=f"Invalid meta field. Valid fields: {valid_fields}")
+    
+    return crud.get_unique_values(db, field)
+
 
 
 @router.get("/{recipe_id}", response_model=schemas.Recipe)

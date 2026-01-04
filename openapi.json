@@ -1219,6 +1219,23 @@
         ],
         "title": "ComponentCreate"
       },
+      "DietType": {
+        "type": "string",
+        "enum": [
+          "diabetic",
+          "gluten-free",
+          "halal",
+          "hindu",
+          "kosher",
+          "low-calorie",
+          "low-fat",
+          "low-lactose",
+          "low-salt",
+          "vegan",
+          "vegetarian"
+        ],
+        "title": "DietType"
+      },
       "DifficultyLevel": {
         "type": "string",
         "enum": [
@@ -1320,6 +1337,13 @@
           "nutrition": {
             "$ref": "#/components/schemas/RecipeNutrition"
           },
+          "suitable_for_diet": {
+            "items": {
+              "$ref": "#/components/schemas/DietType"
+            },
+            "type": "array",
+            "title": "Suitable For Diet"
+          },
           "audit": {
             "$ref": "#/components/schemas/RecipeAudit"
           }
@@ -1331,6 +1355,7 @@
           "components",
           "instructions",
           "nutrition",
+          "suitable_for_diet",
           "audit"
         ],
         "title": "Recipe"
@@ -1689,6 +1714,14 @@
             },
             "type": "array",
             "title": "Instructions"
+          },
+          "suitable_for_diet": {
+            "items": {
+              "$ref": "#/components/schemas/DietType"
+            },
+            "type": "array",
+            "title": "Suitable For Diet",
+            "default": []
           }
         },
         "type": "object",

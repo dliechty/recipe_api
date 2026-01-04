@@ -99,7 +99,7 @@ def parse_time_minutes(time_str: str) -> Optional[int]:
     p_min = r'(?:m|mn|min|mins|minute|minutes)'
     
     # Pattern: number followed optionally by space, then unit
-    pattern = re.compile(f'(\d+(?:\.\d+)?)\s*({p_hour}|{p_min})')
+    pattern = re.compile(f'(\\d+(?:\\.\\d+)?)\s*({p_hour}|{p_min})')
     
     matches = pattern.findall(s)
     
@@ -144,6 +144,23 @@ def normalize_ingredient(quantity: float, unit: str) -> Tuple[float, str]:
     return quantity, unit
 
 
+def map_protein(category_id: int, category_map: Dict[int, str]) -> Optional[str]:
+    """Maps Food Category ID to Protein string, with exclusions."""
+    if pd.isna(category_id):
+        return None
+    
+    category_name = category_map.get(category_id)
+    if not category_name:
+        return None
+        
+    # Exclusion list
+    exclusions = ["Grain", "Vegetable", "Fruit", "Other"]
+    if category_name in exclusions:
+        return None
+        
+    return category_name
+
+
 def fix_ingredient_precision(qty_val: float) -> float:
     """
     Fixes precision issues from Access migration.
@@ -179,7 +196,7 @@ def migrate():
     df_preparations = run_mdb_export("tblPreparations")
     df_complexity = run_mdb_export("tblComplexityLevels")
     df_complexity = run_mdb_export("tblComplexityLevels")
-    # df_categories = run_mdb_export("tblFoodCategories") # No longer mapping this to category
+    df_categories = run_mdb_export("tblFoodCategories")
     df_types = run_mdb_export("tblRecipeTypes")
     df_sources = run_mdb_export("tblRecipeSources")
     df_notes = run_mdb_export("tblRecipeNotes")
@@ -204,8 +221,8 @@ def migrate():
     # Complexity ID -> Description
     complexity_map = df_complexity.set_index('Complexity_Level_ID')['Complexity_Level_Description'].to_dict()
     
-    # Category ID -> Name (now unused for Recipe.category, replaced by Type)
-    # category_map = df_categories.set_index('Food_Category_ID')['Food_Category'].to_dict() if not df_categories.empty else {}
+    # Category ID -> Name (Mapped to Protein)
+    food_category_map = df_categories.set_index('Food_Category_ID')['Food_Category'].to_dict() if not df_categories.empty else {}
     
     # Type ID -> Name (New Category)
     type_map = df_types.set_index('Recipe_Type_ID')['Recipe_Type'].to_dict() if not df_types.empty else {}
@@ -251,6 +268,7 @@ def migrate():
                 yield_unit="servings",
                 difficulty=map_difficulty(row.get('Complexity_Level_ID'), complexity_map),
                 category=type_map.get(row.get('Recipe_Type_ID')),
+                protein=map_protein(row.get('Food_Category_ID'), food_category_map),
 
                 prep_time_minutes=parse_time_minutes(row.get('Recipe_Prep_Time')),
                 cook_time_minutes=parse_time_minutes(row.get('Recipe_Cook_Time')),

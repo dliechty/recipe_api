@@ -28,7 +28,8 @@ def test_create_recipe(client: TestClient, db):
             "name": "Pancakes",
             "description": "Fluffy breakfast",
             "difficulty": "Easy",
-            "yield_amount": 4
+            "yield_amount": 4,
+            "protein": "Dairy"
         },
         "times": {
             "prep_time_minutes": 10,

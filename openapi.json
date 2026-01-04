@@ -1503,6 +1503,17 @@
             ],
             "title": "Source Url"
           },
+          "protein": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protein"
+          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -1625,6 +1636,17 @@
               }
             ],
             "title": "Source Url"
+          },
+          "protein": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protein"
           }
         },
         "type": "object",

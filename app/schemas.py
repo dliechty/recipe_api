@@ -157,7 +157,9 @@ class RecipeCoreBase(BaseModel):
     cuisine: Optional[str] = None
     category: Optional[str] = None
     source: Optional[str] = None
+    source: Optional[str] = None
     source_url: Optional[str] = None
+    protein: Optional[str] = None
 
 class RecipeCoreCreate(RecipeCoreBase):
     pass
@@ -220,6 +222,7 @@ class Recipe(BaseModel):
                     "category": data.category,
                     "source": data.source,
                     "source_url": data.source_url,
+                    "protein": data.protein,
                     "owner_id": data.owner_id,
                 },
                 "times": {

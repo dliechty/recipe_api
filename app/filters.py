@@ -18,6 +18,7 @@ class Filter:
         return f"Filter({self.field} {self.operator} {self.value})"
 
 ALLOWED_FIELDS = {
+    'id': models.Recipe.id,
     'name': models.Recipe.name,
     'description': models.Recipe.description,
     'category': models.Recipe.category,
@@ -139,6 +140,16 @@ def apply_filters(query: Query, filters: List[Filter]) -> Query:
                      models.User.first_name.ilike(f"%{f.value}%"),
                      models.User.last_name.ilike(f"%{f.value}%")
                 ))
+            continue
+
+        # Special handling for ID (UUID conversion)
+        if f.field == 'id':
+            from uuid import UUID
+            if f.operator == 'in':
+                val_list = [UUID(v) for v in f.value.split(',')]
+                query = query.filter(models.Recipe.id.in_(val_list))
+            elif f.operator == 'eq':
+                query = query.filter(models.Recipe.id == UUID(f.value))
             continue
 
         # General Field Handling

@@ -1790,6 +1790,18 @@
             "type": "array",
             "title": "Suitable For Diet",
             "default": []
+          },
+          "parent_recipe_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Recipe Id"
           }
         },
         "type": "object",

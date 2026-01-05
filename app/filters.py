@@ -43,6 +43,13 @@ SORT_FIELDS = {
     'calories': models.Recipe.calories,
     'total_time_minutes': models.Recipe.total_time_minutes,
     'difficulty': models.Recipe.difficulty,
+    'category': models.Recipe.category,
+    'cuisine': models.Recipe.cuisine,
+    'prep_time_minutes': models.Recipe.prep_time_minutes,
+    'cook_time_minutes': models.Recipe.cook_time_minutes,
+    'active_time_minutes': models.Recipe.active_time_minutes,
+    'yield_amount': models.Recipe.yield_amount,
+    'protein': models.Recipe.protein,
 }
 
 def parse_filters(query_params: dict) -> List[Filter]:

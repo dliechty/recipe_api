@@ -21,6 +21,33 @@ from app.core.hashing import calculate_recipe_checksum
 logger = logging.getLogger(__name__)
 
 
+def check_cycle(db: Session, child_id: UUID, parent_id: UUID):
+    """
+    Check if setting parent_id for child_id would create a cycle.
+    Traverses up from parent_id. If we encounter child_id, it's a cycle.
+    """
+    if child_id == parent_id:
+        raise ValueError("A recipe cannot be its own parent")
+    
+    current_id = parent_id
+    while current_id:
+        # Fetch parent
+        # Optimization: We only need the parent_recipe_id of the current node
+        parent_node = db.query(models.Recipe.parent_recipe_id).filter(models.Recipe.id == current_id).first()
+        if not parent_node:
+            break # Parent not found? connection broken or root reached if we consider query failure (unlikely for valid IDs)
+        
+        # parent_node is a named tuple or result row? .parent_recipe_id accessed directly?
+        # query(Column) returns a Row. row[0] or row.parent_recipe_id
+        pid = parent_node[0]
+        
+        if pid == child_id:
+            raise ValueError("Cycle detected: This would make a recipe a descendant of its own child")
+        
+        current_id = pid
+
+
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -248,7 +275,8 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
         **recipe_kwargs,
         owner_id=user_id,
         checksum=checksum,
-        version=1
+        version=1,
+        parent_recipe_id=recipe.parent_recipe_id
     )
     db.add(db_recipe)
     db.commit()
@@ -329,6 +357,24 @@ def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCre
     
     # Calculate new checksum
     new_checksum = calculate_recipe_checksum(recipe_update.model_dump(exclude={'audit'}))
+    
+    # Handle parent_recipe_id update
+    if recipe_update.parent_recipe_id is not None:
+        # Check if it changed
+        if db_recipe.parent_recipe_id != recipe_update.parent_recipe_id:
+             check_cycle(db, recipe_id, recipe_update.parent_recipe_id)
+             db_recipe.parent_recipe_id = recipe_update.parent_recipe_id
+    elif recipe_update.parent_recipe_id is None and 'parent_recipe_id' in recipe_update.model_dump(exclude_unset=True):
+         # Explicitly set to None?
+         # Schema has default=None, checking if it was intentionally unset or just default.
+         # Actually Pydantic v2 `exclude_unset=True` works if the field was passed.
+         # But usually update schemas use Optional fields for everything. 
+         # recipe_update is RecipeCreate which has required fields for core etc. 
+         # But parent_recipe_id is Optional=None.
+         # If user PUTs the whole object and leaves parent_recipe_id as null, we should probably clear it?
+         # Yes, "Full replacement strategy"
+         db_recipe.parent_recipe_id = None
+
     
     if db_recipe.checksum != new_checksum:
         db_recipe.version = (db_recipe.version or 1) + 1

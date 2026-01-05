@@ -196,6 +196,7 @@ class RecipeCreate(BaseModel):
     components: List[ComponentCreate]
     instructions: List[InstructionCreate]
     suitable_for_diet: List[DietType] = []
+    parent_recipe_id: Optional[UUID] = None
 
 
 class Recipe(BaseModel):

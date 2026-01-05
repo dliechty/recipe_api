@@ -112,7 +112,11 @@ def update_recipe(
         logger.error(f"User {current_user.email} is not authorized to update recipe with ID: {recipe_id}")
         raise HTTPException(status_code=403, detail="Not authorized to update this recipe")
 
-    return crud.update_recipe(db=db, recipe_id=recipe_id, recipe_update=recipe)
+    try:
+        updated_recipe = crud.update_recipe(db=db, recipe_id=recipe_id, recipe_update=recipe)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return updated_recipe
 
 
 @router.delete("/{recipe_id}", response_model=schemas.Recipe)

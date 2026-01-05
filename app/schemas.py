@@ -183,7 +183,7 @@ class RecipeAudit(BaseModel):
     updated_at: Optional[datetime] = None
     version: Optional[int] = None
     checksum: Optional[str] = None
-    parent_recipe_id: Optional[UUID] = None
+    checksum: Optional[str] = None
 
 # --- Main Recipe Schemas ---
 
@@ -207,6 +207,8 @@ class Recipe(BaseModel):
     instructions: List[Instruction]
     nutrition: RecipeNutrition
     suitable_for_diet: List[DietType]
+    variant_recipe_ids: List[UUID]
+    parent_recipe_id: Optional[UUID] = None
     audit: RecipeAudit
 
     @model_validator(mode='before')
@@ -244,11 +246,14 @@ class Recipe(BaseModel):
                     "updated_at": data.updated_at,
                     "version": data.version,
                     "checksum": data.checksum,
-                    "parent_recipe_id": data.parent_recipe_id,
+                    "version": data.version,
+                    "checksum": data.checksum,
                 },
                 "components": data.components,
                 "instructions": data.instructions,
                 "suitable_for_diet": [d.diet_type for d in data.diets] if data.diets else [],
+                "variant_recipe_ids": [v.id for v in data.variants] if data.variants else [],
+                "parent_recipe_id": data.parent_recipe_id,
             }
         return data
 

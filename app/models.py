@@ -103,9 +103,12 @@ class Recipe(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     version = Column(Integer, default=1)
     checksum = Column(String, nullable=True)
-    parent_recipe_id = Column(Uuid(as_uuid=True), nullable=True)
+
+
+    parent_recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=True)
 
     # Relationships
+    parent = relationship("Recipe", remote_side=[id], backref="variants")
     owner = relationship("User", back_populates="recipes")
     
     components = relationship("RecipeComponent", back_populates="recipe", cascade="all, delete-orphan")

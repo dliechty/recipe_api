@@ -1403,6 +1403,26 @@
             "type": "array",
             "title": "Suitable For Diet"
           },
+          "variant_recipe_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Variant Recipe Ids"
+          },
+          "parent_recipe_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Recipe Id"
+          },
           "audit": {
             "$ref": "#/components/schemas/RecipeAudit"
           }
@@ -1415,6 +1435,7 @@
           "instructions",
           "nutrition",
           "suitable_for_diet",
+          "variant_recipe_ids",
           "audit"
         ],
         "title": "Recipe"
@@ -1466,18 +1487,6 @@
               }
             ],
             "title": "Checksum"
-          },
-          "parent_recipe_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parent Recipe Id"
           }
         },
         "type": "object",

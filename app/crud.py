@@ -3,7 +3,7 @@
 
 import logging
 import uuid
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from datetime import datetime, timezone
 from passlib.context import CryptContext
 from uuid import UUID
@@ -155,7 +155,8 @@ def get_recipe(db: Session, recipe_id: UUID): # Changed to UUID
         .options(
             joinedload(models.Recipe.components).joinedload(models.RecipeComponent.ingredients).joinedload(models.RecipeIngredient.ingredient),
             joinedload(models.Recipe.instructions),
-            joinedload(models.Recipe.diets)
+            joinedload(models.Recipe.diets),
+            selectinload(models.Recipe.variants)
         )
         .filter(models.Recipe.id == recipe_id)
         .first()

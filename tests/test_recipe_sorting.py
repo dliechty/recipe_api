@@ -32,7 +32,7 @@ def test_recipes_sorted_by_name(db):
         crud.create_user_recipe(db=db, recipe=recipe_in, user_id=user.id)
         
     # Retrieve recipes
-    recipes, _ = crud.get_recipes(db=db, skip=0, limit=100)
+    recipes, _ = crud.get_recipes(db=db, skip=0, limit=100, sort_by="name")
     
     # Check if they are sorted
     recipe_names = [recipe.name for recipe in recipes]

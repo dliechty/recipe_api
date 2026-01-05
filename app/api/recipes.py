@@ -67,7 +67,7 @@ def get_meta_values(
     """
     Retrieve unique values for a specific field for metadata usage.
     """
-    valid_fields = ['category', 'cuisine', 'difficulty', 'suitable_for_diet', 'owner']
+    valid_fields = ['category', 'cuisine', 'difficulty', 'suitable_for_diet', 'owner', 'protein']
     if field not in valid_fields:
         raise HTTPException(status_code=400, detail=f"Invalid meta field. Valid fields: {valid_fields}")
     

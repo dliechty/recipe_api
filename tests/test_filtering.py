@@ -86,3 +86,6 @@ def test_compound_filters(db: Session):
 def test_meta_endpoints(db: Session):
     vals = crud.get_unique_values(db, "category")
     assert isinstance(vals, list)
+    
+    vals_prot = crud.get_unique_values(db, "protein")
+    assert isinstance(vals_prot, list)

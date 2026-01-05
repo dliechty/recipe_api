@@ -204,6 +204,8 @@ def get_unique_values(db: Session, field: str):
          # Simplest for now: List of names
          users = db.query(models.User).join(models.Recipe).distinct().all()
          return [{"id": u.id, "name": f"{u.first_name} {u.last_name}" if u.first_name else u.email} for u in users]
+    elif field == 'protein':
+        return [r[0] for r in db.query(models.Recipe.protein).distinct().filter(models.Recipe.protein != None).order_by(models.Recipe.protein).all()]
     
     return []
 

@@ -137,6 +137,9 @@ def delete_recipe(
         logger.error(f"User {current_user.email} is not authorized to delete recipe with ID: {recipe_id}")
         raise HTTPException(status_code=403, detail="Not authorized to delete this recipe")
 
+    if db_recipe.variants:
+        raise HTTPException(status_code=400, detail="Cannot delete recipe with existing variants. Please delete or reassign variants first.")
+
     return crud.delete_recipe(db=db, recipe_id=recipe_id)
 
 

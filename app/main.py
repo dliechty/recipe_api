@@ -63,6 +63,30 @@ app.add_middleware(
 
 # --- End of CORS Middleware Section ---
 
+# --- Security Headers Middleware ---
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all responses."""
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+        # Prevent clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+        # Prevent MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Enable XSS filter in browsers
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        # Control referrer information
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Content Security Policy - restrict resource loading
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# --- End of Security Headers Middleware ---
+
 # Include API routers
 # This makes the endpoints defined in the 'auth' and 'recipes' modules available.
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])

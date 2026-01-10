@@ -2,13 +2,15 @@
 # Handles user authentication, registration, and token generation.
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
 from uuid import UUID
 
 from jose import JWTError, jwt
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 # Import local modules
 from app import crud
@@ -16,6 +18,50 @@ from app import schemas
 from app import models
 from app.db.session import get_db
 from app.core.config import settings
+
+# Rate limiter instance (uses same key function as main app)
+# Disabled during testing (when DATABASE_URL contains 'test')
+import os
+_is_testing = "test" in os.environ.get("DATABASE_URL", "").lower()
+limiter = Limiter(key_func=get_remote_address, enabled=not _is_testing)
+
+# --- Account Lockout Configuration ---
+# In-memory storage for failed login attempts (for single-server deployments)
+# For distributed systems, use Redis or database storage instead
+from collections import defaultdict
+from threading import Lock
+
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_DURATION_MINUTES = 15
+
+_failed_attempts: dict[str, list[datetime]] = defaultdict(list)
+_failed_attempts_lock = Lock()
+
+
+def _clean_old_attempts(email: str) -> None:
+    """Remove failed attempts older than the lockout duration."""
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+    _failed_attempts[email] = [t for t in _failed_attempts[email] if t > cutoff]
+
+
+def _is_account_locked(email: str) -> bool:
+    """Check if account is locked due to too many failed attempts."""
+    with _failed_attempts_lock:
+        _clean_old_attempts(email)
+        return len(_failed_attempts[email]) >= MAX_FAILED_ATTEMPTS
+
+
+def _record_failed_attempt(email: str) -> None:
+    """Record a failed login attempt."""
+    with _failed_attempts_lock:
+        _clean_old_attempts(email)
+        _failed_attempts[email].append(datetime.now(timezone.utc))
+
+
+def _clear_failed_attempts(email: str) -> None:
+    """Clear failed attempts on successful login."""
+    with _failed_attempts_lock:
+        _failed_attempts[email] = []
 
 # --- Configuration for JWT ---
 # Loaded from settings
@@ -123,18 +169,37 @@ def list_active_users(
 
 
 @router.post("/token", response_model=schemas.Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")  # Limit login attempts to prevent brute force
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """
     Endpoint to log in a user and get an access token.
+    Rate limited to 5 attempts per minute per IP address.
+    Account is locked for 15 minutes after 5 failed attempts.
     """
-    user = crud.get_user_by_email(db, email=form_data.username.lower())
+    email = form_data.username.lower()
+
+    # Check if account is locked
+    if _is_account_locked(email):
+        logger.warning(f"Login attempt for locked account: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail=f"Account temporarily locked due to too many failed attempts. Try again in {LOCKOUT_DURATION_MINUTES} minutes.",
+        )
+
+    user = crud.get_user_by_email(db, email=email)
     if not user or not crud.verify_password(form_data.password, user.hashed_password):
-        logger.warning("Incorrect password")
+        # Record failed attempt
+        _record_failed_attempt(email)
+        logger.warning(f"Failed login attempt for: {email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Successful login - clear failed attempts
+    _clear_failed_attempts(email)
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": str(user.id)}, expires_delta=access_token_expires
@@ -147,20 +212,26 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 from fastapi.responses import JSONResponse
 
 @router.post("/request-account", status_code=status.HTTP_202_ACCEPTED)
-def request_account(request: schemas.UserRequestCreate, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")  # Limit account requests to prevent abuse
+def request_account(request: Request, account_request: schemas.UserRequestCreate, db: Session = Depends(get_db)):
     """
     Submit a request for a new user account.
+    Rate limited to 3 requests per minute per IP address.
+
+    Note: Always returns 202 Accepted to prevent user enumeration attacks.
+    The same response is returned whether or not the email is already registered.
     """
-    # Check if user already exists
-    if crud.get_user_by_email(db, email=request.email):
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    # Check if request already exists
-    if crud.get_user_request_by_email(db, email=request.email):
-        return JSONResponse(status_code=200, content={"message": "Request already pending"})
-    
-    crud.create_user_request(db, request)
-    return {"message": "Account request submitted"}
+    # Check if user already exists or request already pending
+    # We still perform these checks but don't reveal the result to the user
+    user_exists = crud.get_user_by_email(db, email=account_request.email) is not None
+    request_exists = crud.get_user_request_by_email(db, email=account_request.email) is not None
+
+    # Only create a new request if email is not already registered or pending
+    if not user_exists and not request_exists:
+        crud.create_user_request(db, account_request)
+
+    # Always return the same response to prevent enumeration
+    return {"message": "If this email is not already registered, an account request has been submitted"}
 
 
 @router.get("/pending-requests", response_model=list[schemas.UserRequest])

@@ -10,15 +10,16 @@ def test_request_account_flow(client: TestClient, db):
         json={"email": "newuser@example.com", "first_name": "New", "last_name": "User"},
     )
     assert response.status_code == 202
-    assert response.json()["message"] == "Account request submitted"
-    
-    # 2. Duplicate Request
+    # Response intentionally vague to prevent user enumeration
+    assert "email" in response.json()["message"].lower()
+
+    # 2. Duplicate Request - should return same response (prevents enumeration)
     response = client.post(
         "/auth/request-account",
         json={"email": "newuser@example.com", "first_name": "New", "last_name": "User"},
     )
-    assert response.status_code == 200
-    assert response.json()["message"] == "Request already pending"
+    assert response.status_code == 202  # Same status code to prevent enumeration
+    assert "email" in response.json()["message"].lower()
 
     # 3. Create Admin User manually to approve
     admin_data = schemas.UserCreate(
@@ -255,13 +256,54 @@ def test_request_account_case_insensitive(client: TestClient, db):
     assert req is not None
     assert req.email == email.lower()
     
-    # Try to request again with different case (should fail as duplicate)
+    # Try to request again with different case
+    # Now returns same 202 response to prevent user enumeration
     response = client.post(
         "/auth/request-account",
         json={"email": email.upper(), "first_name": "Req", "last_name": "User"},
     )
-    # The endpoint returns 200 OK with "Request already pending" if it exists
-    assert response.status_code == 200
-    assert response.json()["message"] == "Request already pending"
+    assert response.status_code == 202  # Same response to prevent enumeration
 
 
+def test_account_lockout_after_failed_attempts(client: TestClient, db):
+    """Test that account gets locked after too many failed login attempts."""
+    from app.api.auth import MAX_FAILED_ATTEMPTS, _clear_failed_attempts
+
+    # Create a user
+    user_data = schemas.UserCreate(
+        email="lockouttest@example.com",
+        password="correctpassword",
+        first_name="Lockout",
+        last_name="Test"
+    )
+    crud.create_user(db, user_data)
+    db.commit()
+
+    # Clear any existing failed attempts
+    _clear_failed_attempts("lockouttest@example.com")
+
+    # Make MAX_FAILED_ATTEMPTS failed login attempts
+    for i in range(MAX_FAILED_ATTEMPTS):
+        response = client.post(
+            "/auth/token",
+            data={"username": "lockouttest@example.com", "password": "wrongpassword"},
+        )
+        assert response.status_code == 401, f"Attempt {i+1} should return 401"
+
+    # Next attempt should be locked (423)
+    response = client.post(
+        "/auth/token",
+        data={"username": "lockouttest@example.com", "password": "wrongpassword"},
+    )
+    assert response.status_code == 423
+    assert "locked" in response.json()["detail"].lower()
+
+    # Even correct password should be rejected while locked
+    response = client.post(
+        "/auth/token",
+        data={"username": "lockouttest@example.com", "password": "correctpassword"},
+    )
+    assert response.status_code == 423
+
+    # Clean up for other tests
+    _clear_failed_attempts("lockouttest@example.com")

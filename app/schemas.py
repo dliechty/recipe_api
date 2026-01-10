@@ -2,11 +2,59 @@
 # Defines the Pydantic models (schemas) for data validation and serialization.
 
 from pydantic import BaseModel, EmailStr, ConfigDict, Field, model_validator, field_validator
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Literal
 from decimal import Decimal
 from uuid import UUID
 from datetime import datetime
 from app.models import DifficultyLevel, DietType, MealClassification, MealStatus, MealTemplateSlotStrategy
+
+# --- Search Criteria Validation ---
+
+# Fields allowed in search criteria (must match filters.py ALLOWED_FIELDS + special fields)
+ALLOWED_SEARCH_FIELDS = {
+    "id", "name", "description", "category", "cuisine", "difficulty",
+    "protein", "yield_amount", "calories", "prep_time_minutes",
+    "cook_time_minutes", "active_time_minutes", "total_time_minutes",
+    "ingredients", "suitable_for_diet", "owner"
+}
+
+# Valid operators for search criteria
+ALLOWED_SEARCH_OPERATORS = {"eq", "neq", "gt", "gte", "lt", "lte", "in", "like", "all"}
+
+
+class SearchCriterion(BaseModel):
+    """A single search criterion for meal template SEARCH strategy."""
+    field: str
+    operator: str
+    value: str | int | float
+
+    @field_validator("field")
+    @classmethod
+    def validate_field(cls, v: str) -> str:
+        if v not in ALLOWED_SEARCH_FIELDS:
+            raise ValueError(
+                f"Invalid search field '{v}'. Allowed fields: {sorted(ALLOWED_SEARCH_FIELDS)}"
+            )
+        return v
+
+    @field_validator("operator")
+    @classmethod
+    def validate_operator(cls, v: str) -> str:
+        if v not in ALLOWED_SEARCH_OPERATORS:
+            raise ValueError(
+                f"Invalid operator '{v}'. Allowed operators: {sorted(ALLOWED_SEARCH_OPERATORS)}"
+            )
+        return v
+
+    @field_validator("value")
+    @classmethod
+    def validate_value(cls, v: str | int | float) -> str:
+        # Convert to string for consistent storage and filtering
+        str_val = str(v)
+        if not str_val or not str_val.strip():
+            raise ValueError("Search criterion value cannot be empty")
+        return str_val
+
 
 # --- Basic Enums/Types ---
 
@@ -298,7 +346,7 @@ class MealTemplateSlotBase(BaseModel):
     strategy: MealTemplateSlotStrategy
     recipe_id: Optional[UUID] = None
     recipe_ids: Optional[List[UUID]] = None
-    search_criteria: Optional[Any] = None # JSON
+    search_criteria: Optional[List[SearchCriterion]] = None
 
     @model_validator(mode='after')
     def validate_slot_strategy(self):

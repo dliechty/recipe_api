@@ -2,17 +2,28 @@
 # Main application file for the FastAPI recipe service.
 
 import logging.config
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 import uvicorn
 
 # Import the CORS middleware
 from fastapi.middleware.cors import CORSMiddleware
+
+# Rate limiting
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Import local modules
 from app.db.session import engine
 from app import models
 from app.api import auth, recipes, meals
 from app.core.config import settings
+
+# Initialize rate limiter - uses client IP address for rate limit key
+# Disabled during testing (when DATABASE_URL contains 'test')
+import os
+_is_testing = "test" in os.environ.get("DATABASE_URL", "").lower()
+limiter = Limiter(key_func=get_remote_address, enabled=not _is_testing)
 
 # Load logging configuration
 logging.config.fileConfig('logging.ini', disable_existing_loggers=False)
@@ -34,6 +45,10 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
+# Add rate limiter to app state and register exception handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # --- Add CORS Middleware ---
 # Origins loaded from settings
 
@@ -41,12 +56,36 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,  # Allows specified origins
     allow_credentials=True,  # Allows cookies to be included in requests
-    allow_methods=["*"],  # Allows all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicit HTTP methods
+    allow_headers=["Authorization", "Content-Type", "Accept"],  # Explicit headers
     expose_headers=["X-Total-Count"],  # Expose custom headers
 )
 
 # --- End of CORS Middleware Section ---
+
+# --- Security Headers Middleware ---
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all responses."""
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+        # Prevent clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+        # Prevent MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Enable XSS filter in browsers
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        # Control referrer information
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Content Security Policy - restrict resource loading
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# --- End of Security Headers Middleware ---
 
 # Include API routers
 # This makes the endpoints defined in the 'auth' and 'recipes' modules available.

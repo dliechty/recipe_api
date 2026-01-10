@@ -2,17 +2,28 @@
 # Main application file for the FastAPI recipe service.
 
 import logging.config
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 import uvicorn
 
 # Import the CORS middleware
 from fastapi.middleware.cors import CORSMiddleware
+
+# Rate limiting
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Import local modules
 from app.db.session import engine
 from app import models
 from app.api import auth, recipes, meals
 from app.core.config import settings
+
+# Initialize rate limiter - uses client IP address for rate limit key
+# Disabled during testing (when DATABASE_URL contains 'test')
+import os
+_is_testing = "test" in os.environ.get("DATABASE_URL", "").lower()
+limiter = Limiter(key_func=get_remote_address, enabled=not _is_testing)
 
 # Load logging configuration
 logging.config.fileConfig('logging.ini', disable_existing_loggers=False)
@@ -33,6 +44,10 @@ app = FastAPI(
     root_path=settings.ROOT_PATH,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+# Add rate limiter to app state and register exception handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # --- Add CORS Middleware ---
 # Origins loaded from settings

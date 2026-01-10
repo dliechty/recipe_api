@@ -2,13 +2,15 @@
 # Handles user authentication, registration, and token generation.
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
 from uuid import UUID
 
 from jose import JWTError, jwt
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 # Import local modules
 from app import crud
@@ -16,6 +18,12 @@ from app import schemas
 from app import models
 from app.db.session import get_db
 from app.core.config import settings
+
+# Rate limiter instance (uses same key function as main app)
+# Disabled during testing (when DATABASE_URL contains 'test')
+import os
+_is_testing = "test" in os.environ.get("DATABASE_URL", "").lower()
+limiter = Limiter(key_func=get_remote_address, enabled=not _is_testing)
 
 # --- Configuration for JWT ---
 # Loaded from settings
@@ -123,9 +131,11 @@ def list_active_users(
 
 
 @router.post("/token", response_model=schemas.Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")  # Limit login attempts to prevent brute force
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """
     Endpoint to log in a user and get an access token.
+    Rate limited to 5 attempts per minute per IP address.
     """
     user = crud.get_user_by_email(db, email=form_data.username.lower())
     if not user or not crud.verify_password(form_data.password, user.hashed_password):
@@ -147,19 +157,21 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 from fastapi.responses import JSONResponse
 
 @router.post("/request-account", status_code=status.HTTP_202_ACCEPTED)
-def request_account(request: schemas.UserRequestCreate, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")  # Limit account requests to prevent abuse
+def request_account(request: Request, account_request: schemas.UserRequestCreate, db: Session = Depends(get_db)):
     """
     Submit a request for a new user account.
+    Rate limited to 3 requests per minute per IP address.
     """
     # Check if user already exists
-    if crud.get_user_by_email(db, email=request.email):
+    if crud.get_user_by_email(db, email=account_request.email):
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     # Check if request already exists
-    if crud.get_user_request_by_email(db, email=request.email):
+    if crud.get_user_request_by_email(db, email=account_request.email):
         return JSONResponse(status_code=200, content={"message": "Request already pending"})
-    
-    crud.create_user_request(db, request)
+
+    crud.create_user_request(db, account_request)
     return {"message": "Account request submitted"}
 
 

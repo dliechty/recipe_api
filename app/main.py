@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Import local modules
 from app.db.session import engine
 from app import models
-from app.api import auth, recipes
+from app.api import auth, recipes, meals
 from app.core.config import settings
 
 # Load logging configuration
@@ -52,6 +52,7 @@ app.add_middleware(
 # This makes the endpoints defined in the 'auth' and 'recipes' modules available.
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(recipes.router, prefix="/recipes", tags=["Recipes"])
+app.include_router(meals.router, prefix="/meals", tags=["Meals"])
 
 @app.get("/", tags=["Root"])
 async def read_root():

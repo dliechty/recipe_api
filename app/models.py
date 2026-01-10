@@ -3,7 +3,7 @@
 
 import uuid
 from sqlalchemy import (
-    Boolean, Column, ForeignKey, Integer, String, Text, Table, Numeric, Enum, DateTime, func, Float, desc
+    Boolean, Column, ForeignKey, Integer, String, Text, Table, Numeric, Enum, DateTime, func, Float, desc, JSON
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import Uuid
@@ -204,3 +204,120 @@ class RecipeDiet(Base):
     diet_type = Column(Enum(DietType), nullable=False)
 
     recipe = relationship("Recipe", back_populates="diets")
+
+
+class MealClassification(str, enum.Enum):
+    BREAKFAST = "Breakfast"
+    BRUNCH = "Brunch"
+    LUNCH = "Lunch"
+    DINNER = "Dinner"
+    SNACK = "Snack"
+
+
+class MealStatus(str, enum.Enum):
+    PROPOSED = "Proposed"
+    SCHEDULED = "Scheduled"
+    COOKED = "Cooked"
+
+
+class MealTemplateSlotStrategy(str, enum.Enum):
+    DIRECT = "Direct"
+    LIST = "List"
+    SEARCH = "Search"
+
+
+class MealTemplate(Base):
+    """
+    Template for generating meals.
+    """
+    __tablename__ = "meal_templates"
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    name = Column(String, nullable=False)
+    classification = Column(Enum(MealClassification), nullable=True)
+    
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    user = relationship("User")
+    slots = relationship("MealTemplateSlot", back_populates="template", cascade="all, delete-orphan")
+
+
+class MealTemplateSlotRecipe(Base):
+    """
+    Association table for the LIST strategy in meal template slots.
+    """
+    __tablename__ = "meal_template_slot_recipes"
+
+    slot_id = Column(Uuid(as_uuid=True), ForeignKey("meal_template_slots.id"), primary_key=True)
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), primary_key=True)
+
+
+class MealTemplateSlot(Base):
+    """
+    A slot within a meal template.
+    """
+    __tablename__ = "meal_template_slots"
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    template_id = Column(Uuid(as_uuid=True), ForeignKey("meal_templates.id"), nullable=False)
+    
+    strategy = Column(Enum(MealTemplateSlotStrategy), nullable=False)
+    
+    # For DIRECT strategy
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=True)
+    
+    # For SEARCH strategy
+    search_criteria = Column(JSON, nullable=True)
+
+    template = relationship("MealTemplate", back_populates="slots")
+    recipe = relationship("Recipe") # For DIRECT strategy
+    
+    # For LIST strategy
+    recipes = relationship("Recipe", secondary="meal_template_slot_recipes")
+
+    @property
+    def recipe_ids(self):
+        if self.recipes:
+            return [r.id for r in self.recipes]
+        return []
+
+
+class Meal(Base):
+    """
+    A specific instance of a meal, potentially generated from a template.
+    """
+    __tablename__ = "meals"
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    template_id = Column(Uuid(as_uuid=True), ForeignKey("meal_templates.id"), nullable=True)
+    
+    name = Column(String, nullable=True)
+    status = Column(Enum(MealStatus), default=MealStatus.PROPOSED, nullable=False)
+    classification = Column(Enum(MealClassification), nullable=True)
+    date = Column(DateTime, nullable=True)
+    
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    user = relationship("User")
+    template = relationship("MealTemplate")
+    items = relationship("MealItem", back_populates="meal", cascade="all, delete-orphan")
+
+
+class MealItem(Base):
+    """
+    A specific item (recipe) within a meal. asd
+    """
+    __tablename__ = "meal_items"
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    meal_id = Column(Uuid(as_uuid=True), ForeignKey("meals.id"), nullable=False)
+    slot_id = Column(Uuid(as_uuid=True), ForeignKey("meal_template_slots.id"), nullable=True)
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=False)
+
+    meal = relationship("Meal", back_populates="items")
+    slot = relationship("MealTemplateSlot")
+    recipe = relationship("Recipe")

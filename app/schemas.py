@@ -6,7 +6,7 @@ from typing import List, Optional, Any
 from decimal import Decimal
 from uuid import UUID
 from datetime import datetime
-from app.models import DifficultyLevel, DietType
+from app.models import DifficultyLevel, DietType, MealClassification, MealStatus, MealTemplateSlotStrategy
 
 # --- Basic Enums/Types ---
 
@@ -289,4 +289,115 @@ class Comment(CommentBase):
     created_at: datetime
     updated_at: datetime
     
+    model_config = ConfigDict(from_attributes=True)
+
+
+# --- Meal Template Schemas ---
+
+class MealTemplateSlotBase(BaseModel):
+    strategy: MealTemplateSlotStrategy
+    recipe_id: Optional[UUID] = None
+    recipe_ids: Optional[List[UUID]] = None
+    search_criteria: Optional[Any] = None # JSON
+
+    @model_validator(mode='after')
+    def validate_slot_strategy(self):
+        if self.strategy == MealTemplateSlotStrategy.DIRECT and not self.recipe_id:
+            raise ValueError("recipe_id is required for DIRECT strategy")
+        if self.strategy == MealTemplateSlotStrategy.SEARCH and not self.search_criteria:
+            raise ValueError("search_criteria is required for SEARCH strategy")
+        if self.strategy == MealTemplateSlotStrategy.LIST and not self.recipe_ids:
+            raise ValueError("recipe_ids is required for LIST strategy")
+        return self
+
+
+class MealTemplateSlotCreate(MealTemplateSlotBase):
+    pass
+
+
+class MealTemplateSlot(MealTemplateSlotBase):
+    id: UUID
+    template_id: UUID
+    recipes: List[RecipeCore] = [] # For LIST strategy, handled via association
+
+    @model_validator(mode='before')
+    @classmethod
+    def load_list_recipes(cls, data: Any) -> Any:
+        if hasattr(data, "strategy") and data.strategy == MealTemplateSlotStrategy.LIST:
+            # Pydantic will handle the list serialization if we just pass the object
+            # But we might want schema for the recipes in the list?
+            # For now, let's keep it simple.
+            pass
+        return data
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MealTemplateBase(BaseModel):
+    name: str
+    classification: Optional[MealClassification] = None
+
+
+class MealTemplateCreate(MealTemplateBase):
+    slots: List[MealTemplateSlotCreate]
+
+
+class MealTemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    classification: Optional[MealClassification] = None
+    # Updating slots is complex, might handle separately or replacement
+
+
+class MealTemplate(MealTemplateBase):
+    id: UUID
+    user_id: UUID
+    created_at: datetime
+    updated_at: datetime
+    slots: List[MealTemplateSlot]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# --- Meal Schemas ---
+
+class MealItemBase(BaseModel):
+    recipe_id: UUID
+
+
+class MealItem(MealItemBase):
+    id: UUID
+    meal_id: UUID
+    slot_id: Optional[UUID] = None
+    # We could embed the full recipe here if needed
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MealBase(BaseModel):
+    name: Optional[str] = None
+    status: MealStatus = MealStatus.PROPOSED
+    classification: Optional[MealClassification] = None
+    date: Optional[datetime] = None
+
+
+class MealCreate(MealBase):
+    template_id: Optional[UUID] = None
+    items: List[MealItemBase] = []
+
+
+class MealUpdate(BaseModel):
+    name: Optional[str] = None
+    status: Optional[MealStatus] = None
+    classification: Optional[MealClassification] = None
+    date: Optional[datetime] = None
+
+
+class Meal(MealBase):
+    id: UUID
+    user_id: UUID
+    template_id: Optional[UUID] = None
+    created_at: datetime
+    updated_at: datetime
+    items: List[MealItem]
+
     model_config = ConfigDict(from_attributes=True)

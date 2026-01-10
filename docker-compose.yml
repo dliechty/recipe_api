@@ -7,11 +7,12 @@ services:
     build: .
     # Map port 8000 on the host to port 8000 in the container
     ports:
-      - "8000:8000"
+      - "8001:8000"
     # Mount the 'database-data' volume to the /app directory in the container.
     # This ensures that the recipes.db file persists even if the container is removed.
     volumes:
       - database-data:/app/db
+      - ../recipe_migrate_data:/app/migrate_data
     # Load environment variables from .env file
     env_file:
       - .env

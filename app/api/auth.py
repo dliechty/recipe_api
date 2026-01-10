@@ -25,6 +25,44 @@ import os
 _is_testing = "test" in os.environ.get("DATABASE_URL", "").lower()
 limiter = Limiter(key_func=get_remote_address, enabled=not _is_testing)
 
+# --- Account Lockout Configuration ---
+# In-memory storage for failed login attempts (for single-server deployments)
+# For distributed systems, use Redis or database storage instead
+from collections import defaultdict
+from threading import Lock
+
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_DURATION_MINUTES = 15
+
+_failed_attempts: dict[str, list[datetime]] = defaultdict(list)
+_failed_attempts_lock = Lock()
+
+
+def _clean_old_attempts(email: str) -> None:
+    """Remove failed attempts older than the lockout duration."""
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+    _failed_attempts[email] = [t for t in _failed_attempts[email] if t > cutoff]
+
+
+def _is_account_locked(email: str) -> bool:
+    """Check if account is locked due to too many failed attempts."""
+    with _failed_attempts_lock:
+        _clean_old_attempts(email)
+        return len(_failed_attempts[email]) >= MAX_FAILED_ATTEMPTS
+
+
+def _record_failed_attempt(email: str) -> None:
+    """Record a failed login attempt."""
+    with _failed_attempts_lock:
+        _clean_old_attempts(email)
+        _failed_attempts[email].append(datetime.now(timezone.utc))
+
+
+def _clear_failed_attempts(email: str) -> None:
+    """Clear failed attempts on successful login."""
+    with _failed_attempts_lock:
+        _failed_attempts[email] = []
+
 # --- Configuration for JWT ---
 # Loaded from settings
 
@@ -136,15 +174,32 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
     """
     Endpoint to log in a user and get an access token.
     Rate limited to 5 attempts per minute per IP address.
+    Account is locked for 15 minutes after 5 failed attempts.
     """
-    user = crud.get_user_by_email(db, email=form_data.username.lower())
+    email = form_data.username.lower()
+
+    # Check if account is locked
+    if _is_account_locked(email):
+        logger.warning(f"Login attempt for locked account: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail=f"Account temporarily locked due to too many failed attempts. Try again in {LOCKOUT_DURATION_MINUTES} minutes.",
+        )
+
+    user = crud.get_user_by_email(db, email=email)
     if not user or not crud.verify_password(form_data.password, user.hashed_password):
-        logger.warning("Incorrect password")
+        # Record failed attempt
+        _record_failed_attempt(email)
+        logger.warning(f"Failed login attempt for: {email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Successful login - clear failed attempts
+    _clear_failed_attempts(email)
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": str(user.id)}, expires_delta=access_token_expires

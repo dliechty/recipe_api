@@ -162,17 +162,21 @@ def request_account(request: Request, account_request: schemas.UserRequestCreate
     """
     Submit a request for a new user account.
     Rate limited to 3 requests per minute per IP address.
+
+    Note: Always returns 202 Accepted to prevent user enumeration attacks.
+    The same response is returned whether or not the email is already registered.
     """
-    # Check if user already exists
-    if crud.get_user_by_email(db, email=account_request.email):
-        raise HTTPException(status_code=400, detail="Email already registered")
+    # Check if user already exists or request already pending
+    # We still perform these checks but don't reveal the result to the user
+    user_exists = crud.get_user_by_email(db, email=account_request.email) is not None
+    request_exists = crud.get_user_request_by_email(db, email=account_request.email) is not None
 
-    # Check if request already exists
-    if crud.get_user_request_by_email(db, email=account_request.email):
-        return JSONResponse(status_code=200, content={"message": "Request already pending"})
+    # Only create a new request if email is not already registered or pending
+    if not user_exists and not request_exists:
+        crud.create_user_request(db, account_request)
 
-    crud.create_user_request(db, account_request)
-    return {"message": "Account request submitted"}
+    # Always return the same response to prevent enumeration
+    return {"message": "If this email is not already registered, an account request has been submitted"}
 
 
 @router.get("/pending-requests", response_model=list[schemas.UserRequest])

@@ -10,15 +10,16 @@ def test_request_account_flow(client: TestClient, db):
         json={"email": "newuser@example.com", "first_name": "New", "last_name": "User"},
     )
     assert response.status_code == 202
-    assert response.json()["message"] == "Account request submitted"
-    
-    # 2. Duplicate Request
+    # Response intentionally vague to prevent user enumeration
+    assert "email" in response.json()["message"].lower()
+
+    # 2. Duplicate Request - should return same response (prevents enumeration)
     response = client.post(
         "/auth/request-account",
         json={"email": "newuser@example.com", "first_name": "New", "last_name": "User"},
     )
-    assert response.status_code == 200
-    assert response.json()["message"] == "Request already pending"
+    assert response.status_code == 202  # Same status code to prevent enumeration
+    assert "email" in response.json()["message"].lower()
 
     # 3. Create Admin User manually to approve
     admin_data = schemas.UserCreate(
@@ -255,13 +256,12 @@ def test_request_account_case_insensitive(client: TestClient, db):
     assert req is not None
     assert req.email == email.lower()
     
-    # Try to request again with different case (should fail as duplicate)
+    # Try to request again with different case
+    # Now returns same 202 response to prevent user enumeration
     response = client.post(
         "/auth/request-account",
         json={"email": email.upper(), "first_name": "Req", "last_name": "User"},
     )
-    # The endpoint returns 200 OK with "Request already pending" if it exists
-    assert response.status_code == 200
-    assert response.json()["message"] == "Request already pending"
+    assert response.status_code == 202  # Same response to prevent enumeration
 
 

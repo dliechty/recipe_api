@@ -262,3 +262,66 @@ def test_generate_meal_complex_filters(client: TestClient, db: Session, normal_u
     generated_item = data["items"][0]
     assert generated_item["recipe_id"] == str(target_recipe.id)
 
+
+def test_invalid_search_criteria_rejected(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test that invalid search criteria fields and operators are rejected."""
+
+    # Test invalid field
+    invalid_field_data = {
+        "name": "Invalid Field Template",
+        "slots": [
+            {
+                "strategy": "Search",
+                "search_criteria": [
+                    {"field": "invalid_field", "operator": "eq", "value": "test"}
+                ]
+            }
+        ]
+    }
+    response = client.post(
+        "/meals/templates",
+        headers=normal_user_token_headers,
+        json=invalid_field_data
+    )
+    assert response.status_code == 422
+    assert "invalid_field" in response.text.lower() or "Invalid search field" in response.text
+
+    # Test invalid operator
+    invalid_operator_data = {
+        "name": "Invalid Operator Template",
+        "slots": [
+            {
+                "strategy": "Search",
+                "search_criteria": [
+                    {"field": "category", "operator": "invalid_op", "value": "test"}
+                ]
+            }
+        ]
+    }
+    response = client.post(
+        "/meals/templates",
+        headers=normal_user_token_headers,
+        json=invalid_operator_data
+    )
+    assert response.status_code == 422
+    assert "invalid_op" in response.text.lower() or "Invalid operator" in response.text
+
+    # Test empty value
+    empty_value_data = {
+        "name": "Empty Value Template",
+        "slots": [
+            {
+                "strategy": "Search",
+                "search_criteria": [
+                    {"field": "category", "operator": "eq", "value": ""}
+                ]
+            }
+        ]
+    }
+    response = client.post(
+        "/meals/templates",
+        headers=normal_user_token_headers,
+        json=empty_value_data
+    )
+    assert response.status_code == 422
+    assert "empty" in response.text.lower() or "value" in response.text.lower()

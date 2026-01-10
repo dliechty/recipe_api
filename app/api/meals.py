@@ -33,11 +33,16 @@ def create_meal_template(
     for slot_in in template_in.slots:
         # Debug removed
 
+        # Convert SearchCriterion objects to dicts for JSON storage
+        criteria_json = None
+        if slot_in.search_criteria:
+            criteria_json = [c.model_dump() for c in slot_in.search_criteria]
+
         db_slot = models.MealTemplateSlot(
             template_id=db_template.id,
             strategy=slot_in.strategy,
             recipe_id=slot_in.recipe_id,
-            search_criteria=slot_in.search_criteria
+            search_criteria=criteria_json
         )
         
         if slot_in.recipe_ids:

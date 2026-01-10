@@ -65,7 +65,7 @@ level=INFO
 
 To create the initial Superuser account:
 
-1. Configure `FIRST_SUPERUSER_EMAIL` and `FIRST_SUPERUSER_PASSWORD` in `.env` (optional, defaults to `admin@example.com` / `admin123`).
+1. Configure `FIRST_SUPERUSER_EMAIL` and `FIRST_SUPERUSER_PASSWORD` in `.env` (required, password must be at least 12 characters).
 2. Run the initialization script:
 
 ```bash

@@ -7,6 +7,7 @@ import random
 from app.db.session import get_db
 from app import models, schemas
 from app.api import auth
+from app import filters
 
 router = APIRouter()
 
@@ -30,7 +31,8 @@ def create_meal_template(
     
     # Create Slots
     for slot_in in template_in.slots:
-        print(f"DEBUG: slot_in.strategy type: {type(slot_in.strategy)}, value: {slot_in.strategy}")
+        # Debug removed
+
         db_slot = models.MealTemplateSlot(
             template_id=db_template.id,
             strategy=slot_in.strategy,
@@ -118,17 +120,27 @@ def resolve_recipe_for_slot(db: Session, slot: models.MealTemplateSlot, user_id:
         
     elif slot.strategy == models.MealTemplateSlotStrategy.SEARCH:
         # Build query based on criteria
-        criteria = slot.search_criteria or {}
+        criteria = slot.search_criteria or []
         query = db.query(models.Recipe)
         
-        # Example criteria support (expand as needed)
-        if criteria.get("category"):
-            query = query.filter(models.Recipe.category == criteria["category"])
-        if criteria.get("cuisine"):
-             query = query.filter(models.Recipe.cuisine == criteria["cuisine"])
-        if criteria.get("difficulty"):
-            query = query.filter(models.Recipe.difficulty == criteria["difficulty"])
+        # Criteria is expected to be a list of dicts that can be parsed into Filters
+        filters_list = []
+        if isinstance(criteria, list):
+            for c in criteria:
+                # Assuming c is a dict like {'field': 'x', 'operator': 'eq', 'value': 'y'}
+                if isinstance(c, dict):
+                     filters_list.append(filters.Filter(
+                         field=c.get('field'),
+                         operator=c.get('operator'),
+                         value=c.get('value')
+                     ))
+        
+        if filters_list:
+            query = filters.apply_filters(query, filters_list)
             
+        # Optimization: Don't fetch all, just fetch one random
+        # But we need to know count to pick random offset? 
+        # Or order by random() which is db specific but usually works.
         match = query.order_by(func.random()).first()
         return match
         

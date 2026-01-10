@@ -67,7 +67,7 @@ def test_create_meal_template(client: TestClient, db: Session, normal_user_token
             },
             {
                 "strategy": "Search",
-                "search_criteria": {"category": "Dinner"}
+                "search_criteria": [{"field": "category", "operator": "eq", "value": "Dinner"}]
             }
         ]
     }
@@ -126,7 +126,7 @@ def test_generate_meal(client: TestClient, db: Session, normal_user_token_header
             },
             {
                 "strategy": "Search",
-                "search_criteria": {"category": "Special"}
+                "search_criteria": [{"field": "category", "operator": "eq", "value": "Special"}]
             }
         ]
     }
@@ -203,3 +203,62 @@ def test_meal_crud(client: TestClient, db: Session, normal_user_token_headers, n
     # Verify Delete
     res = client.get(f"/meals/{meal_id}", headers=normal_user_token_headers)
     assert res.status_code == 404
+
+
+def test_generate_meal_complex_filters(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    # Setup Recipes
+    # Target: Medium difficulty, < 30 mins
+    target_recipe = create_recipe(db, normal_user.id, "Target Recipe")
+    target_recipe.difficulty = models.DifficultyLevel.MEDIUM
+    target_recipe.total_time_minutes = 20
+    db.add(target_recipe)
+    
+    # Noise 1: Easy, < 30 mins
+    noise1 = create_recipe(db, normal_user.id, "Noise 1")
+    noise1.difficulty = models.DifficultyLevel.EASY
+    noise1.total_time_minutes = 20
+    db.add(noise1)
+    
+    # Noise 2: Medium, > 30 mins
+    noise2 = create_recipe(db, normal_user.id, "Noise 2")
+    noise2.difficulty = models.DifficultyLevel.MEDIUM
+    noise2.total_time_minutes = 60
+    db.add(noise2)
+    
+    db.commit()
+    
+    # Create Template
+    template_data = {
+        "name": "Complex Filter Template",
+        "slots": [
+            {
+                "strategy": "Search",
+                "search_criteria": [
+                    {"field": "difficulty", "operator": "eq", "value": "Medium"},
+                    {"field": "total_time_minutes", "operator": "lt", "value": 30}
+                ]
+            }
+        ]
+    }
+    
+    create_res = client.post(
+        "/meals/templates",
+        headers=normal_user_token_headers,
+        json=template_data
+    )
+    assert create_res.status_code == 201
+    template_id = create_res.json()["id"]
+    
+    # Generate Meal
+    gen_res = client.post(
+        f"/meals/generate?template_id={template_id}",
+        headers=normal_user_token_headers
+    )
+    
+    assert gen_res.status_code == 201
+    data = gen_res.json()
+    
+    # Should find exactly the target recipe
+    generated_item = data["items"][0]
+    assert generated_item["recipe_id"] == str(target_recipe.id)
+

@@ -12,6 +12,9 @@ services:
     # This ensures that the recipes.db file persists even if the container is removed.
     volumes:
       - database-data:/app/db
+    # Load environment variables from .env file
+    env_file:
+      - .env
     # Set the container name for easier reference
     container_name: recipe_api_app
 

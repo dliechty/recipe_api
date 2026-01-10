@@ -10,6 +10,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def init_db(db: Session) -> None:
+    if not settings.FIRST_SUPERUSER_EMAIL or not settings.FIRST_SUPERUSER_PASSWORD:
+        logger.info("First superuser not configured, skipping creation.")
+        return
+
     # Check if superuser exists
     user = crud.get_user_by_email(db, email=settings.FIRST_SUPERUSER_EMAIL)
     if user:

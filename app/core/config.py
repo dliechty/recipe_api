@@ -1,7 +1,7 @@
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
-from typing import List
+from typing import List, Optional
 
 # Known insecure default values that must not be used
 _INSECURE_SECRET_KEYS = {
@@ -43,16 +43,16 @@ class Settings(BaseSettings):
             )
         return v
 
-    FIRST_SUPERUSER_EMAIL: str  # Required - must be set via environment variable
-    FIRST_SUPERUSER_PASSWORD: str  # Required - must be set via environment variable
+    FIRST_SUPERUSER_EMAIL: Optional[str] = None
+    FIRST_SUPERUSER_PASSWORD: Optional[str] = None
     FIRST_SUPERUSER_FIRST_NAME: str = "Admin"
     FIRST_SUPERUSER_LAST_NAME: str = "User"
 
     @field_validator("FIRST_SUPERUSER_EMAIL")
     @classmethod
-    def validate_superuser_email(cls, v: str) -> str:
-        if not v:
-            raise ValueError("FIRST_SUPERUSER_EMAIL must be set")
+    def validate_superuser_email(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
         if v == "admin@example.com":
             raise ValueError(
                 "FIRST_SUPERUSER_EMAIL cannot be the default 'admin@example.com'. "
@@ -62,9 +62,9 @@ class Settings(BaseSettings):
 
     @field_validator("FIRST_SUPERUSER_PASSWORD")
     @classmethod
-    def validate_superuser_password(cls, v: str) -> str:
-        if not v:
-            raise ValueError("FIRST_SUPERUSER_PASSWORD must be set")
+    def validate_superuser_password(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
         if v in _INSECURE_PASSWORDS:
             raise ValueError(
                 "FIRST_SUPERUSER_PASSWORD is set to a known insecure default. "

@@ -115,6 +115,13 @@ def apply_filters(query: Query, filters: List[Filter]) -> Query:
                            models.RecipeIngredient.ingredient.has(models.Ingredient.name == ing)
                         )
                     ))
+            elif f.operator == 'like':
+                 # Partial match on any ingredient
+                 # Similar to 'in' but with ilike.
+                 # Since it's 'like', usually implies ANY ingredient matches pattern.
+                 # "chicken" -> matches "Chicken Breast", "Roast Chicken", etc.
+                 query = query.join(models.RecipeComponent).join(models.RecipeIngredient).join(models.Ingredient)
+                 query = query.filter(models.Ingredient.name.ilike(f"%{f.value}%"))
             continue
 
         if f.field == 'suitable_for_diet':

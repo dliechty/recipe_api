@@ -30,6 +30,14 @@ def test_parse_filters_list():
     assert filters[0].operator == "in"
     assert filters[0].value == "milk,eggs"
 
+def test_parse_filters_ingredients_like():
+    params = {"ingredients[like]": "chick"}
+    filters = parse_filters(params)
+    assert len(filters) == 1
+    assert filters[0].field == "ingredients"
+    assert filters[0].operator == "like"
+    assert filters[0].value == "chick"
+
 def test_parse_filters_invalid_format():
     params = {"invalid_param": "value"}
     filters = parse_filters(params)
@@ -142,4 +150,38 @@ def test_filter_by_id_collection(client: TestClient, db):
     returned_ids = [r["core"]["id"] for r in data]
     assert id1 in returned_ids
     assert id3 in returned_ids
+    assert id1 in returned_ids
+    assert id3 in returned_ids
     assert id2 not in returned_ids
+
+def test_filter_recipes_by_ingredients_like(client: TestClient, db):
+    headers = get_auth_headers(client, db, email="user_ing_like@example.com")
+
+    # Create recipes
+    def create_recipe_with_ingredients(name, ingredients):
+        data = {
+            "core": {"name": name},
+            "times": {},
+            "nutrition": {},
+            "components": [
+                {"name": "main", "ingredients": [{"ingredient_name": ing, "quantity": 1, "unit": "cup"} for ing in ingredients]}
+            ],
+            "instructions": []
+        }
+        res = client.post("/recipes/", json=data, headers=headers)
+        return res.json()["core"]["id"]
+
+    id1 = create_recipe_with_ingredients("Chicken Soup", ["Chicken Breast", "Carrots"])
+    id2 = create_recipe_with_ingredients("Beef Stew", ["Beef Chunk", "Potatoes"])
+    id3 = create_recipe_with_ingredients("Salad", ["Lettuce", "Tomatoes"])
+
+    # Filter for 'chick' -> Should match Chicken matching ingredients
+    response = client.get(f"/recipes/?ingredients[like]=Chick", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Expect only recipe 1
+    ids = [r["core"]["id"] for r in data]
+    assert id1 in ids
+    assert id2 not in ids
+    assert id3 not in ids

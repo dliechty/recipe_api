@@ -43,6 +43,7 @@ class User(Base):
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     is_admin = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True, nullable=False)
     is_first_login = Column(Boolean, default=False)
 
     recipes = relationship("Recipe", back_populates="owner")

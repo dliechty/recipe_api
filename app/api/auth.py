@@ -95,7 +95,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 # --- Dependency for Getting Current User ---
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """
     Decodes the JWT token to get the current user.
     This function is a dependency that can be used to protect endpoints.
@@ -122,6 +122,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         logger.error("Could not find user")
         raise credentials_exception
     logger.debug(f"Found user: {user.email}")
+    # Attach user to request state for logging middleware
+    request.state.user = user
     return user
 
 

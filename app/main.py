@@ -18,6 +18,7 @@ from app.db.session import engine
 from app import models
 from app.api import auth, recipes, meals
 from app.core.config import settings
+from app.core.logging_middleware import StructuredLoggingMiddleware
 
 # Initialize rate limiter - uses client IP address for rate limit key
 # Disabled during testing (when DATABASE_URL contains 'test')
@@ -48,6 +49,10 @@ app = FastAPI(
 # Add rate limiter to app state and register exception handler
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# --- Add Structured Logging Middleware ---
+app.add_middleware(StructuredLoggingMiddleware)
+# --- End of Structured Logging Middleware ---
 
 # --- Add CORS Middleware ---
 # Origins loaded from settings

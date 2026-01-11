@@ -226,7 +226,7 @@
           "Authentication"
         ],
         "summary": "Login",
-        "description": "Endpoint to log in a user and get an access token.",
+        "description": "Endpoint to log in a user and get an access token.\nRate limited to 5 attempts per minute per IP address.\nAccount is locked for 15 minutes after 5 failed attempts.",
         "operationId": "login_auth_token_post",
         "requestBody": {
           "content": {
@@ -268,7 +268,7 @@
           "Authentication"
         ],
         "summary": "Request Account",
-        "description": "Submit a request for a new user account.",
+        "description": "Submit a request for a new user account.\nRate limited to 3 requests per minute per IP address.\n\nNote: Always returns 202 Accepted to prevent user enumeration attacks.\nThe same response is returned whether or not the email is already registered.",
         "operationId": "request_account_auth_request_account_post",
         "requestBody": {
           "content": {
@@ -2243,7 +2243,12 @@
           },
           "search_criteria": {
             "anyOf": [
-              {},
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SearchCriterion"
+                },
+                "type": "array"
+              },
               {
                 "type": "null"
               }
@@ -2311,7 +2316,12 @@
           },
           "search_criteria": {
             "anyOf": [
-              {},
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SearchCriterion"
+                },
+                "type": "array"
+              },
               {
                 "type": "null"
               }
@@ -3021,6 +3031,40 @@
         },
         "type": "object",
         "title": "RecipeTimes"
+      },
+      "SearchCriterion": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "operator": {
+            "type": "string",
+            "title": "Operator"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "operator",
+          "value"
+        ],
+        "title": "SearchCriterion",
+        "description": "A single search criterion for meal template SEARCH strategy."
       },
       "Token": {
         "properties": {

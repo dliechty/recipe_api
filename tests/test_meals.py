@@ -325,3 +325,51 @@ def test_invalid_search_criteria_rejected(client: TestClient, db: Session, norma
     )
     assert response.status_code == 422
     assert "empty" in response.text.lower() or "value" in response.text.lower()
+
+
+def test_update_meal_items(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    # Setup
+    r1 = create_recipe(db, normal_user.id, "Recipe 1")
+    r2 = create_recipe(db, normal_user.id, "Recipe 2")
+    r3 = create_recipe(db, normal_user.id, "Recipe 3")
+    
+    # Create valid meal
+    meal_data = {
+        "name": "Update Items Test",
+        "items": [{"recipe_id": str(r1.id)}]
+    }
+    create_res = client.post("/meals/", headers=normal_user_token_headers, json=meal_data)
+    meal_id = create_res.json()["id"]
+    
+    # 1. Replace Items
+    update_data = {
+        "items": [
+            {"recipe_id": str(r2.id)},
+            {"recipe_id": str(r3.id)}
+        ]
+    }
+    res = client.put(f"/meals/{meal_id}", headers=normal_user_token_headers, json=update_data)
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data["items"]) == 2
+    ids = [item["recipe_id"] for item in data["items"]]
+    assert str(r2.id) in ids
+    assert str(r3.id) in ids
+    assert str(r1.id) not in ids
+    
+    # 2. Clear Items
+    update_data = {"items": []}
+    res = client.put(f"/meals/{meal_id}", headers=normal_user_token_headers, json=update_data)
+    assert res.status_code == 200
+    assert len(res.json()["items"]) == 0
+    
+    # 3. Partial Update (no items field) should keep existing
+    # Add one back first
+    client.put(f"/meals/{meal_id}", headers=normal_user_token_headers, json={"items": [{"recipe_id": str(r1.id)}]})
+    
+    update_data = {"name": "Renamed Meal"} # No items field
+    res = client.put(f"/meals/{meal_id}", headers=normal_user_token_headers, json=update_data)
+    assert res.status_code == 200
+    assert res.json()["name"] == "Renamed Meal"
+    assert len(res.json()["items"]) == 1
+    assert res.json()["items"][0]["recipe_id"] == str(r1.id)

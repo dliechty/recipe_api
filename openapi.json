@@ -2415,6 +2415,20 @@
               }
             ],
             "title": "Date"
+          },
+          "items": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MealItemBase"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Items"
           }
         },
         "type": "object",

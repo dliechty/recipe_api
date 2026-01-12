@@ -260,7 +260,22 @@ def update_meal(
     if meal_in.date is not None:
         meal.date = meal_in.date
         
-    # Not handling item updates here for brevity, usually separate endpoints or nested logic
+    if meal_in.items is not None:
+        # Clear existing items
+        # We need to manually remove them or use cascade. Cascade is set on relationship, so removing from list might work if we were using purely ORM list manipulation, 
+        # but explicit delete is safer for clarity or if we just want to replace the collection.
+        # Actually, with SQLAlchemy relationship cascade="all, delete-orphan", clearing the list usually works.
+        # Let's try clearing the list first.
+        meal.items.clear()
+        
+        # Add new items
+        for item_in in meal_in.items:
+            db_item = models.MealItem(
+                meal_id=meal.id,
+                recipe_id=item_in.recipe_id
+                # Note: slot_id is lost/reset to None for these manual updates as per plan
+            )
+            meal.items.append(db_item)
     
     db.commit()
     db.refresh(meal)

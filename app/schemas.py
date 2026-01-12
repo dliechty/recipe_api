@@ -438,6 +438,7 @@ class MealUpdate(BaseModel):
     status: Optional[MealStatus] = None
     classification: Optional[MealClassification] = None
     date: Optional[datetime] = None
+    items: Optional[List[MealItemBase]] = None
 
 
 class Meal(MealBase):

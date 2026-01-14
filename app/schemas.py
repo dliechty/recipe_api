@@ -205,7 +205,6 @@ class RecipeCoreBase(BaseModel):
     cuisine: Optional[str] = None
     category: Optional[str] = None
     source: Optional[str] = None
-    source: Optional[str] = None
     source_url: Optional[str] = None
     protein: Optional[str] = None
 
@@ -231,7 +230,6 @@ class RecipeAudit(BaseModel):
     updated_at: Optional[datetime] = None
     version: Optional[int] = None
     checksum: Optional[str] = None
-    checksum: Optional[str] = None
 
 # --- Main Recipe Schemas ---
 
@@ -250,8 +248,6 @@ class RecipeCreate(BaseModel):
 class Recipe(BaseModel):
     core: RecipeCore
     times: RecipeTimes
-    components: List[Component]
-    instructions: List[Instruction]
     components: List[Component]
     instructions: List[Instruction]
     nutrition: RecipeNutrition
@@ -293,8 +289,6 @@ class Recipe(BaseModel):
                 "audit": {
                     "created_at": data.created_at,
                     "updated_at": data.updated_at,
-                    "version": data.version,
-                    "checksum": data.checksum,
                     "version": data.version,
                     "checksum": data.checksum,
                 },

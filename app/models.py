@@ -85,7 +85,7 @@ class Recipe(Base):
     protein = Column(String, nullable=True, index=True)
     source_url = Column(String, nullable=True)
     
-    owner_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"))
+    owner_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), index=True)
 
     # Times
     prep_time_minutes = Column(Integer, nullable=True, index=True)
@@ -104,7 +104,7 @@ class Recipe(Base):
     checksum = Column(String, nullable=True)
 
 
-    parent_recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=True)
+    parent_recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=True, index=True)
 
     # Relationships
     parent = relationship("Recipe", remote_side=[id], backref="variants")
@@ -130,8 +130,8 @@ class RecipeComponent(Base):
     
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, default="Main")
-    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"))
-    
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), index=True)
+
     recipe = relationship("Recipe", back_populates="components")
     ingredients = relationship("RecipeIngredient", back_populates="component", cascade="all, delete-orphan", order_by="RecipeIngredient.order")
 
@@ -152,8 +152,8 @@ class RecipeIngredient(Base):
     __tablename__ = "recipe_ingredients"
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    component_id = Column(Uuid(as_uuid=True), ForeignKey("recipe_components.id"))
-    ingredient_id = Column(Uuid(as_uuid=True), ForeignKey("ingredients.id"))
+    component_id = Column(Uuid(as_uuid=True), ForeignKey("recipe_components.id"), index=True)
+    ingredient_id = Column(Uuid(as_uuid=True), ForeignKey("ingredients.id"), index=True)
     
     quantity = Column(Float, nullable=False)
     unit = Column(String, nullable=False)
@@ -172,7 +172,7 @@ class Instruction(Base):
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     step_number = Column(Integer, nullable=False)
     text = Column(Text, nullable=False)
-    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"))
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), index=True)
 
     recipe = relationship("Recipe", back_populates="instructions")
 
@@ -183,8 +183,8 @@ class Comment(Base):
     """
     __tablename__ = "comments"
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=False)
-    user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=False, index=True)
+    user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     text = Column(Text, nullable=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -199,7 +199,7 @@ class RecipeDiet(Base):
     """
     __tablename__ = "recipe_diets"
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=False)
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=False, index=True)
     diet_type = Column(Enum(DietType), nullable=False)
 
     recipe = relationship("Recipe", back_populates="diets")
@@ -232,10 +232,10 @@ class MealTemplate(Base):
     __tablename__ = "meal_templates"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     classification = Column(Enum(MealClassification), nullable=True)
-    
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -260,12 +260,12 @@ class MealTemplateSlot(Base):
     __tablename__ = "meal_template_slots"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    template_id = Column(Uuid(as_uuid=True), ForeignKey("meal_templates.id"), nullable=False)
-    
+    template_id = Column(Uuid(as_uuid=True), ForeignKey("meal_templates.id"), nullable=False, index=True)
+
     strategy = Column(Enum(MealTemplateSlotStrategy), nullable=False)
-    
+
     # For DIRECT strategy
-    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=True)
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=True, index=True)
     
     # For SEARCH strategy
     search_criteria = Column(JSON, nullable=True)
@@ -290,9 +290,9 @@ class Meal(Base):
     __tablename__ = "meals"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    template_id = Column(Uuid(as_uuid=True), ForeignKey("meal_templates.id"), nullable=True)
-    
+    user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    template_id = Column(Uuid(as_uuid=True), ForeignKey("meal_templates.id"), nullable=True, index=True)
+
     name = Column(String, nullable=True)
     status = Column(Enum(MealStatus), default=MealStatus.PROPOSED, nullable=False)
     classification = Column(Enum(MealClassification), nullable=True)
@@ -313,9 +313,9 @@ class MealItem(Base):
     __tablename__ = "meal_items"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    meal_id = Column(Uuid(as_uuid=True), ForeignKey("meals.id"), nullable=False)
-    slot_id = Column(Uuid(as_uuid=True), ForeignKey("meal_template_slots.id"), nullable=True)
-    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=False)
+    meal_id = Column(Uuid(as_uuid=True), ForeignKey("meals.id"), nullable=False, index=True)
+    slot_id = Column(Uuid(as_uuid=True), ForeignKey("meal_template_slots.id"), nullable=True, index=True)
+    recipe_id = Column(Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=False, index=True)
 
     meal = relationship("Meal", back_populates="items")
     slot = relationship("MealTemplateSlot")

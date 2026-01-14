@@ -199,6 +199,14 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Check if user account is active
+    if not user.is_active:
+        logger.warning(f"Login attempt for inactive account: {email}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive",
+        )
+
     # Successful login - clear failed attempts
     _clear_failed_attempts(email)
 

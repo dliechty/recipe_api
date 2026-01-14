@@ -307,3 +307,43 @@ def test_account_lockout_after_failed_attempts(client: TestClient, db):
 
     # Clean up for other tests
     _clear_failed_attempts("lockouttest@example.com")
+
+
+def test_inactive_user_cannot_login(client: TestClient, db):
+    """Test that inactive users cannot obtain a token at login."""
+    # Create a user
+    user_data = schemas.UserCreate(
+        email="inactiveuser@example.com",
+        password="testpassword",
+        first_name="Inactive",
+        last_name="User"
+    )
+    user = crud.create_user(db, user_data)
+    db.commit()
+
+    # Verify the user can login while active
+    response = client.post(
+        "/auth/token",
+        data={"username": "inactiveuser@example.com", "password": "testpassword"},
+    )
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+
+    # Deactivate the user
+    user.is_active = False
+    db.commit()
+
+    # Attempt to login - should be rejected with 403
+    response = client.post(
+        "/auth/token",
+        data={"username": "inactiveuser@example.com", "password": "testpassword"},
+    )
+    assert response.status_code == 403
+    assert "inactive" in response.json()["detail"].lower()
+
+    # Verify wrong password still returns 401 (not 403) to avoid revealing account status
+    response = client.post(
+        "/auth/token",
+        data={"username": "inactiveuser@example.com", "password": "wrongpassword"},
+    )
+    assert response.status_code == 401

@@ -279,8 +279,7 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
         parent_recipe_id=recipe.parent_recipe_id
     )
     db.add(db_recipe)
-    db.commit()
-    db.refresh(db_recipe)
+    db.flush()  # Get recipe ID without committing transaction
 
     # Handle Components and Ingredients
     for comp in recipe.components:
@@ -289,17 +288,16 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
             recipe_id=db_recipe.id
         )
         db.add(db_component)
-        db.commit() # Commit to get ID
-        
+        db.flush()  # Get component ID without committing transaction
+
         for idx, item in enumerate(comp.ingredients):
             # Find or create the master ingredient
-             # item.item is the name due to our schema mapping? No, schema says `item`
-            ingredient_name = item.item 
+            ingredient_name = item.item
             ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == ingredient_name).first()
             if not ingredient:
                 ingredient = models.Ingredient(name=ingredient_name)
                 db.add(ingredient)
-                db.commit()
+                db.flush()  # Get ingredient ID without committing transaction
 
             # Create the recipe-ingredient link
             recipe_ingredient = models.RecipeIngredient(
@@ -317,7 +315,7 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
         instruction = models.Instruction(
             recipe_id=db_recipe.id,
             step_number=item.step_number,
-            text=item.text # usage of 'text' field
+            text=item.text
         )
         db.add(instruction)
 
@@ -329,6 +327,7 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
         )
         db.add(recipe_diet)
 
+    # Single commit for the entire transaction
     db.commit()
     db.refresh(db_recipe)
     return db_recipe
@@ -384,25 +383,24 @@ def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCre
         setattr(db_recipe, key, value)
 
     # Clear and replace components
-    # We might need to delete existing components
     # Cascade delete should handle their ingredients
     db.query(models.RecipeComponent).filter(models.RecipeComponent.recipe_id == recipe_id).delete()
-    
+
     for comp in recipe_update.components:
         db_component = models.RecipeComponent(
             name=comp.name,
             recipe_id=recipe_id
         )
         db.add(db_component)
-        db.commit() # Need ID
-        
+        db.flush()  # Get component ID without committing transaction
+
         for idx, item in enumerate(comp.ingredients):
             ingredient_name = item.item
             ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == ingredient_name).first()
             if not ingredient:
                 ingredient = models.Ingredient(name=ingredient_name)
                 db.add(ingredient)
-                db.commit()
+                db.flush()  # Get ingredient ID without committing transaction
 
             recipe_ingredient = models.RecipeIngredient(
                 component_id=db_component.id,
@@ -433,6 +431,7 @@ def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCre
         )
         db.add(recipe_diet)
 
+    # Single commit for the entire transaction
     db.commit()
     db.refresh(db_recipe)
     return db_recipe

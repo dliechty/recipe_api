@@ -16,10 +16,10 @@ def test_recipe_versioning_logic(client: TestClient, db):
     }
     
     create_resp = client.post("/recipes/", json=recipe_data, headers=headers)
-    assert create_resp.status_code == 200
+    assert create_resp.status_code == 201
     recipe = create_resp.json()
     recipe_id = recipe["core"]["id"]
-    
+
     # Verify initial version
     assert recipe["audit"]["version"] == 1
     
@@ -84,10 +84,10 @@ def test_timestamp_behavior(client: TestClient, db):
     
     start_time = datetime.now(timezone.utc)
     create_resp = client.post("/recipes/", json=recipe_data, headers=headers)
-    assert create_resp.status_code == 200
+    assert create_resp.status_code == 201
     recipe = create_resp.json()
     recipe_id = recipe["core"]["id"]
-    
+
     created_at = recipe["audit"]["created_at"]
     updated_at = recipe["audit"]["updated_at"]
     
@@ -132,7 +132,7 @@ def test_timestamp_behavior(client: TestClient, db):
     }
     
     create_resp_2 = client.post("/recipes/", json=recipe_data_explicit, headers=headers)
-    assert create_resp_2.status_code == 200
+    assert create_resp_2.status_code == 201
     recipe_2 = create_resp_2.json()
     
     assert recipe_2["audit"]["created_at"].startswith(explicit_created.split('+')[0])

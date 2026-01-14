@@ -30,7 +30,7 @@ def test_delete_recipe_with_variants_fails(client: TestClient, db):
         "instructions": []
     }
     parent_res = client.post("/recipes/", json=parent_data, headers=headers)
-    assert parent_res.status_code == 200
+    assert parent_res.status_code == 201
     parent_id = parent_res.json()["core"]["id"]
 
     # 2. Create Variant (Child) Recipe
@@ -42,10 +42,10 @@ def test_delete_recipe_with_variants_fails(client: TestClient, db):
         "instructions": [],
         "parent_recipe_id": parent_id
     }
-    # Note: Using json=child_data assuming the schema supports parent_recipe_id on create. 
+    # Note: Using json=child_data assuming the schema supports parent_recipe_id on create.
     # If not supported, we'd need to link it manually, but previous analysis suggests it works or is expected.
     child_res = client.post("/recipes/", json=child_data, headers=headers)
-    assert child_res.status_code == 200
+    assert child_res.status_code == 201
     child_id = child_res.json()["core"]["id"]
 
     # Verify relationship exists

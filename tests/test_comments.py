@@ -38,7 +38,7 @@ def create_dummy_recipe(client, headers, name="Test Recipe"):
         "instructions": []
     }
     response = client.post("/recipes/", json=recipe_data, headers=headers)
-    assert response.status_code == 200
+    assert response.status_code == 201
     return response.json()
 
 def test_create_and_read_comment(client, db):
@@ -50,7 +50,7 @@ def test_create_and_read_comment(client, db):
     # 2. Add Comment
     comment_data = {"text": "This is a tasty recipe!"}
     response = client.post(f"/recipes/{recipe_id}/comments", json=comment_data, headers=user_headers)
-    assert response.status_code == 200
+    assert response.status_code == 201
     created_comment = response.json()
     assert created_comment["text"] == "This is a tasty recipe!"
     assert created_comment["user"]["email"] == "commenter@example.com"
@@ -120,7 +120,7 @@ def test_delete_comment_permissions(client, db):
     # Actually wait, let's test admin delete first on this one
     admin_headers = get_auth_headers(client, db, email="admin_del@example.com", is_admin=True)
     res = client.delete(f"/recipes/{recipe_id}/comments/{comment_id}", headers=admin_headers)
-    assert res.status_code == 200
+    assert res.status_code == 204
 
     # 5. Verify deleted
     res = client.get(f"/recipes/{recipe_id}/comments", headers=owner_headers)
@@ -131,4 +131,4 @@ def test_delete_comment_permissions(client, db):
     comment_id_2 = res.json()["id"]
 
     res = client.delete(f"/recipes/{recipe_id}/comments/{comment_id_2}", headers=commenter_headers)
-    assert res.status_code == 200
+    assert res.status_code == 204

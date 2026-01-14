@@ -37,7 +37,7 @@ def create_dummy_recipe(client, headers, name="Test Recipe"):
         "instructions": []
     }
     response = client.post("/recipes/", json=recipe_data, headers=headers)
-    assert response.status_code == 200
+    assert response.status_code == 201
     return response.json()
 
 def test_admin_can_update_other_user_recipe(client, db):

@@ -33,7 +33,7 @@ def create_recipe(client, headers, name, parent_id=None):
     # but let's assume it is or we patch it if needed. 
     # Based on test_circular_dependency it seems supported in the payload or at least handled.
     res = client.post("/recipes/", json=data, headers=headers)
-    assert res.status_code == 200
+    assert res.status_code == 201
     return res.json()["core"]["id"]
 
 def update_recipe_parent(client, headers, recipe_id, parent_id):
@@ -61,7 +61,7 @@ def test_recipe_children_exposed(client: TestClient, db):
         "instructions": []
     }
     parent_res = client.post("/recipes/", json=parent_data, headers=headers)
-    assert parent_res.status_code == 200
+    assert parent_res.status_code == 201
     parent_id = parent_res.json()["core"]["id"]
 
     # 2. Create Child Recipe
@@ -73,7 +73,7 @@ def test_recipe_children_exposed(client: TestClient, db):
         "instructions": []
     }
     child_res = client.post("/recipes/", json=child_data, headers=headers)
-    assert child_res.status_code == 200
+    assert child_res.status_code == 201
     child_id = child_res.json()["core"]["id"]
 
     # 3. Manually link child to parent (if API create doesn't support it yet, mimicking test_recipe_relationships original behavior)

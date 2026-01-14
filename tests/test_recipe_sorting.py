@@ -33,7 +33,7 @@ def create_recipe_with_fields(client, headers, name, category, cuisine):
         "instructions": []
     }
     res = client.post("/recipes/", json=data, headers=headers)
-    assert res.status_code == 200
+    assert res.status_code == 201
     return res.json()
 
 # --- Tests ---
@@ -107,7 +107,7 @@ def test_instruction_ordering_repro(client: TestClient, db):
     }
     
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
-    assert create_res.status_code == 200
+    assert create_res.status_code == 201
     recipe_id = create_res.json()["core"]["id"]
     
     # Read back

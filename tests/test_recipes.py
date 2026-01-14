@@ -54,7 +54,7 @@ def test_create_recipe(client: TestClient, db):
         "suitable_for_diet": ["vegetarian", "low-calorie"]
     }
     response = client.post("/recipes/", json=recipe_data, headers=headers)
-    assert response.status_code == 200, response.text
+    assert response.status_code == 201, response.text
     data = response.json()
     assert data["core"]["name"] == "Pancakes"
     assert len(data["components"]) == 1

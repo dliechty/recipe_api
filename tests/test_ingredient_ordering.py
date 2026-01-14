@@ -28,7 +28,7 @@ def test_create_recipe_preserves_order(client, db):
     
     # Action
     response = client.post("/recipes/", json=recipe_data, headers=headers)
-    assert response.status_code == 200
+    assert response.status_code == 201
     created_recipe = response.json()
     
     # Verify

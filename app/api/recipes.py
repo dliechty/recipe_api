@@ -3,7 +3,7 @@
 
 import logging
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from typing import List, Any
 
@@ -24,7 +24,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/", response_model=schemas.Recipe)
+@router.post("/", response_model=schemas.Recipe, status_code=status.HTTP_201_CREATED)
 def create_recipe(
         recipe: schemas.RecipeCreate,
         db: Session = Depends(get_db),
@@ -145,7 +145,7 @@ def delete_recipe(
 
 # --- Comment Endpoints ---
 
-@router.post("/{recipe_id}/comments", response_model=schemas.Comment)
+@router.post("/{recipe_id}/comments", response_model=schemas.Comment, status_code=status.HTTP_201_CREATED)
 def create_comment(
     recipe_id: UUID,
     comment: schemas.CommentCreate,
@@ -206,7 +206,7 @@ def update_comment(
     return crud.update_comment(db=db, comment_id=comment_id, comment_update=comment_update)
 
 
-@router.delete("/{recipe_id}/comments/{comment_id}")
+@router.delete("/{recipe_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_comment(
     recipe_id: UUID,
     comment_id: UUID,
@@ -219,12 +219,12 @@ def delete_comment(
     db_comment = crud.get_comment(db, comment_id=comment_id)
     if not db_comment:
         raise HTTPException(status_code=404, detail="Comment not found")
-        
+
     if db_comment.recipe_id != recipe_id:
-         raise HTTPException(status_code=400, detail="Comment does not belong to this recipe")
+        raise HTTPException(status_code=400, detail="Comment does not belong to this recipe")
 
     if db_comment.user_id != current_user.id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
 
     crud.delete_comment(db=db, comment_id=comment_id)
-    return {"message": "Comment deleted successfully"}
+    return None

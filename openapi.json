@@ -518,7 +518,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -667,7 +667,7 @@
           "Recipes"
         ],
         "summary": "Read Recipe",
-        "description": "Retrieve a single recipe by its ID.",
+        "description": "Retrieve a single recipe by its ID.\n\nOptionally provide a `scale` parameter to multiply all ingredient quantities.\nFor example, scale=2 doubles all quantities, scale=0.5 halves them.",
         "operationId": "read_recipe_recipes__recipe_id__get",
         "security": [
           {
@@ -684,6 +684,25 @@
               "format": "uuid",
               "title": "Recipe Id"
             }
+          },
+          {
+            "name": "scale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Scale factor for ingredient quantities (must be > 0)",
+              "title": "Scale"
+            },
+            "description": "Scale factor for ingredient quantities (must be > 0)"
           }
         ],
         "responses": {
@@ -850,7 +869,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -1047,13 +1066,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",

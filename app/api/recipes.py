@@ -3,9 +3,9 @@
 
 import logging
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
-from typing import List, Any
+from typing import List, Any, Optional
 
 # Import local modules
 from app import crud
@@ -78,19 +78,50 @@ def get_meta_values(
 @router.get("/{recipe_id}", response_model=schemas.Recipe)
 def read_recipe(
         recipe_id: UUID,
+        scale: Optional[float] = Query(
+            default=None,
+            gt=0,
+            description="Scale factor for ingredient quantities (must be > 0)"
+        ),
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_active_user)
 ):
     """
     Retrieve a single recipe by its ID.
+
+    Optionally provide a `scale` parameter to multiply all ingredient quantities.
+    For example, scale=2 doubles all quantities, scale=0.5 halves them.
     """
-    logger.debug(f"Fetching recipe with ID: {recipe_id}")
+    logger.debug(f"Fetching recipe with ID: {recipe_id}, scale: {scale}")
     db_recipe = crud.get_recipe(db, recipe_id=recipe_id)
     if db_recipe is None:
         logger.warning(f"Recipe with ID {recipe_id} not found.")
         raise HTTPException(status_code=404, detail="Recipe not found")
     logger.debug(f"Recipe with ID {recipe_id} found: {db_recipe}")
-    return db_recipe
+
+    # If no scaling requested, return as-is (Pydantic handles ORM conversion)
+    if scale is None or scale == 1.0:
+        return db_recipe
+
+    # Let Pydantic do the ORM transformation, then scale quantities
+    response = schemas.Recipe.model_validate(db_recipe).model_dump(mode="json")
+    return _apply_scale_factor(response, scale)
+
+
+def _apply_scale_factor(recipe_dict: dict, scale: float) -> dict:
+    """
+    Apply scaling factor to ingredient quantities and yield_amount in a recipe dict.
+    """
+    # Scale yield_amount
+    if recipe_dict["core"]["yield_amount"] is not None:
+        recipe_dict["core"]["yield_amount"] *= scale
+
+    # Scale ingredient quantities
+    for component in recipe_dict["components"]:
+        for ingredient in component["ingredients"]:
+            ingredient["quantity"] *= scale
+
+    return recipe_dict
 
 
 @router.put("/{recipe_id}", response_model=schemas.Recipe)

@@ -144,3 +144,267 @@ def test_delete_recipe(client: TestClient, db):
     # Verify it's gone
     get_res = client.get(f"/recipes/{recipe_id}", headers=headers)
     assert get_res.status_code == 404
+
+
+# --- Ingredient Scaling Tests ---
+
+def test_read_recipe_with_scale_factor(client: TestClient, db):
+    """Test that scale parameter correctly multiplies ingredient quantities."""
+    headers = get_auth_headers(client, db)
+
+    recipe_data = {
+        "core": {"name": "Scaled Recipe", "yield_amount": 4},
+        "times": {"prep_time_minutes": 10},
+        "nutrition": {"calories": 200},
+        "components": [
+            {
+                "name": "Main",
+                "ingredients": [
+                    {"ingredient_name": "Flour", "quantity": 2.0, "unit": "cups"},
+                    {"ingredient_name": "Sugar", "quantity": 0.5, "unit": "cups"},
+                ]
+            }
+        ],
+        "instructions": [{"step_number": 1, "text": "Mix"}]
+    }
+    create_res = client.post("/recipes/", json=recipe_data, headers=headers)
+    recipe_id = create_res.json()["core"]["id"]
+
+    # Test scale=2 (double)
+    response = client.get(f"/recipes/{recipe_id}?scale=2", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify quantities are doubled
+    ingredients = data["components"][0]["ingredients"]
+    assert ingredients[0]["quantity"] == 4.0  # 2 * 2
+    assert ingredients[1]["quantity"] == 1.0  # 0.5 * 2
+
+    # Verify yield_amount is also scaled
+    assert data["core"]["yield_amount"] == 8  # 4 * 2
+
+
+def test_read_recipe_with_scale_half(client: TestClient, db):
+    """Test that scale=0.5 halves ingredient quantities."""
+    headers = get_auth_headers(client, db)
+
+    recipe_data = {
+        "core": {"name": "Half Recipe", "yield_amount": 4},
+        "times": {},
+        "nutrition": {},
+        "components": [
+            {
+                "name": "Main",
+                "ingredients": [
+                    {"ingredient_name": "Butter", "quantity": 1.0, "unit": "cup"},
+                ]
+            }
+        ],
+        "instructions": []
+    }
+    create_res = client.post("/recipes/", json=recipe_data, headers=headers)
+    recipe_id = create_res.json()["core"]["id"]
+
+    response = client.get(f"/recipes/{recipe_id}?scale=0.5", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["components"][0]["ingredients"][0]["quantity"] == 0.5
+    assert data["core"]["yield_amount"] == 2
+
+
+def test_read_recipe_scale_one_unchanged(client: TestClient, db):
+    """Test that scale=1 returns quantities unchanged."""
+    headers = get_auth_headers(client, db)
+
+    recipe_data = {
+        "core": {"name": "No Change Recipe"},
+        "times": {},
+        "nutrition": {},
+        "components": [
+            {
+                "name": "Main",
+                "ingredients": [
+                    {"ingredient_name": "Salt", "quantity": 1.5, "unit": "tsp"},
+                ]
+            }
+        ],
+        "instructions": []
+    }
+    create_res = client.post("/recipes/", json=recipe_data, headers=headers)
+    recipe_id = create_res.json()["core"]["id"]
+
+    response = client.get(f"/recipes/{recipe_id}?scale=1", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["components"][0]["ingredients"][0]["quantity"] == 1.5
+
+
+def test_read_recipe_no_scale_unchanged(client: TestClient, db):
+    """Test that omitting scale parameter returns original quantities."""
+    headers = get_auth_headers(client, db)
+
+    recipe_data = {
+        "core": {"name": "Default Recipe"},
+        "times": {},
+        "nutrition": {},
+        "components": [
+            {
+                "name": "Main",
+                "ingredients": [
+                    {"ingredient_name": "Pepper", "quantity": 0.25, "unit": "tsp"},
+                ]
+            }
+        ],
+        "instructions": []
+    }
+    create_res = client.post("/recipes/", json=recipe_data, headers=headers)
+    recipe_id = create_res.json()["core"]["id"]
+
+    response = client.get(f"/recipes/{recipe_id}", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["components"][0]["ingredients"][0]["quantity"] == 0.25
+
+
+def test_read_recipe_scale_zero_rejected(client: TestClient, db):
+    """Test that scale=0 is rejected with 422."""
+    headers = get_auth_headers(client, db)
+
+    recipe_data = {
+        "core": {"name": "Zero Scale Recipe"},
+        "times": {},
+        "nutrition": {},
+        "components": [],
+        "instructions": []
+    }
+    create_res = client.post("/recipes/", json=recipe_data, headers=headers)
+    recipe_id = create_res.json()["core"]["id"]
+
+    response = client.get(f"/recipes/{recipe_id}?scale=0", headers=headers)
+    assert response.status_code == 422
+
+
+def test_read_recipe_scale_negative_rejected(client: TestClient, db):
+    """Test that negative scale values are rejected with 422."""
+    headers = get_auth_headers(client, db)
+
+    recipe_data = {
+        "core": {"name": "Negative Scale Recipe"},
+        "times": {},
+        "nutrition": {},
+        "components": [],
+        "instructions": []
+    }
+    create_res = client.post("/recipes/", json=recipe_data, headers=headers)
+    recipe_id = create_res.json()["core"]["id"]
+
+    response = client.get(f"/recipes/{recipe_id}?scale=-1", headers=headers)
+    assert response.status_code == 422
+
+
+def test_read_recipe_scale_large_value(client: TestClient, db):
+    """Test that large scale values work correctly."""
+    headers = get_auth_headers(client, db)
+
+    recipe_data = {
+        "core": {"name": "Large Scale Recipe"},
+        "times": {},
+        "nutrition": {},
+        "components": [
+            {
+                "name": "Main",
+                "ingredients": [
+                    {"ingredient_name": "Water", "quantity": 1.0, "unit": "cup"},
+                ]
+            }
+        ],
+        "instructions": []
+    }
+    create_res = client.post("/recipes/", json=recipe_data, headers=headers)
+    recipe_id = create_res.json()["core"]["id"]
+
+    response = client.get(f"/recipes/{recipe_id}?scale=100", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["components"][0]["ingredients"][0]["quantity"] == 100.0
+
+
+def test_read_recipe_scale_multiple_components(client: TestClient, db):
+    """Test scaling works across multiple components."""
+    headers = get_auth_headers(client, db)
+
+    recipe_data = {
+        "core": {"name": "Multi-Component Recipe"},
+        "times": {},
+        "nutrition": {},
+        "components": [
+            {
+                "name": "Dough",
+                "ingredients": [
+                    {"ingredient_name": "Flour", "quantity": 3.0, "unit": "cups"},
+                ]
+            },
+            {
+                "name": "Filling",
+                "ingredients": [
+                    {"ingredient_name": "Cheese", "quantity": 2.0, "unit": "cups"},
+                    {"ingredient_name": "Spinach", "quantity": 1.0, "unit": "cup"},
+                ]
+            }
+        ],
+        "instructions": []
+    }
+    create_res = client.post("/recipes/", json=recipe_data, headers=headers)
+    recipe_id = create_res.json()["core"]["id"]
+
+    response = client.get(f"/recipes/{recipe_id}?scale=3", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["components"][0]["ingredients"][0]["quantity"] == 9.0
+    assert data["components"][1]["ingredients"][0]["quantity"] == 6.0
+    assert data["components"][1]["ingredients"][1]["quantity"] == 3.0
+
+
+def test_read_recipe_scale_preserves_other_fields(client: TestClient, db):
+    """Test that scaling preserves non-quantity fields."""
+    headers = get_auth_headers(client, db)
+
+    recipe_data = {
+        "core": {"name": "Preserved Fields Recipe", "difficulty": "Medium"},
+        "times": {"prep_time_minutes": 30, "cook_time_minutes": 45},
+        "nutrition": {"calories": 500},
+        "components": [
+            {
+                "name": "Main",
+                "ingredients": [
+                    {"ingredient_name": "Onion", "quantity": 1.0, "unit": "whole", "notes": "diced"},
+                ]
+            }
+        ],
+        "instructions": [{"step_number": 1, "text": "Dice the onion"}],
+        "suitable_for_diet": ["vegan"]
+    }
+    create_res = client.post("/recipes/", json=recipe_data, headers=headers)
+    recipe_id = create_res.json()["core"]["id"]
+
+    response = client.get(f"/recipes/{recipe_id}?scale=2", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+
+    # Quantity is scaled
+    assert data["components"][0]["ingredients"][0]["quantity"] == 2.0
+
+    # Other fields are preserved
+    assert data["components"][0]["ingredients"][0]["unit"] == "whole"
+    assert data["components"][0]["ingredients"][0]["notes"] == "diced"
+    assert data["components"][0]["ingredients"][0]["item"] == "Onion"
+    assert data["core"]["difficulty"] == "Medium"
+    assert data["times"]["prep_time_minutes"] == 30  # Not scaled
+    assert data["nutrition"]["calories"] == 500  # Not scaled
+    assert data["instructions"][0]["text"] == "Dice the onion"
+    assert "vegan" in data["suitable_for_diet"]

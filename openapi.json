@@ -667,7 +667,7 @@
           "Recipes"
         ],
         "summary": "Read Recipe",
-        "description": "Retrieve a single recipe by its ID.\n\nOptionally provide a `scale` parameter to multiply all ingredient quantities.\nFor example, scale=2 doubles all quantities, scale=0.5 halves them.",
+        "description": "Retrieve a single recipe by its ID.\n\nThe response includes a `unit_system` field indicating the predominant unit system\nused in the recipe's ingredients (metric or imperial).\n\nOptionally provide a `scale` parameter to multiply all ingredient quantities.\nFor example, scale=2 doubles all quantities, scale=0.5 halves them.\n\nOptionally provide a `units` parameter to convert ingredient quantities:\n- 'metric': Convert to metric units (ml, g, cm)\n- 'imperial': Convert to imperial units (cups, oz, inches)",
         "operationId": "read_recipe_recipes__recipe_id__get",
         "security": [
           {
@@ -703,6 +703,24 @@
               "title": "Scale"
             },
             "description": "Scale factor for ingredient quantities (must be > 0)"
+          },
+          {
+            "name": "units",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UnitSystem"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Convert ingredient units to 'metric' (ml, g, cm) or 'imperial' (cups, oz, inches)",
+              "title": "Units"
+            },
+            "description": "Convert ingredient units to 'metric' (ml, g, cm) or 'imperial' (cups, oz, inches)"
           }
         ],
         "responses": {
@@ -2520,6 +2538,16 @@
           },
           "audit": {
             "$ref": "#/components/schemas/RecipeAudit"
+          },
+          "unit_system": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UnitSystem"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -3111,6 +3139,15 @@
           "token_type"
         ],
         "title": "Token"
+      },
+      "UnitSystem": {
+        "type": "string",
+        "enum": [
+          "metric",
+          "imperial"
+        ],
+        "title": "UnitSystem",
+        "description": "Unit system for recipe ingredients."
       },
       "User": {
         "properties": {

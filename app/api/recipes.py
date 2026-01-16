@@ -14,6 +14,11 @@ from app import models
 from app.db.session import get_db
 from app.api.auth import get_current_active_user
 from app.filters import parse_filters
+from app.unit_conversion import (
+    UnitSystem,
+    convert_recipe_units,
+    detect_recipe_unit_system,
+)
 from fastapi import Request
 
 
@@ -83,29 +88,52 @@ def read_recipe(
             gt=0,
             description="Scale factor for ingredient quantities (must be > 0)"
         ),
+        units: Optional[UnitSystem] = Query(
+            default=None,
+            description="Convert ingredient units to 'metric' (ml, g, cm) or 'imperial' (cups, oz, inches)"
+        ),
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_active_user)
 ):
     """
     Retrieve a single recipe by its ID.
 
+    The response includes a `unit_system` field indicating the predominant unit system
+    used in the recipe's ingredients (metric or imperial).
+
     Optionally provide a `scale` parameter to multiply all ingredient quantities.
     For example, scale=2 doubles all quantities, scale=0.5 halves them.
+
+    Optionally provide a `units` parameter to convert ingredient quantities:
+    - 'metric': Convert to metric units (ml, g, cm)
+    - 'imperial': Convert to imperial units (cups, oz, inches)
     """
-    logger.debug(f"Fetching recipe with ID: {recipe_id}, scale: {scale}")
+    logger.debug(f"Fetching recipe with ID: {recipe_id}, scale: {scale}, units: {units}")
     db_recipe = crud.get_recipe(db, recipe_id=recipe_id)
     if db_recipe is None:
         logger.warning(f"Recipe with ID {recipe_id} not found.")
         raise HTTPException(status_code=404, detail="Recipe not found")
     logger.debug(f"Recipe with ID {recipe_id} found: {db_recipe}")
 
-    # If no scaling requested, return as-is (Pydantic handles ORM conversion)
-    if scale is None or scale == 1.0:
-        return db_recipe
-
-    # Let Pydantic do the ORM transformation, then scale quantities
+    # Always convert to dict to add unit_system field
     response = schemas.Recipe.model_validate(db_recipe).model_dump(mode="json")
-    return _apply_scale_factor(response, scale)
+
+    # Apply scaling (if requested)
+    if scale is not None and scale != 1.0:
+        response = _apply_scale_factor(response, scale)
+
+    # Apply unit conversion (if requested) and set unit_system
+    if units is not None:
+        response = convert_recipe_units(response, units)
+        response["unit_system"] = units.value
+    else:
+        # Derive unit system from original ingredients
+        all_ingredients = []
+        for component in response.get("components", []):
+            all_ingredients.extend(component.get("ingredients", []))
+        response["unit_system"] = detect_recipe_unit_system(all_ingredients).value
+
+    return response
 
 
 def _apply_scale_factor(recipe_dict: dict, scale: float) -> dict:

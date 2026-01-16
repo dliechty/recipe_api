@@ -7,6 +7,7 @@ from decimal import Decimal
 from uuid import UUID
 from datetime import datetime
 from app.models import DifficultyLevel, DietType, MealClassification, MealStatus, MealTemplateSlotStrategy
+from app.unit_conversion import UnitSystem
 
 # --- Search Criteria Validation ---
 
@@ -255,6 +256,7 @@ class Recipe(BaseModel):
     variant_recipe_ids: List[UUID]
     parent_recipe_id: Optional[UUID] = None
     audit: RecipeAudit
+    unit_system: Optional[UnitSystem] = None
 
     @model_validator(mode='before')
     @classmethod

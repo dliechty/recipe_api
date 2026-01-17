@@ -1,21 +1,15 @@
-import csv
-import io
-import os
-import subprocess
 import sys
-from io import StringIO
-from typing import Dict, List, Optional, Tuple
+import os
 import re
-import uuid
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
-from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
-# Add the current directory to sys.path to make imports work
+# Add the project root to sys.path
 sys.path.append(os.getcwd())
 
-from app.db.session import SessionLocal, engine
+from app.db.session import SessionLocal
 from app.models import (
     Recipe,
     RecipeComponent,
@@ -26,51 +20,7 @@ from app.models import (
     DifficultyLevel,
     Comment,
 )
-
-# Database path
-DB_PATH = "migrate_data/Recipes.accdb"
-
-def run_mdb_export(table_name: str) -> pd.DataFrame:
-    """Exports a table from the Access database to a Pandas DataFrame."""
-    print(f"Exporting {table_name}...")
-    try:
-        # Run mdb-export
-        result = subprocess.run(
-            ["mdb-export", DB_PATH, table_name],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        # Parse CSV output into DataFrame
-        return pd.read_csv(StringIO(result.stdout))
-    except subprocess.CalledProcessError as e:
-        print(f"Error exporting {table_name}: {e}")
-        print(e.stderr)
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error processing {table_name}: {e}")
-        sys.exit(1)
-
-def get_or_create_user(session: Session, email: str = "admin@example.com") -> User:
-    """Gets an existing user or returns the first admin user."""
-    user = session.query(User).filter(User.email == email).first()
-    if user:
-        return user
-    
-    # Fallback to any admin
-    user = session.query(User).filter(User.is_admin == True).first()
-    if user:
-        print(f"User {email} not found. Using admin: {user.email}")
-        return user
-        
-    print("No users found. Please create a user first.")
-    sys.exit(1)
-
-def clean_text(text):
-    if pd.isna(text):
-        return None
-    s = str(text).strip()
-    return s if s else None
+from migration_scripts.utils import run_mdb_export, get_or_create_user, clean_text, DB_PATH
 
 def map_difficulty(complexity_id: int, complexity_map: Dict[int, str]) -> Optional[DifficultyLevel]:
     desc = complexity_map.get(complexity_id)
@@ -179,7 +129,7 @@ def fix_ingredient_precision(qty_val: float) -> float:
     return qty_val
 
 
-def migrate():
+def migrate_recipes():
     if not os.path.exists(DB_PATH):
         print(f"Database file not found at {DB_PATH}")
         sys.exit(1)
@@ -400,4 +350,4 @@ def migrate():
         session.close()
 
 if __name__ == "__main__":
-    migrate()
+    migrate_recipes()

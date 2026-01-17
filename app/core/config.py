@@ -79,6 +79,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./db/recipes.db"
 
+    # Environment
+    ENVIRONMENT: str = "production"
+
     # CORS
     # In production, you would handle this more robustly, possibly parsing a comma-separated string
     CORS_ORIGINS: List[str] = [

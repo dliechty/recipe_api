@@ -1,4 +1,4 @@
-from migrate_access import should_skip_recipe, normalize_ingredient, fix_ingredient_precision
+from migration_scripts.migrate_access_recipes import should_skip_recipe, normalize_ingredient, fix_ingredient_precision
 
 def test_normalize_ingredient():
     # Target case

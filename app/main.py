@@ -85,7 +85,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Control referrer information
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         # Content Security Policy - restrict resource loading
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        if settings.ENVIRONMENT in ["development", "testing"]:
+            # Relaxed to allow FastAPI Swagger UI assets
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "img-src 'self' data: https://fastapi.tiangolo.com; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net"
+            )
+        else:
+            response.headers["Content-Security-Policy"] = "default-src 'self'"
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)

@@ -1,6 +1,7 @@
 
 from fastapi.testclient import TestClient
 from app.main import app
+from app.core.config import settings
 
 def test_read_root(client: TestClient):
     response = client.get("/")
@@ -31,4 +32,15 @@ def test_security_headers(client: TestClient):
     assert response.headers.get("X-Content-Type-Options") == "nosniff"
     assert response.headers.get("X-XSS-Protection") == "1; mode=block"
     assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
-    assert response.headers.get("Content-Security-Policy") == "default-src 'self'"
+    
+    if settings.ENVIRONMENT in ["development", "testing"]:
+        expected_csp = (
+            "default-src 'self'; "
+            "img-src 'self' data: https://fastapi.tiangolo.com; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net"
+        )
+    else:
+        expected_csp = "default-src 'self'"
+        
+    assert response.headers.get("Content-Security-Policy") == expected_csp

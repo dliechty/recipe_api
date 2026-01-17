@@ -373,3 +373,174 @@ def test_update_meal_items(client: TestClient, db: Session, normal_user_token_he
     assert res.json()["name"] == "Renamed Meal"
     assert len(res.json()["items"]) == 1
     assert res.json()["items"][0]["recipe_id"] == str(r1.id)
+
+
+def test_duplicate_template_slots_rejected(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test that creating a template with identical slots to an existing template is rejected."""
+    recipe = create_recipe(db, normal_user.id, "Duplicate Test Recipe")
+
+    template_data = {
+        "name": "Original Template",
+        "slots": [
+            {
+                "strategy": "Direct",
+                "recipe_id": str(recipe.id)
+            }
+        ]
+    }
+
+    # Create first template
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert res.status_code == 201
+
+    # Try to create duplicate with different name
+    template_data["name"] = "Duplicate Template"
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert res.status_code == 409
+    assert "Original Template" in res.json()["detail"]
+    assert "Meal User" in res.json()["detail"]  # User's first and last name
+
+
+def test_duplicate_template_slots_order_independent(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test that slot order doesn't matter when detecting duplicates."""
+    r1 = create_recipe(db, normal_user.id, "Recipe A")
+    r2 = create_recipe(db, normal_user.id, "Recipe B")
+
+    # Create template with slots in one order
+    template_data = {
+        "name": "Order Test Original",
+        "slots": [
+            {"strategy": "Direct", "recipe_id": str(r1.id)},
+            {"strategy": "Direct", "recipe_id": str(r2.id)}
+        ]
+    }
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert res.status_code == 201
+
+    # Try to create with same slots in different order
+    template_data = {
+        "name": "Order Test Duplicate",
+        "slots": [
+            {"strategy": "Direct", "recipe_id": str(r2.id)},
+            {"strategy": "Direct", "recipe_id": str(r1.id)}
+        ]
+    }
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert res.status_code == 409
+    assert "Order Test Original" in res.json()["detail"]
+
+
+def test_duplicate_template_list_strategy(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test duplicate detection works for LIST strategy slots."""
+    r1 = create_recipe(db, normal_user.id, "List Recipe A")
+    r2 = create_recipe(db, normal_user.id, "List Recipe B")
+
+    template_data = {
+        "name": "List Template Original",
+        "slots": [
+            {"strategy": "List", "recipe_ids": [str(r1.id), str(r2.id)]}
+        ]
+    }
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert res.status_code == 201
+
+    # Same list but different order of recipe_ids should still be duplicate
+    template_data = {
+        "name": "List Template Duplicate",
+        "slots": [
+            {"strategy": "List", "recipe_ids": [str(r2.id), str(r1.id)]}
+        ]
+    }
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert res.status_code == 409
+
+
+def test_duplicate_template_search_strategy(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test duplicate detection works for SEARCH strategy slots."""
+    template_data = {
+        "name": "Search Template Original",
+        "slots": [
+            {
+                "strategy": "Search",
+                "search_criteria": [
+                    {"field": "category", "operator": "eq", "value": "Dinner"},
+                    {"field": "difficulty", "operator": "eq", "value": "Easy"}
+                ]
+            }
+        ]
+    }
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert res.status_code == 201
+
+    # Same criteria in different order
+    template_data = {
+        "name": "Search Template Duplicate",
+        "slots": [
+            {
+                "strategy": "Search",
+                "search_criteria": [
+                    {"field": "difficulty", "operator": "eq", "value": "Easy"},
+                    {"field": "category", "operator": "eq", "value": "Dinner"}
+                ]
+            }
+        ]
+    }
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert res.status_code == 409
+
+
+def test_different_templates_allowed(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test that templates with different slots can be created."""
+    r1 = create_recipe(db, normal_user.id, "Different Test Recipe 1")
+    r2 = create_recipe(db, normal_user.id, "Different Test Recipe 2")
+
+    template_data1 = {
+        "name": "Different Template 1",
+        "slots": [{"strategy": "Direct", "recipe_id": str(r1.id)}]
+    }
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data1)
+    assert res.status_code == 201
+
+    template_data2 = {
+        "name": "Different Template 2",
+        "slots": [{"strategy": "Direct", "recipe_id": str(r2.id)}]
+    }
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data2)
+    assert res.status_code == 201
+
+
+def test_duplicate_template_cross_user(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test that duplicate detection works across different users."""
+    # Create recipe for first user
+    recipe = create_recipe(db, normal_user.id, "Cross User Recipe")
+
+    # Create template with first user
+    template_data = {
+        "name": "First User Template",
+        "slots": [{"strategy": "Direct", "recipe_id": str(recipe.id)}]
+    }
+    res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert res.status_code == 201
+
+    # Create second user
+    second_user_data = schemas.UserCreate(
+        email="seconduser@example.com",
+        password="testpassword",
+        first_name="Second",
+        last_name="User"
+    )
+    second_user = crud.create_user(db, second_user_data)
+
+    # Get token for second user
+    login_res = client.post(
+        "/auth/token",
+        data={"username": "seconduser@example.com", "password": "testpassword"}
+    )
+    second_user_headers = {"Authorization": f"Bearer {login_res.json()['access_token']}"}
+
+    # Try to create same template with second user - should fail
+    template_data["name"] = "Second User Template"
+    res = client.post("/meals/templates", headers=second_user_headers, json=template_data)
+    assert res.status_code == 409
+    assert "First User Template" in res.json()["detail"]
+    assert "Meal User" in res.json()["detail"]  # First user's name

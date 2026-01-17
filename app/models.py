@@ -235,6 +235,7 @@ class MealTemplate(Base):
     user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     classification = Column(Enum(MealClassification), nullable=True)
+    slots_checksum = Column(String(64), nullable=True, index=True)
 
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

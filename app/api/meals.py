@@ -1,15 +1,84 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
 from uuid import UUID
 import random
+import json
+import hashlib
 from app.db.session import get_db
 from app import models, schemas
 from app.api import auth
 from app import filters
 
 router = APIRouter()
+
+
+def compute_slot_signature(slot: Any) -> str:
+    """
+    Compute a canonical string representation of a slot for hashing.
+    Works with both ORM MealTemplateSlot objects and MealTemplateSlotCreate schemas.
+    """
+    strategy = slot.strategy
+
+    if strategy == models.MealTemplateSlotStrategy.DIRECT:
+        return f"direct:{slot.recipe_id}"
+
+    elif strategy == models.MealTemplateSlotStrategy.LIST:
+        # Check if this is an ORM object (has recipes relationship) or Pydantic (has recipe_ids)
+        if hasattr(slot, 'recipes') and slot.recipes is not None:
+            # ORM object - get recipe IDs from the relationship
+            recipe_ids = sorted(str(r.id) for r in slot.recipes)
+        else:
+            # Pydantic schema - use recipe_ids directly
+            recipe_ids = sorted(str(rid) for rid in slot.recipe_ids) if slot.recipe_ids else []
+        return f"list:{','.join(recipe_ids)}"
+
+    elif strategy == models.MealTemplateSlotStrategy.SEARCH:
+        criteria = slot.search_criteria or []
+        # Handle both ORM (list of dicts) and Pydantic (list of SearchCriterion)
+        sorted_criteria = sorted(
+            f"{c.get('field', '')}:{c.get('operator', '')}:{c.get('value', '')}"
+            if isinstance(c, dict)
+            else f"{c.field}:{c.operator}:{c.value}"
+            for c in criteria
+        )
+        return f"search:{';'.join(sorted_criteria)}"
+
+    return "unknown"
+
+
+def compute_slots_checksum(slots: List[Any]) -> str:
+    """
+    Compute a SHA256 checksum for a list of slots.
+    The checksum is order-independent (slots are sorted before hashing).
+    """
+    # Get canonical string for each slot and sort them for order independence
+    slot_signatures = sorted(compute_slot_signature(slot) for slot in slots)
+    # Join all signatures and compute SHA256
+    combined = "|".join(slot_signatures)
+    return hashlib.sha256(combined.encode()).hexdigest()
+
+
+def find_duplicate_template(
+    db: Session,
+    slots: List[Any],
+    exclude_template_id: Optional[UUID] = None
+) -> Optional[models.MealTemplate]:
+    """
+    Find an existing template with identical slot configuration using checksum lookup.
+    Returns the duplicate template if found, None otherwise.
+    """
+    checksum = compute_slots_checksum(slots)
+
+    # Query by checksum (uses index for efficient lookup)
+    query = db.query(models.MealTemplate).filter(
+        models.MealTemplate.slots_checksum == checksum
+    )
+    if exclude_template_id:
+        query = query.filter(models.MealTemplate.id != exclude_template_id)
+
+    return query.first()
 
 # --- Meal Templates ---
 
@@ -19,11 +88,28 @@ def create_meal_template(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
-    # Create Template
+    # Compute checksum for duplicate detection
+    slots_checksum = compute_slots_checksum(template_in.slots)
+
+    # Check for duplicate slot configuration using indexed checksum lookup
+    duplicate = find_duplicate_template(db, template_in.slots)
+    if duplicate:
+        owner_name = duplicate.user.email
+        if duplicate.user.first_name:
+            owner_name = duplicate.user.first_name
+            if duplicate.user.last_name:
+                owner_name = f"{duplicate.user.first_name} {duplicate.user.last_name}"
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A template with identical slots already exists: '{duplicate.name}' (created by {owner_name})"
+        )
+
+    # Create Template with checksum
     db_template = models.MealTemplate(
         user_id=current_user.id,
         name=template_in.name,
-        classification=template_in.classification
+        classification=template_in.classification,
+        slots_checksum=slots_checksum
     )
     db.add(db_template)
     db.commit()

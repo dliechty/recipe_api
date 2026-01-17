@@ -196,7 +196,7 @@ def test_migrate_meals(db, mock_session_local):
     search_slot = next(s for s in template.slots if s.strategy == MealTemplateSlotStrategy.SEARCH)
     
     assert direct_slot.recipe.name == "Test Recipe"
-    assert search_slot.search_criteria == {"category[eq]": "Vegetable"}
+    assert search_slot.search_criteria == [{"field": "category", "operator": "eq", "value": "Vegetable"}]
     
     meal = db.query(Meal).first()
     assert meal is not None

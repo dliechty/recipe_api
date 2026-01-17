@@ -41,12 +41,12 @@ def map_status(status_id: int) -> MealStatus:
     return MealStatus.PROPOSED
 
 WILDCARD_MAP = {
-    "<<random veggie>>": {"category[eq]": "Vegetable"},
-    "<<random salad>>": {"category[eq]": "Salad"},
-    "<<random bread>>": {"category[eq]": "Bread"},
-    "<<random carb>>": {"category[eq]": "Carb"},
-    "<<random dessert>>": {"category[eq]": "Dessert"},
-    "<<random appetizer>>": {"category[eq]": "Appetizer"},
+    "<<random veggie>>": [{"field": "category", "operator": "eq", "value": "Vegetable"}],
+    "<<random salad>>": [{"field": "category", "operator": "eq", "value": "Salad"}],
+    "<<random bread>>": [{"field": "category", "operator": "eq", "value": "Bread"}],
+    "<<random carb>>": [{"field": "category", "operator": "eq", "value": "Carb"}],
+    "<<random dessert>>": [{"field": "category", "operator": "eq", "value": "Dessert"}],
+    "<<random appetizer>>": [{"field": "category", "operator": "eq", "value": "Appetizer"}],
 }
 
 def migrate_meals():

@@ -1176,6 +1176,15 @@
               "default": 100,
               "title": "Limit"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Sort"
+            }
           }
         ],
         "responses": {

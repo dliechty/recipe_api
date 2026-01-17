@@ -145,10 +145,13 @@ def create_meal_template(
 def get_meal_templates(
     skip: int = 0,
     limit: int = 100,
+    sort: str = Query(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
-    templates = db.query(models.MealTemplate).filter(models.MealTemplate.user_id == current_user.id).offset(skip).limit(limit).all()
+    query = db.query(models.MealTemplate).filter(models.MealTemplate.user_id == current_user.id)
+    query = filters.apply_sorting(query, sort, filters.MEAL_TEMPLATE_SORT_FIELDS, default_sort_col=models.MealTemplate.name)
+    templates = query.offset(skip).limit(limit).all()
     return templates
 
 @router.get("/templates/{template_id}", response_model=schemas.MealTemplate)

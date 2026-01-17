@@ -61,6 +61,13 @@ MEAL_SORT_FIELDS = {
     'name': models.Meal.name,
 }
 
+MEAL_TEMPLATE_SORT_FIELDS = {
+    'created_at': models.MealTemplate.created_at,
+    'updated_at': models.MealTemplate.updated_at,
+    'name': models.MealTemplate.name,
+    'classification': models.MealTemplate.classification,
+}
+
 def parse_filters(query_params: dict) -> List[Filter]:
     filters = []
     # Pattern to match field[operator]=value

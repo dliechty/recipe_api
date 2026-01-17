@@ -1,5 +1,5 @@
 from typing import List, Optional, Tuple, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
 from uuid import UUID
@@ -143,6 +143,7 @@ def create_meal_template(
 
 @router.get("/templates", response_model=List[schemas.MealTemplate])
 def get_meal_templates(
+    response: Response,
     skip: int = 0,
     limit: int = 100,
     sort: str = Query(None),
@@ -150,6 +151,11 @@ def get_meal_templates(
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
     query = db.query(models.MealTemplate).filter(models.MealTemplate.user_id == current_user.id)
+    
+    # Calculate total count before pagination
+    total_count = query.count()
+    response.headers["X-Total-Count"] = str(total_count)
+    
     query = filters.apply_sorting(query, sort, filters.MEAL_TEMPLATE_SORT_FIELDS, default_sort_col=models.MealTemplate.name)
     templates = query.offset(skip).limit(limit).all()
     return templates
@@ -310,6 +316,7 @@ def create_meal(
 
 @router.get("/", response_model=List[schemas.Meal])
 def get_meals(
+    response: Response,
     skip: int = 0,
     limit: int = 100,
     sort: str = Query(None),
@@ -317,6 +324,11 @@ def get_meals(
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
     query = db.query(models.Meal).filter(models.Meal.user_id == current_user.id)
+    
+    # Calculate total count before pagination
+    total_count = query.count()
+    response.headers["X-Total-Count"] = str(total_count)
+    
     query = filters.apply_sorting(query, sort, filters.MEAL_SORT_FIELDS, default_sort_col=models.Meal.date)
     meals = query.offset(skip).limit(limit).all()
     return meals

@@ -52,6 +52,15 @@ SORT_FIELDS = {
     'protein': models.Recipe.protein,
 }
 
+MEAL_SORT_FIELDS = {
+    'date': models.Meal.date,
+    'classification': models.Meal.classification,
+    'status': models.Meal.status,
+    'created_at': models.Meal.created_at,
+    'updated_at': models.Meal.updated_at,
+    'name': models.Meal.name,
+}
+
 def parse_filters(query_params: dict) -> List[Filter]:
     filters = []
     # Pattern to match field[operator]=value
@@ -192,9 +201,14 @@ def apply_filters(query: Query, filters: List[Filter]) -> Query:
     return query
 
 
-def apply_sorting(query: Query, sort_param: str) -> Query:
+def apply_sorting(query: Query, sort_param: str, sort_fields_map: dict = None, default_sort_col=None) -> Query:
+    if sort_fields_map is None:
+        sort_fields_map = SORT_FIELDS
+
     if not sort_param:
-        return query.order_by(models.Recipe.id) # Default consistent sort?
+        if default_sort_col is not None:
+            return query.order_by(default_sort_col)
+        return query.order_by(models.Recipe.id) # Default consistent sort for recipes
 
     sort_fields = sort_param.split(',')
     for field in sort_fields:
@@ -204,7 +218,7 @@ def apply_sorting(query: Query, sort_param: str) -> Query:
             direction = desc
             field = field[1:]
         
-        model_attr = SORT_FIELDS.get(field)
+        model_attr = sort_fields_map.get(field)
         if model_attr is not None:
             query = query.order_by(direction(model_attr))
     

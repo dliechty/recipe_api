@@ -309,10 +309,13 @@ def create_meal(
 def get_meals(
     skip: int = 0,
     limit: int = 100,
+    sort: str = Query(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
-    meals = db.query(models.Meal).filter(models.Meal.user_id == current_user.id).offset(skip).limit(limit).all()
+    query = db.query(models.Meal).filter(models.Meal.user_id == current_user.id)
+    query = filters.apply_sorting(query, sort, filters.MEAL_SORT_FIELDS, default_sort_col=models.Meal.date)
+    meals = query.offset(skip).limit(limit).all()
     return meals
 
 @router.get("/{meal_id}", response_model=schemas.Meal)

@@ -25,7 +25,36 @@ alembic downgrade -1                              # Revert last migration
 # Utilities
 python3 -m app.initial_data            # Create initial superuser
 python3 generate_openapi.py            # Generate OpenAPI spec
+
+# Data Migration (from MS Access)
+python3 migration_scripts/master_migration.py migrate-all      # Migrate recipes then meals
+python3 migration_scripts/master_migration.py migrate-recipes  # Migrate only recipes
+python3 migration_scripts/master_migration.py migrate-meals    # Migrate only meals
+python3 migration_scripts/master_migration.py purge-all        # Purge meals then recipes
+python3 migration_scripts/master_migration.py purge-recipes    # Purge only recipes
+python3 migration_scripts/master_migration.py purge-meals      # Purge only meals
 ```
+
+## Migration Scripts
+
+The `migration_scripts/` directory contains tools for migrating data from a legacy Microsoft Access database.
+
+**Prerequisites:**
+- Place the Access database at `migrate_data/Recipes.accdb`
+- Install `mdbtools` (`apt install mdbtools` on Ubuntu/Debian)
+- Ensure a user exists in the database (recipes/meals will be assigned to first admin user)
+
+**Scripts:**
+- `master_migration.py` - CLI entry point for all migration/purge operations
+- `migrate_access_recipes.py` - Imports recipes, components, ingredients, instructions, and comments
+- `migrate_access_meals.py` - Imports meal templates, slots, meals, and meal items
+- `purge_recipes.py` - Deletes all recipe data (respects FK order)
+- `purge_meals.py` - Deletes all meal data (respects FK order)
+- `utils.py` - Shared utilities (`mdb-export` wrapper, user lookup, text cleaning)
+
+**Migration Order:**
+- Migrate: Recipes first (meals depend on recipe IDs)
+- Purge: Meals first (meals depend on recipes)
 
 ## Architecture
 

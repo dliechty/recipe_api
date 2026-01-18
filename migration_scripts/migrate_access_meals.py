@@ -147,12 +147,17 @@ def migrate_meals():
                 session.add(slot)
                 
         # 4. Migrate Meals (Menus)
-        print(f"Migrating {len(df_menus)} Meals...")
-        
+        # Only migrate meals that have at least one recipe link
+        menu_ids_with_recipes = set(df_menu_recipes['Menu_ID'].unique())
+        df_menus_with_recipes = df_menus[df_menus['Menu_ID'].isin(menu_ids_with_recipes)]
+
+        skipped_meals = len(df_menus) - len(df_menus_with_recipes)
+        print(f"Migrating {len(df_menus_with_recipes)} Meals (skipping {skipped_meals} with no recipes)...")
+
         # Map Menu ID -> New UUID
         meal_id_map = {}
-        
-        for _, row in df_menus.iterrows():
+
+        for _, row in df_menus_with_recipes.iterrows():
             old_id = row['Menu_ID']
             date_str = row['Menu_Date']
             

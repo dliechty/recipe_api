@@ -546,3 +546,57 @@ def test_duplicate_template_cross_user(client: TestClient, db: Session, normal_u
     assert res.status_code == 409
     assert "First User Template" in res.json()["detail"]
     assert "Meal User" in res.json()["detail"]  # First user's name
+
+
+def test_generate_meal_with_scheduled_date(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test generating a meal with a scheduled date sets status to Scheduled."""
+    recipe = create_recipe(db, normal_user.id, "Scheduled Recipe")
+
+    # Create template
+    template_data = {
+        "name": "Scheduled Gen Template",
+        "slots": [{"strategy": "Direct", "recipe_id": str(recipe.id)}]
+    }
+    create_res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert create_res.status_code == 201
+    template_id = create_res.json()["id"]
+
+    # Generate meal with scheduled_date
+    scheduled_date = "2025-01-20T18:00:00"
+    gen_res = client.post(
+        f"/meals/generate?template_id={template_id}",
+        headers=normal_user_token_headers,
+        json={"scheduled_date": scheduled_date}
+    )
+
+    assert gen_res.status_code == 201
+    data = gen_res.json()
+    assert data["status"] == "Scheduled"
+    assert data["date"] is not None
+    assert "2025-01-20" in data["date"]
+    assert data["template_id"] == template_id
+
+
+def test_generate_meal_without_scheduled_date(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test generating a meal without scheduled_date keeps status as Proposed."""
+    recipe = create_recipe(db, normal_user.id, "Unscheduled Recipe")
+
+    # Create template
+    template_data = {
+        "name": "Unscheduled Gen Template",
+        "slots": [{"strategy": "Direct", "recipe_id": str(recipe.id)}]
+    }
+    create_res = client.post("/meals/templates", headers=normal_user_token_headers, json=template_data)
+    assert create_res.status_code == 201
+    template_id = create_res.json()["id"]
+
+    # Generate meal without body
+    gen_res = client.post(
+        f"/meals/generate?template_id={template_id}",
+        headers=normal_user_token_headers
+    )
+
+    assert gen_res.status_code == 201
+    data = gen_res.json()
+    assert data["status"] == "Proposed"
+    assert data["date"] is None

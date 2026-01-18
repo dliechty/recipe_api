@@ -1382,6 +1382,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/MealScheduleRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Schedule Request"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Successful Response",
@@ -2163,6 +2180,25 @@
           "recipe_id"
         ],
         "title": "MealItemBase"
+      },
+      "MealScheduleRequest": {
+        "properties": {
+          "scheduled_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled Date"
+          }
+        },
+        "type": "object",
+        "title": "MealScheduleRequest",
+        "description": "Optional scheduling parameters for meal generation or duplication."
       },
       "MealStatus": {
         "type": "string",

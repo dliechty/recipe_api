@@ -446,3 +446,10 @@ class Meal(MealBase):
     items: List[MealItem]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# --- Meal Generation/Duplication Schemas ---
+
+class MealScheduleRequest(BaseModel):
+    """Optional scheduling parameters for meal generation or duplication."""
+    scheduled_date: Optional[datetime] = None

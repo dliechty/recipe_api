@@ -251,25 +251,34 @@ def resolve_recipe_for_slot(db: Session, slot: models.MealTemplateSlot, user_id:
 @router.post("/generate", response_model=schemas.Meal, status_code=status.HTTP_201_CREATED)
 def generate_meal(
     template_id: UUID,
+    schedule_request: Optional[schemas.MealScheduleRequest] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
     template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id, models.MealTemplate.user_id == current_user.id).first()
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
-        
+
+    # Determine status and date based on schedule request
+    meal_status = models.MealStatus.PROPOSED
+    meal_date = None
+    if schedule_request and schedule_request.scheduled_date:
+        meal_status = models.MealStatus.SCHEDULED
+        meal_date = schedule_request.scheduled_date
+
     # Create Meal
     db_meal = models.Meal(
         user_id=current_user.id,
         template_id=template.id,
         name=f"Generated {template.name}",
-        status=models.MealStatus.PROPOSED,
-        classification=template.classification
+        status=meal_status,
+        classification=template.classification,
+        date=meal_date
     )
     db.add(db_meal)
     db.commit()
     db.refresh(db_meal)
-    
+
     # Process Slots
     for slot in template.slots:
         recipe = resolve_recipe_for_slot(db, slot, current_user.id)
@@ -280,7 +289,7 @@ def generate_meal(
                 recipe_id=recipe.id
             )
             db.add(meal_item)
-            
+
     db.commit()
     db.refresh(db_meal)
     return db_meal
@@ -394,7 +403,7 @@ def delete_meal(
     meal = db.query(models.Meal).filter(models.Meal.id == meal_id, models.Meal.user_id == current_user.id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
-    
+
     db.delete(meal)
     db.commit()
     return None

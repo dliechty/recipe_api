@@ -1981,7 +1981,7 @@
           },
           "status": {
             "$ref": "#/components/schemas/MealStatus",
-            "default": "Proposed"
+            "default": "Draft"
           },
           "classification": {
             "anyOf": [
@@ -2081,7 +2081,7 @@
           },
           "status": {
             "$ref": "#/components/schemas/MealStatus",
-            "default": "Proposed"
+            "default": "Draft"
           },
           "classification": {
             "anyOf": [
@@ -2203,7 +2203,7 @@
       "MealStatus": {
         "type": "string",
         "enum": [
-          "Proposed",
+          "Draft",
           "Scheduled",
           "Cooked"
         ],

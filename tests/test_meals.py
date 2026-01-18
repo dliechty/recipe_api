@@ -147,7 +147,7 @@ def test_generate_meal(client: TestClient, db: Session, normal_user_token_header
     
     assert gen_res.status_code == 201
     data = gen_res.json()
-    assert data["status"] == "Proposed"
+    assert data["status"] == "Draft"
     assert "Generated" in data["name"]
     assert data["template_id"] == template_id  # Verify link back to originating template
 
@@ -578,7 +578,7 @@ def test_generate_meal_with_scheduled_date(client: TestClient, db: Session, norm
 
 
 def test_generate_meal_without_scheduled_date(client: TestClient, db: Session, normal_user_token_headers, normal_user):
-    """Test generating a meal without scheduled_date keeps status as Proposed."""
+    """Test generating a meal without scheduled_date keeps status as Draft."""
     recipe = create_recipe(db, normal_user.id, "Unscheduled Recipe")
 
     # Create template
@@ -598,5 +598,5 @@ def test_generate_meal_without_scheduled_date(client: TestClient, db: Session, n
 
     assert gen_res.status_code == 201
     data = gen_res.json()
-    assert data["status"] == "Proposed"
+    assert data["status"] == "Draft"
     assert data["date"] is None

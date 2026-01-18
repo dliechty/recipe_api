@@ -419,7 +419,7 @@ class MealItem(MealItemBase):
 
 class MealBase(BaseModel):
     name: Optional[str] = None
-    status: MealStatus = MealStatus.PROPOSED
+    status: MealStatus = MealStatus.DRAFT
     classification: Optional[MealClassification] = None
     date: Optional[datetime] = None
 

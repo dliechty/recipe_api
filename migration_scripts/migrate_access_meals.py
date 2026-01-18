@@ -38,7 +38,7 @@ def map_status(status_id: int) -> MealStatus:
     # 1: Proposed, 2: Implemented
     if status_id == 2:
         return MealStatus.SCHEDULED
-    return MealStatus.PROPOSED
+    return MealStatus.DRAFT
 
 WILDCARD_MAP = {
     "<<random veggie>>": [{"field": "category", "operator": "eq", "value": "Vegetable"}],

@@ -260,7 +260,7 @@ def generate_meal(
         raise HTTPException(status_code=404, detail="Meal template not found")
 
     # Determine status and date based on schedule request
-    meal_status = models.MealStatus.PROPOSED
+    meal_status = models.MealStatus.DRAFT
     meal_date = None
     if schedule_request and schedule_request.scheduled_date:
         meal_status = models.MealStatus.SCHEDULED

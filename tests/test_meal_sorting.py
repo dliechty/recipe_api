@@ -41,7 +41,7 @@ def test_meals_sorting(client: TestClient, db):
     meals_data = [
         {
             "name": "Meal A",
-            "status": "Proposed",
+            "status": "Draft",
             "classification": "Dinner",
             "date": (base_date + timedelta(days=2)).isoformat(),
         },
@@ -92,7 +92,7 @@ def test_meals_sorting(client: TestClient, db):
     assert names == ["Meal B", "Meal A", "Meal C"], f"Expected B, A, C (Class Asc), got {names}"
 
     # 4. Sort by Status (Asc)
-    # Cooked (B), Proposed (A), Scheduled (C)
+    # Cooked (B), Draft (A), Scheduled (C)
     res = client.get("/meals/?sort=status", headers=headers)
     data = res.json()
     names = [m["name"] for m in data]

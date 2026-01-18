@@ -214,7 +214,7 @@ class MealClassification(str, enum.Enum):
 
 
 class MealStatus(str, enum.Enum):
-    PROPOSED = "Proposed"
+    DRAFT = "Draft"
     SCHEDULED = "Scheduled"
     COOKED = "Cooked"
 
@@ -295,7 +295,7 @@ class Meal(Base):
     template_id = Column(Uuid(as_uuid=True), ForeignKey("meal_templates.id"), nullable=True, index=True)
 
     name = Column(String, nullable=True)
-    status = Column(Enum(MealStatus), default=MealStatus.PROPOSED, nullable=False)
+    status = Column(Enum(MealStatus), default=MealStatus.DRAFT, nullable=False)
     classification = Column(Enum(MealClassification), nullable=True)
     date = Column(DateTime, nullable=True)
     

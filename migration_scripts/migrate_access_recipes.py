@@ -49,7 +49,7 @@ def parse_time_minutes(time_str: str) -> Optional[int]:
     p_min = r'(?:m|mn|min|mins|minute|minutes)'
     
     # Pattern: number followed optionally by space, then unit
-    pattern = re.compile(f'(\\d+(?:\\.\\d+)?)\s*({p_hour}|{p_min})')
+    pattern = re.compile(f'(\\d+(?:\\.\\d+)?)\\s*({p_hour}|{p_min})')
     
     matches = pattern.findall(s)
     

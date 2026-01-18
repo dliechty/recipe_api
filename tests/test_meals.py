@@ -149,7 +149,8 @@ def test_generate_meal(client: TestClient, db: Session, normal_user_token_header
     data = gen_res.json()
     assert data["status"] == "Proposed"
     assert "Generated" in data["name"]
-    
+    assert data["template_id"] == template_id  # Verify link back to originating template
+
     # Should have 3 items
     assert len(data["items"]) == 3
     
@@ -180,7 +181,8 @@ def test_meal_crud(client: TestClient, db: Session, normal_user_token_headers, n
     )
     assert res.status_code == 201
     meal_id = res.json()["id"]
-    
+    assert res.json()["template_id"] is None  # Manually created meals have no template
+
     # Get List
     res = client.get("/meals/", headers=normal_user_token_headers)
     assert res.status_code == 200

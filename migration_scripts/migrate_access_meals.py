@@ -34,12 +34,6 @@ def map_classification(type_id: int) -> Optional[MealClassification]:
     }
     return mapping.get(type_id)
 
-def map_status(status_id: int) -> MealStatus:
-    # 1: Proposed, 2: Implemented
-    if status_id == 2:
-        return MealStatus.SCHEDULED
-    return MealStatus.DRAFT
-
 WILDCARD_MAP = {
     "<<random veggie>>": [{"field": "category", "operator": "eq", "value": "Vegetable"}],
     "<<random salad>>": [{"field": "category", "operator": "eq", "value": "Salad"}],
@@ -169,7 +163,13 @@ def migrate_meals():
                 pass
             
             cls = map_classification(row.get('Meal_Type_ID'))
-            status = map_status(row.get('Menu_Status_ID'))
+            
+            if meal_date is None:
+                status = MealStatus.DRAFT
+            elif meal_date < datetime.now():
+                status = MealStatus.COOKED
+            else:
+                status = MealStatus.SCHEDULED
             
             # Name: e.g. "Dinner on 2023-04-24"
             name = f"{cls.value if cls else 'Meal'} on {meal_date.strftime('%Y-%m-%d') if meal_date else 'Unknown Date'}"

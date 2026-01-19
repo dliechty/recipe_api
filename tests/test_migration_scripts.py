@@ -201,6 +201,6 @@ def test_migrate_meals(db, mock_session_local):
     meal = db.query(Meal).first()
     assert meal is not None
     assert meal.classification == MealClassification.DINNER
-    assert meal.status == MealStatus.DRAFT
+    assert meal.status == MealStatus.COOKED
     assert len(meal.items) == 1
     assert meal.items[0].recipe.name == "Test Recipe"

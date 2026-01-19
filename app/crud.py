@@ -4,7 +4,8 @@
 import logging
 from sqlalchemy.orm import Session, joinedload, selectinload
 from datetime import datetime, timezone
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
+from pwdlib.hashers.bcrypt import BcryptHasher
 from uuid import UUID
 
 from app import schemas
@@ -13,7 +14,7 @@ from app import models
 from app.core.hashing import calculate_recipe_checksum
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+password_hash = PasswordHash((BcryptHasher(),))
 
 
 # Get a logger instance
@@ -48,11 +49,11 @@ def check_cycle(db: Session, child_id: UUID, parent_id: UUID):
 
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    return password_hash.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return password_hash.hash(password)
 
 
 # --- User CRUD Functions ---

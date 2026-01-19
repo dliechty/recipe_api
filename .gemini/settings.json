@@ -7,11 +7,13 @@
       "run_shell_command(uv run pytest)",
       "run_shell_command(uv run alembic revision)",
       "run_shell_command(uv run alembic upgrade head)",
+      "run_shell_command(uv add)",
       "run_shell_command(git commit)",
       "run_shell_command(git add)",
       "run_shell_command(git status)",
       "run_shell_command(git diff)",
       "run_shell_command(mkdir)",
+      "run_shell_command(grep)",
       "run_shell_command(touch)"
     ]
   }

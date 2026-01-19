@@ -3,22 +3,27 @@
 # 1. Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
+# Copy uv from the official image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 # 2. Set the working directory in the container
 WORKDIR /app
 
-# 3. Copy the requirements file into the container at /app
-COPY ./requirements.txt /app/requirements.txt
+# 3. Copy the lockfile and pyproject.toml
+COPY pyproject.toml uv.lock ./
 
-# 4. Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
+# 4. Install the project's dependencies
+RUN uv sync --frozen --no-install-project --no-dev
 
 # 5. Copy the rest of the application's code into the container at /app
 COPY . /app
 
-# 6. Expose port 8000 to allow communication to the Uvicorn server
+# 6. Install the project itself
+RUN uv sync --frozen --no-dev
+
+# 7. Expose port 8000 to allow communication to the Uvicorn server
 EXPOSE 8000
 
-# 7. Define the command to run the application
-# This command will be executed when the container starts.
-# It runs the Alembic upgrade to apply migrations and then starts the Uvicorn server.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# 8. Define the command to run the application
+# We use `uv run` to ensure the command runs within the virtual environment
+CMD ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000"]

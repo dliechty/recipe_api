@@ -67,7 +67,7 @@ To create the initial Superuser account:
 2. Run the initialization script:
 
 ```bash
-uv run app/initial_data.py
+uv run python -m app.initial_data
 ```
 
 This will ensure a superuser exists. You can then log in and manage other users or requests.

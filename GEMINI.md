@@ -28,7 +28,7 @@ uv run ruff check --fix .                                # Run linter and fix is
 uv run ruff format .                                     # Format code
 
 # Utilities
-uv run app/initial_data.py            # Create initial superuser
+uv run python -m app.initial_data            # Create initial superuser
 uv run generate_openapi.py            # Generate OpenAPI spec
 
 # Data Migration (from MS Access)

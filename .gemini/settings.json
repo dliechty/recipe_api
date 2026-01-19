@@ -6,6 +6,9 @@
       "run_shell_command(ruff)",
       "run_shell_command(pytest)",
       "run_shell_command(git commit)",
+      "run_shell_command(git add)",
+      "run_shell_command(git status)",
+      "run_shell_command(git diff)",
       "run_shell_command(alembic revision)",
       "run_shell_command(mkdir)",
       "run_shell_command(touch)"

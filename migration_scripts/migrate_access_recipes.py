@@ -71,7 +71,7 @@ def parse_time_minutes(time_str: str) -> Optional[int]:
     # Try parsing just as number if regex failed
     try:
         return int(float(s))
-    except:
+    except Exception:
         return None
 
 def should_skip_recipe(name: str) -> bool:
@@ -269,7 +269,7 @@ def migrate_recipes():
                 else:
                     try:
                         qty_val = float(raw_amt)
-                    except:
+                    except Exception:
                         # If amount is text like "1-2", default 1 and put in notes
                         qty_val = 1
                         qty_note = f"Amount: {raw_amt}"
@@ -284,8 +284,10 @@ def migrate_recipes():
                 prep_text = prep_map.get(prep_id)
                 
                 final_notes = []
-                if qty_note: final_notes.append(qty_note)
-                if prep_text: final_notes.append(prep_text)
+                if qty_note:
+                    final_notes.append(qty_note)
+                if prep_text:
+                    final_notes.append(prep_text)
                 
                 ri = RecipeIngredient(
                     component_id=component.id,

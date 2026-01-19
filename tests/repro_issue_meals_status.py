@@ -72,11 +72,16 @@ def test_migrate_meals_status_logic(db, mock_session_local):
     ])
 
     def mock_run_mdb_export(table_name):
-        if table_name == 'tblRecipes': return df_recipes_old
-        if table_name == 'tblMealTemplates': return df_templates
-        if table_name == 'tblMealTemplateRecipes': return df_template_recipes
-        if table_name == 'tblMenus': return df_menus
-        if table_name == 'tblMenuRecipes': return df_menu_recipes
+        if table_name == "tblRecipes":
+            return df_recipes_old
+        if table_name == "tblMealTemplates":
+            return df_templates
+        if table_name == "tblMealTemplateRecipes":
+            return df_template_recipes
+        if table_name == "tblMenus":
+            return df_menus
+        if table_name == "tblMenuRecipes":
+            return df_menu_recipes
         return pd.DataFrame()
 
     with patch('migration_scripts.migrate_access_meals.SessionLocal', side_effect=mock_session_local), \
@@ -87,7 +92,7 @@ def test_migrate_meals_status_logic(db, mock_session_local):
     
     # Verify statuses
     # 1. Past
-    meal_past = db.query(Meal).filter(Meal.name.like("%Unknown Date%") == False).filter(Meal.date < datetime.now()).first()
+    meal_past = db.query(Meal).filter(not Meal.name.like("%Unknown Date%")).filter(Meal.date < datetime.now()).first()
     # Or just iterate by ID order if we can rely on insertion order, but better filter by date or assume count
     
     meals = db.query(Meal).all()

@@ -1,4 +1,5 @@
-
+import time
+from datetime import datetime, timezone, timedelta
 from fastapi.testclient import TestClient
 from tests.test_recipes import get_auth_headers
 
@@ -67,8 +68,6 @@ def test_recipe_versioning_logic(client: TestClient, db):
     # Note: Pydantic might normalize format, so we check startswith or parse
     assert updated_recipe_v4["audit"]["updated_at"].startswith("2099-01-01")
 
-from datetime import datetime, timezone, timedelta
-
 def test_timestamp_behavior(client: TestClient, db):
     headers = get_auth_headers(client, db, email="time_tester@example.com")
 
@@ -102,7 +101,6 @@ def test_timestamp_behavior(client: TestClient, db):
     assert start_time - timedelta(minutes=1) < parsed_created < start_time + timedelta(minutes=1)
     
     # 2. Update Recipe (Implicit Update Time)
-    import time
     time.sleep(1.1) 
     
     update_data = recipe_data.copy()

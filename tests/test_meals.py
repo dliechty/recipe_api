@@ -529,7 +529,7 @@ def test_duplicate_template_cross_user(client: TestClient, db: Session, normal_u
         first_name="Second",
         last_name="User"
     )
-    second_user = crud.create_user(db, second_user_data)
+    crud.create_user(db, second_user_data)
 
     # Get token for second user
     login_res = client.post(

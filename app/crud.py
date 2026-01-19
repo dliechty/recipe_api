@@ -10,11 +10,11 @@ from uuid import UUID
 from app import schemas
 from app import filters
 from app import models
+from app.core.hashing import calculate_recipe_checksum
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-from app.core.hashing import calculate_recipe_checksum
 
 # Get a logger instance
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 
 
 def get_active_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.User).filter(models.User.is_active == True).offset(skip).limit(limit).all()
+    return db.query(models.User).filter(models.User.is_active).offset(skip).limit(limit).all()
 
 
 def create_user(db: Session, user: schemas.UserCreate):
@@ -216,11 +216,11 @@ def get_unique_values(db: Session, field: str):
     Retrieve unique values for a specific field for metadata usage.
     """
     if field == 'category':
-        return [r[0] for r in db.query(models.Recipe.category).distinct().filter(models.Recipe.category != None).order_by(models.Recipe.category).all()]
+        return [r[0] for r in db.query(models.Recipe.category).distinct().filter(models.Recipe.category is not None).order_by(models.Recipe.category).all()]
     elif field == 'cuisine':
-        return [r[0] for r in db.query(models.Recipe.cuisine).distinct().filter(models.Recipe.cuisine != None).order_by(models.Recipe.cuisine).all()]
+        return [r[0] for r in db.query(models.Recipe.cuisine).distinct().filter(models.Recipe.cuisine is not None).order_by(models.Recipe.cuisine).all()]
     elif field == 'difficulty':
-        return [r[0].value for r in db.query(models.Recipe.difficulty).distinct().filter(models.Recipe.difficulty != None).all()]
+        return [r[0].value for r in db.query(models.Recipe.difficulty).distinct().filter(models.Recipe.difficulty is not None).all()]
     elif field == 'suitable_for_diet':
         # Many-to-Many logic? No, RecipeDiet is a table
         return [r[0].value for r in db.query(models.RecipeDiet.diet_type).distinct().all()]
@@ -232,7 +232,7 @@ def get_unique_values(db: Session, field: str):
          users = db.query(models.User).join(models.Recipe).distinct().all()
          return [{"id": u.id, "name": f"{u.first_name} {u.last_name}" if u.first_name else u.email} for u in users]
     elif field == 'protein':
-        return [r[0] for r in db.query(models.Recipe.protein).distinct().filter(models.Recipe.protein != None).order_by(models.Recipe.protein).all()]
+        return [r[0] for r in db.query(models.Recipe.protein).distinct().filter(models.Recipe.protein is not None).order_by(models.Recipe.protein).all()]
     
     return []
 

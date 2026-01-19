@@ -39,7 +39,7 @@ def get_or_create_user(session: Session, email: str = "admin@example.com") -> Us
     if user:
         return user
     
-    user = session.query(User).filter(User.is_admin == True).first()
+    user = session.query(User).filter(User.is_admin).first()
     if user:
         # print(f"User {email} not found. Using admin: {user.email}")
         return user

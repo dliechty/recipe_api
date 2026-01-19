@@ -55,7 +55,7 @@ def test_request_account_flow(client: TestClient, db):
     assert response.status_code == 200
     user_data = response.json()
     assert user_data["email"] == "newuser@example.com"
-    assert user_data["is_first_login"] == True
+    assert user_data["is_first_login"]
     
     # 6. Login as New User
     login_res = client.post(
@@ -191,7 +191,7 @@ def test_admin_promotion(client: TestClient, db):
         json={"is_admin": True}
     )
     assert res.status_code == 200
-    assert res.json()["is_admin"] == True # Depends if UserPublic shows it, actually it serves UserPublic which currently doesn't have is_admin
+    assert res.json()["is_admin"] # Depends if UserPublic shows it, actually it serves UserPublic which currently doesn't have is_admin
     
     # Verify DB state directly or via admin endpoint if UserPublic doesn't show it
     # We didn't add is_admin to UserPublic in schemas.py, checking...
@@ -199,7 +199,7 @@ def test_admin_promotion(client: TestClient, db):
     # But checking DB is fine for test.
     
     db.refresh(user)
-    assert user.is_admin == True
+    assert user.is_admin
 
 
 def test_case_insensitive_email_flow(client: TestClient, db):

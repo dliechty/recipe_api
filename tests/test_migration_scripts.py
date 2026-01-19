@@ -109,18 +109,30 @@ def test_migrate_recipes(db, mock_session_local):
     df_notes = pd.DataFrame(columns=['Recipe_ID', 'Recipe_Note_Num', 'Recipe_Note'])
 
     def mock_run_mdb_export(table_name):
-        if table_name == 'tblRecipes': return df_recipes
-        if table_name == 'tblIngredients': return df_ingredients
-        if table_name == 'tblRecipeIngredients': return df_recipe_ingredients
-        if table_name == 'tblRecipeSteps': return df_steps
-        if table_name == 'tblAmounts': return df_amounts
-        if table_name == 'tblUnits': return df_units
-        if table_name == 'tblPreparations': return df_preparations
-        if table_name == 'tblComplexityLevels': return df_complexity
-        if table_name == 'tblFoodCategories': return df_categories
-        if table_name == 'tblRecipeTypes': return df_types
-        if table_name == 'tblRecipeSources': return df_sources
-        if table_name == 'tblRecipeNotes': return df_notes
+        if table_name == "tblRecipes":
+            return df_recipes
+        if table_name == "tblIngredients":
+            return df_ingredients
+        if table_name == "tblRecipeIngredients":
+            return df_recipe_ingredients
+        if table_name == "tblRecipeSteps":
+            return df_steps
+        if table_name == "tblAmounts":
+            return df_amounts
+        if table_name == "tblUnits":
+            return df_units
+        if table_name == "tblPreparations":
+            return df_preparations
+        if table_name == "tblComplexityLevels":
+            return df_complexity
+        if table_name == "tblFoodCategories":
+            return df_categories
+        if table_name == "tblRecipeTypes":
+            return df_types
+        if table_name == "tblRecipeSources":
+            return df_sources
+        if table_name == "tblRecipeNotes":
+            return df_notes
         return pd.DataFrame()
 
     with patch('migration_scripts.migrate_access_recipes.SessionLocal', side_effect=mock_session_local), \
@@ -173,11 +185,16 @@ def test_migrate_meals(db, mock_session_local):
     ])
 
     def mock_run_mdb_export(table_name):
-        if table_name == 'tblRecipes': return df_recipes_old
-        if table_name == 'tblMealTemplates': return df_templates
-        if table_name == 'tblMealTemplateRecipes': return df_template_recipes
-        if table_name == 'tblMenus': return df_menus
-        if table_name == 'tblMenuRecipes': return df_menu_recipes
+        if table_name == "tblRecipes":
+            return df_recipes_old
+        if table_name == "tblMealTemplates":
+            return df_templates
+        if table_name == "tblMealTemplateRecipes":
+            return df_template_recipes
+        if table_name == "tblMenus":
+            return df_menus
+        if table_name == "tblMenuRecipes":
+            return df_menu_recipes
         return pd.DataFrame()
 
     with patch('migration_scripts.migrate_access_meals.SessionLocal', side_effect=mock_session_local), \

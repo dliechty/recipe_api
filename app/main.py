@@ -2,8 +2,11 @@
 # Main application file for the FastAPI recipe service.
 
 import logging.config
+import os
 from fastapi import FastAPI, Request
 import uvicorn
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 # Import the CORS middleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,7 +25,6 @@ from app.core.logging_middleware import StructuredLoggingMiddleware
 
 # Initialize rate limiter - uses client IP address for rate limit key
 # Disabled during testing (when DATABASE_URL contains 'test')
-import os
 _is_testing = "test" in os.environ.get("DATABASE_URL", "").lower()
 limiter = Limiter(key_func=get_remote_address, enabled=not _is_testing)
 
@@ -69,8 +71,6 @@ app.add_middleware(
 # --- End of CORS Middleware Section ---
 
 # --- Security Headers Middleware ---
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all responses."""

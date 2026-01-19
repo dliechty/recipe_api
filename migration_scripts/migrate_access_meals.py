@@ -156,7 +156,7 @@ def migrate_meals():
             try:
                 # Format appears to be "MM/DD/YY HH:MM:SS" or similar
                 meal_date = pd.to_datetime(date_str).to_pydatetime()
-            except:
+            except Exception:
                 pass
             
             cls = map_classification(row.get('Meal_Type_ID'))

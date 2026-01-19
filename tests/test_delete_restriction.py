@@ -45,7 +45,7 @@ def test_delete_recipe_with_variants_fails(client: TestClient, db):
     # If not supported, we'd need to link it manually, but previous analysis suggests it works or is expected.
     child_res = client.post("/recipes/", json=child_data, headers=headers)
     assert child_res.status_code == 201
-    child_id = child_res.json()["core"]["id"]
+    child_res.json()["core"]["id"]
 
     # Verify relationship exists
     db_parent = crud.get_recipe(db, UUID(parent_id))

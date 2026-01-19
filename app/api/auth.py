@@ -2,6 +2,9 @@
 # Handles user authentication, registration, and token generation.
 
 import logging
+import os
+from collections import defaultdict
+from threading import Lock
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -21,15 +24,12 @@ from app.core.config import settings
 
 # Rate limiter instance (uses same key function as main app)
 # Disabled during testing (when DATABASE_URL contains 'test')
-import os
 _is_testing = "test" in os.environ.get("DATABASE_URL", "").lower()
 limiter = Limiter(key_func=get_remote_address, enabled=not _is_testing)
 
 # --- Account Lockout Configuration ---
 # In-memory storage for failed login attempts (for single-server deployments)
 # For distributed systems, use Redis or database storage instead
-from collections import defaultdict
-from threading import Lock
 
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION_MINUTES = 15

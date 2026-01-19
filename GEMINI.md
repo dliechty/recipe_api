@@ -22,6 +22,11 @@ alembic upgrade head                              # Apply all migrations
 alembic revision --autogenerate -m "description"  # Create new migration
 alembic downgrade -1                              # Revert last migration
 
+# Linting
+ruff check .                                      # Run linter
+ruff check --fix .                                # Run linter and fix issues
+ruff format .                                     # Format code
+
 # Utilities
 python3 -m app.initial_data            # Create initial superuser
 python3 generate_openapi.py            # Generate OpenAPI spec
@@ -34,6 +39,12 @@ python3 migration_scripts/master_migration.py purge-all        # Purge meals the
 python3 migration_scripts/master_migration.py purge-recipes    # Purge only recipes
 python3 migration_scripts/master_migration.py purge-meals      # Purge only meals
 ```
+
+## Development Workflow
+
+Before committing any changes, ensure the following steps are completed:
+1. **Linting**: Run `ruff check .` to identify issues. Use `ruff check --fix .` to auto-fix where possible. All linting issues must be addressed.
+2. **Testing**: Run the full test suite with `pytest`. Ensure all tests pass before proceeding with a commit.
 
 ## Migration Scripts
 

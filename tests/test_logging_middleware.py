@@ -1,7 +1,6 @@
 
 import pytest
 import json
-import logging
 import itertools
 from fastapi import FastAPI, Request
 from starlette.testclient import TestClient

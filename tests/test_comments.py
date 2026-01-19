@@ -1,8 +1,6 @@
 
 from fastapi.testclient import TestClient
-from app import crud, schemas, models
-from tests.conftest import client, db
-from app.api import recipes 
+from app import crud, schemas
 
 def get_auth_headers(client: TestClient, db, email, password="password", is_admin=False):
     # Directly create user in DB

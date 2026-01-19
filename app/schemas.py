@@ -2,8 +2,7 @@
 # Defines the Pydantic models (schemas) for data validation and serialization.
 
 from pydantic import BaseModel, EmailStr, ConfigDict, Field, model_validator, field_validator
-from typing import List, Optional, Any, Literal
-from decimal import Decimal
+from typing import List, Optional, Any
 from uuid import UUID
 from datetime import datetime
 from app.models import DifficultyLevel, DietType, MealClassification, MealStatus, MealTemplateSlotStrategy

@@ -1,6 +1,5 @@
 """Tests for metric/imperial unit conversion functionality."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app import crud, schemas

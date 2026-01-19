@@ -1,7 +1,6 @@
 from fastapi.testclient import TestClient
-from app import crud, schemas, models
+from app import crud, schemas
 from uuid import uuid4, UUID
-import pytest
 
 def get_auth_headers(client: TestClient, db, email_prefix="user_del", password="password"):
     email = f"{email_prefix}_{uuid4()}@example.com"

@@ -1,10 +1,9 @@
 import sys
 import os
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import pandas as pd
-from sqlalchemy.orm import Session
 
 # Add the project root to sys.path
 sys.path.append(os.getcwd())
@@ -16,7 +15,6 @@ from app.models import (
     Ingredient,
     RecipeIngredient,
     Instruction,
-    User,
     DifficultyLevel,
     Comment,
 )

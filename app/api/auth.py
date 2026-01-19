@@ -219,7 +219,6 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
 
 # --- New User Registration & Management Endpoints ---
 
-from fastapi.responses import JSONResponse
 
 @router.post("/request-account", status_code=status.HTTP_202_ACCEPTED)
 @limiter.limit("3/minute")  # Limit account requests to prevent abuse

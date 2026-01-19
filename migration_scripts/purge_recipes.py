@@ -4,7 +4,6 @@ sys.path.append(os.getcwd())
 
 from app.db.session import SessionLocal
 from app.models import Recipe, RecipeComponent, RecipeIngredient, Instruction, Ingredient, Comment
-from sqlalchemy import text
 
 def purge_recipes():
     session = SessionLocal()

@@ -6,7 +6,6 @@ sys.path.append(os.getcwd())
 
 from app.db.session import SessionLocal
 from app.models import MealItem, Meal, MealTemplateSlot, MealTemplate, MealTemplateSlotRecipe
-from sqlalchemy import text
 
 def purge_meals():
     session = SessionLocal()

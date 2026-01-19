@@ -1,10 +1,9 @@
-from typing import List, Optional, Tuple, Any
+from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, text
+from sqlalchemy import func
 from uuid import UUID
 import random
-import json
 import hashlib
 from app.db.session import get_db
 from app import models, schemas

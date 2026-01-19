@@ -1,6 +1,6 @@
 
 from fastapi.testclient import TestClient
-from app import crud, schemas, models
+from app import crud, schemas
 
 def test_list_active_users(client: TestClient, db):
     # 1. Setup Admin

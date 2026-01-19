@@ -3,7 +3,7 @@
 
 import uuid
 from sqlalchemy import (
-    Boolean, Column, ForeignKey, Integer, String, Text, Table, Numeric, Enum, DateTime, func, Float, desc, JSON
+    Boolean, Column, ForeignKey, Integer, String, Text, Enum, DateTime, func, Float, JSON
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import Uuid

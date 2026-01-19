@@ -1,8 +1,6 @@
-import pytest
 from fastapi.testclient import TestClient
 from datetime import datetime, timedelta
-from app import crud, schemas, models
-from uuid import uuid4, UUID
+from app import crud, schemas
 
 def get_auth_headers(client: TestClient, db, email="user_meal_sorting@example.com", password="password"):
     try:

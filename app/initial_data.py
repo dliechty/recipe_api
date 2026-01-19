@@ -2,7 +2,7 @@
 import logging
 from sqlalchemy.orm import Session
 
-from app import crud, schemas, models
+from app import crud, models
 from app.db.session import SessionLocal
 from app.core.config import settings
 

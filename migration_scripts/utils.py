@@ -3,7 +3,6 @@ import subprocess
 import sys
 from io import StringIO
 import pandas as pd
-from typing import Optional
 from sqlalchemy.orm import Session
 from app.models import User
 

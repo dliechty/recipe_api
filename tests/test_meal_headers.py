@@ -1,5 +1,4 @@
 import pytest
-from uuid import UUID
 from app import models, schemas
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session

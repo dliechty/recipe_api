@@ -3,8 +3,6 @@ from uuid import UUID
 from app import models, schemas
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from app.main import app
-from app.core.config import settings
 from app import crud
 
 @pytest.fixture

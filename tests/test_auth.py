@@ -1,7 +1,6 @@
 
 from fastapi.testclient import TestClient
-from app import crud, schemas, models
-from app.db.session import SessionLocal
+from app import crud, schemas
 
 def test_request_account_flow(client: TestClient, db):
     # 1. Request Account

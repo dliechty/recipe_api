@@ -2,7 +2,6 @@
 # Contains the functions for Create, Read, Update, Delete (CRUD) operations.
 
 import logging
-import uuid
 from sqlalchemy.orm import Session, joinedload, selectinload
 from datetime import datetime, timezone
 from passlib.context import CryptContext

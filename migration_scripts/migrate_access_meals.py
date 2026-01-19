@@ -1,9 +1,7 @@
 import sys
 import os
 import pandas as pd
-from typing import Dict, List, Optional
-import uuid
-from sqlalchemy.orm import Session
+from typing import Optional
 from datetime import datetime
 
 # Add the project root to sys.path
@@ -11,7 +9,6 @@ sys.path.append(os.getcwd())
 
 from app.db.session import SessionLocal
 from app.models import (
-    User,
     Recipe,
     MealTemplate,
     MealTemplateSlot,

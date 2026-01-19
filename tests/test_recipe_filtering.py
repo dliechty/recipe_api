@@ -1,12 +1,8 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from uuid import uuid4
-import pytest
 
 from app.filters import parse_filters, Filter
-from app.api.recipes import read_recipes
-from app import models, crud, schemas
-from app.db.session import SessionLocal
+from app import crud, schemas
 
 # --- Unit Tests ---
 
@@ -176,7 +172,7 @@ def test_filter_recipes_by_ingredients_like(client: TestClient, db):
     id3 = create_recipe_with_ingredients("Salad", ["Lettuce", "Tomatoes"])
 
     # Filter for 'chick' -> Should match Chicken matching ingredients
-    response = client.get(f"/recipes/?ingredients[like]=Chick", headers=headers)
+    response = client.get("/recipes/?ingredients[like]=Chick", headers=headers)
     assert response.status_code == 200
     data = response.json()
     

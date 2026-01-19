@@ -1,7 +1,6 @@
 from fastapi.testclient import TestClient
-from app import crud, schemas, models
+from app import crud, schemas
 from uuid import uuid4, UUID
-import pytest
 
 # --- Helpers ---
 

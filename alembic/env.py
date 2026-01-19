@@ -14,7 +14,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # Import your models' Base. This is crucial for autogeneration to work.
 # Import your models' Base. This is crucial for autogeneration to work.
 from app.db.session import Base
-from app import models
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides

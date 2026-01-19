@@ -1,9 +1,7 @@
 # app/filters.py
-from typing import List, Optional, Any, Tuple
-from fastapi import Query as FastAPIQuery, HTTPException
+from typing import List, Any
 from sqlalchemy.orm import Query
-from sqlalchemy import asc, desc, or_, and_, text
-from datetime import timedelta
+from sqlalchemy import asc, desc, or_
 import re
 
 from app import models

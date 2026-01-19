@@ -1,7 +1,7 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pandas as pd
-from app.models import Recipe, Meal, MealTemplate, Ingredient, User, MealStatus, MealClassification
+from app.models import Recipe, Meal, MealTemplate, User, MealStatus, MealClassification
 from migration_scripts import purge_recipes, purge_meals, migrate_access_recipes, migrate_access_meals
 
 # Mock Session Factory

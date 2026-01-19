@@ -5,7 +5,6 @@ import time
 import random
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
 
 # Configure a specific logger for structured events
 # We don't propagate to the root logger to avoid double logging if root captures everything

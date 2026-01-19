@@ -21,7 +21,7 @@ COPY . /app
 # 6. Install the project itself
 RUN uv sync --frozen --no-dev
 
-RUN echo "alias migrate-access='apt update && apt install -y mdbtools && uv sync --no-dev --group migration && uv run python migration_scripts/master_migration.py purge-all && uv run python migration_scripts/master_migration.py migrate_all'" >> ~/.bashrc
+RUN echo "alias migrate-access='apt update && apt install -y mdbtools && uv sync --no-dev --group migration && uv run python migration_scripts/master_migration.py purge-all && uv run python migration_scripts/master_migration.py migrate-all'" >> ~/.bashrc
 
 # 7. Expose port 8000 to allow communication to the Uvicorn server
 EXPOSE 8000

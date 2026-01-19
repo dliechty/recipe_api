@@ -1,7 +1,6 @@
 """Tests for meal plan generation and management."""
 import pytest
 from datetime import datetime, timedelta
-from uuid import UUID
 from app import models, schemas, crud
 from app.services import meal_planning
 from fastapi.testclient import TestClient
@@ -95,9 +94,9 @@ class TestMealPlanCreation:
     ):
         """Test creating a basic meal plan."""
         # Create some recipes
-        r1 = create_recipe(db, normal_user.id, "Recipe 1")
-        r2 = create_recipe(db, normal_user.id, "Recipe 2")
-        r3 = create_recipe(db, normal_user.id, "Recipe 3")
+        create_recipe(db, normal_user.id, "Recipe 1")
+        create_recipe(db, normal_user.id, "Recipe 2")
+        create_recipe(db, normal_user.id, "Recipe 3")
 
         plan_data = {
             "start_date": "2026-01-20T00:00:00",
@@ -171,7 +170,7 @@ class TestMealPlanCreation:
     ):
         """Test creating a plan with pinned meals."""
         pinned_recipe = create_recipe(db, normal_user.id, "Pinned Recipe")
-        other_recipe = create_recipe(db, normal_user.id, "Other Recipe")
+        create_recipe(db, normal_user.id, "Other Recipe")
 
         plan_data = {
             "start_date": "2026-01-20T00:00:00",
@@ -254,7 +253,7 @@ class TestMealPlanConstraints:
             db, normal_user.id, "Easy Recipe",
             difficulty=models.DifficultyLevel.EASY
         )
-        hard_recipe = create_recipe(
+        create_recipe(
             db, normal_user.id, "Hard Recipe",
             difficulty=models.DifficultyLevel.HARD
         )
@@ -291,7 +290,7 @@ class TestMealPlanConstraints:
             db, normal_user.id, "Quick Recipe",
             total_time_minutes=30
         )
-        slow_recipe = create_recipe(
+        create_recipe(
             db, normal_user.id, "Slow Recipe",
             total_time_minutes=120
         )
@@ -323,7 +322,7 @@ class TestMealPlanConstraints:
         normal_user_token_headers, normal_user
     ):
         """Test that excluded_proteins constraint filters recipes."""
-        chicken_recipe = create_recipe(
+        create_recipe(
             db, normal_user.id, "Chicken Dish",
             protein="Chicken"
         )
@@ -679,8 +678,8 @@ class TestMealRegeneration:
         normal_user_token_headers, normal_user
     ):
         """Test regenerating a single meal."""
-        r1 = create_recipe(db, normal_user.id, "Recipe 1")
-        r2 = create_recipe(db, normal_user.id, "Recipe 2")
+        create_recipe(db, normal_user.id, "Recipe 1")
+        create_recipe(db, normal_user.id, "Recipe 2")
 
         create_response = client.post(
             "/meals/plans",

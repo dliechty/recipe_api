@@ -1581,6 +1581,552 @@
         }
       }
     },
+    "/meals/plans": {
+      "post": {
+        "tags": [
+          "Meals"
+        ],
+        "summary": "Create Meal Plan",
+        "description": "Generate a new meal plan with intelligent recipe selection.\n\nThe algorithm scores recipes based on:\n- Freshness: Prefers recipes not cooked recently\n- Variety: Avoids similar proteins/cuisines/categories within the plan\n- Random factor: Adds some unpredictability\n\nPinned meals will use the specified recipes; other meals are auto-generated.",
+        "operationId": "create_meal_plan_meals_plans_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MealPlanCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlan"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Meals"
+        ],
+        "summary": "Get Meal Plans",
+        "description": "List all meal plans for the current user.",
+        "operationId": "get_meal_plans_meals_plans_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MealPlan"
+                  },
+                  "title": "Response Get Meal Plans Meals Plans Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meals/plans/{plan_id}": {
+      "get": {
+        "tags": [
+          "Meals"
+        ],
+        "summary": "Get Meal Plan",
+        "description": "Get a specific meal plan with all its meals.",
+        "operationId": "get_meal_plan_meals_plans__plan_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlan"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Meals"
+        ],
+        "summary": "Update Meal Plan",
+        "description": "Update a meal plan's name or configuration.",
+        "operationId": "update_meal_plan_meals_plans__plan_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MealPlanUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlan"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Meals"
+        ],
+        "summary": "Delete Meal Plan",
+        "description": "Delete a meal plan and all its meals.",
+        "operationId": "delete_meal_plan_meals_plans__plan_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meals/plans/{plan_id}/scores": {
+      "get": {
+        "tags": [
+          "Meals"
+        ],
+        "summary": "Get Meal Plan With Scores",
+        "description": "Get a meal plan with freshness/variety scores for each meal.",
+        "operationId": "get_meal_plan_with_scores_meals_plans__plan_id__scores_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlanWithScores"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meals/plans/{plan_id}/finalize": {
+      "post": {
+        "tags": [
+          "Meals"
+        ],
+        "summary": "Finalize Meal Plan",
+        "description": "Finalize a meal plan.\n\nThis locks the plan and transitions all meals to SCHEDULED status.\nFinalized plans cannot be modified.",
+        "operationId": "finalize_meal_plan_meals_plans__plan_id__finalize_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlan"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meals/plans/{plan_id}/meals/{meal_id}/regenerate": {
+      "post": {
+        "tags": [
+          "Meals"
+        ],
+        "summary": "Regenerate Plan Meal",
+        "description": "Regenerate a single meal within a plan.\n\nSelects a new recipe based on freshness and variety scoring.\nCannot regenerate pinned meals or meals in finalized plans.",
+        "operationId": "regenerate_plan_meal_meals_plans__plan_id__meals__meal_id__regenerate_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "meal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Meal Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meals/plans/{plan_id}/meals/{meal_id}/pin": {
+      "post": {
+        "tags": [
+          "Meals"
+        ],
+        "summary": "Pin Plan Meal",
+        "description": "Pin a meal in the plan.\n\nOptionally swap to a specific recipe. Pinned meals won't be changed\nduring plan regeneration.",
+        "operationId": "pin_plan_meal_meals_plans__plan_id__meals__meal_id__pin_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "meal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Meal Id"
+            }
+          },
+          {
+            "name": "recipe_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Recipe Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meals/plans/{plan_id}/meals/{meal_id}/unpin": {
+      "post": {
+        "tags": [
+          "Meals"
+        ],
+        "summary": "Unpin Plan Meal",
+        "description": "Unpin a meal, allowing it to be regenerated.",
+        "operationId": "unpin_plan_meal_meals_plans__plan_id__meals__meal_id__unpin_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "meal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Meal Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/meals/{meal_id}": {
       "get": {
         "tags": [
@@ -2453,6 +2999,23 @@
             ],
             "title": "Template Id"
           },
+          "meal_plan_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meal Plan Id"
+          },
+          "pinned": {
+            "type": "boolean",
+            "title": "Pinned",
+            "default": false
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2607,6 +3170,369 @@
         ],
         "title": "MealItemBase"
       },
+      "MealPlan": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End Date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MealPlanStatus",
+            "default": "Draft"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "meals": {
+            "items": {
+              "$ref": "#/components/schemas/Meal"
+            },
+            "type": "array",
+            "title": "Meals",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "start_date",
+          "end_date",
+          "id",
+          "user_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "MealPlan",
+        "description": "Full meal plan response."
+      },
+      "MealPlanConfig": {
+        "properties": {
+          "constraints": {
+            "$ref": "#/components/schemas/MealPlanConstraints",
+            "default": {
+              "dietary_restrictions": [],
+              "excluded_proteins": []
+            }
+          },
+          "scoring_weights": {
+            "$ref": "#/components/schemas/MealPlanScoringWeights",
+            "default": {
+              "freshness_weight": 0.5,
+              "variety_weight": 0.4,
+              "random_weight": 0.1
+            }
+          },
+          "freshness_window_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Freshness Window Days",
+            "default": 30
+          }
+        },
+        "type": "object",
+        "title": "MealPlanConfig",
+        "description": "Configuration for meal plan generation."
+      },
+      "MealPlanConstraints": {
+        "properties": {
+          "dietary_restrictions": {
+            "items": {
+              "$ref": "#/components/schemas/DietType"
+            },
+            "type": "array",
+            "title": "Dietary Restrictions",
+            "default": []
+          },
+          "excluded_proteins": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Excluded Proteins",
+            "default": []
+          },
+          "max_difficulty": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DifficultyLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_total_time_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Total Time Minutes"
+          }
+        },
+        "type": "object",
+        "title": "MealPlanConstraints",
+        "description": "Constraints for meal plan generation."
+      },
+      "MealPlanCreate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End Date"
+          },
+          "meals_per_day": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Meals Per Day",
+            "description": "Map of classification name to count per day",
+            "default": {
+              "Dinner": 1
+            }
+          },
+          "config": {
+            "$ref": "#/components/schemas/MealPlanConfig",
+            "default": {
+              "constraints": {
+                "dietary_restrictions": [],
+                "excluded_proteins": []
+              },
+              "scoring_weights": {
+                "freshness_weight": 0.5,
+                "random_weight": 0.1,
+                "variety_weight": 0.4
+              },
+              "freshness_window_days": 30
+            }
+          },
+          "pinned_meals": {
+            "items": {
+              "$ref": "#/components/schemas/PinnedMeal"
+            },
+            "type": "array",
+            "title": "Pinned Meals",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "start_date",
+          "end_date"
+        ],
+        "title": "MealPlanCreate",
+        "description": "Request to create/generate a meal plan."
+      },
+      "MealPlanScoringWeights": {
+        "properties": {
+          "freshness_weight": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Freshness Weight",
+            "default": 0.5
+          },
+          "variety_weight": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Variety Weight",
+            "default": 0.4
+          },
+          "random_weight": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Random Weight",
+            "default": 0.1
+          }
+        },
+        "type": "object",
+        "title": "MealPlanScoringWeights",
+        "description": "Weights for the scoring algorithm."
+      },
+      "MealPlanStatus": {
+        "type": "string",
+        "enum": [
+          "Draft",
+          "Finalized"
+        ],
+        "title": "MealPlanStatus"
+      },
+      "MealPlanUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MealPlanConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "MealPlanUpdate",
+        "description": "Request to update a meal plan."
+      },
+      "MealPlanWithScores": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End Date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MealPlanStatus",
+            "default": "Draft"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "meals": {
+            "items": {
+              "$ref": "#/components/schemas/MealWithScore"
+            },
+            "type": "array",
+            "title": "Meals",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "start_date",
+          "end_date",
+          "id",
+          "user_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "MealPlanWithScores",
+        "description": "Meal plan response with scoring information."
+      },
       "MealScheduleRequest": {
         "properties": {
           "scheduled_date": {
@@ -2630,6 +3556,7 @@
         "type": "string",
         "enum": [
           "Draft",
+          "Proposed",
           "Scheduled",
           "Cooked"
         ],
@@ -2767,6 +3694,11 @@
             ],
             "title": "Search Criteria"
           },
+          "use_freshness_scoring": {
+            "type": "boolean",
+            "title": "Use Freshness Scoring",
+            "default": false
+          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -2839,6 +3771,11 @@
               }
             ],
             "title": "Search Criteria"
+          },
+          "use_freshness_scoring": {
+            "type": "boolean",
+            "title": "Use Freshness Scoring",
+            "default": false
           }
         },
         "type": "object",
@@ -2946,6 +3883,52 @@
         "type": "object",
         "title": "MealUpdate"
       },
+      "MealWithScore": {
+        "properties": {
+          "meal": {
+            "$ref": "#/components/schemas/Meal"
+          },
+          "freshness_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freshness Score"
+          },
+          "variety_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variety Score"
+          },
+          "combined_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Combined Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meal"
+        ],
+        "title": "MealWithScore",
+        "description": "A meal with its scoring information."
+      },
       "PasswordChange": {
         "properties": {
           "old_password": {
@@ -2963,6 +3946,31 @@
           "new_password"
         ],
         "title": "PasswordChange"
+      },
+      "PinnedMeal": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "classification": {
+            "$ref": "#/components/schemas/MealClassification"
+          },
+          "recipe_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Recipe Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "classification",
+          "recipe_id"
+        ],
+        "title": "PinnedMeal",
+        "description": "A pre-specified meal in the plan."
       },
       "Recipe": {
         "properties": {

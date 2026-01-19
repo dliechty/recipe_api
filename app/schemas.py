@@ -411,6 +411,7 @@ class MealTemplateSlotBase(BaseModel):
     recipe_id: Optional[UUID] = None
     recipe_ids: Optional[List[UUID]] = None
     search_criteria: Optional[List[SearchCriterion]] = None
+    use_freshness_scoring: bool = False  # For LIST/SEARCH: weight selection by freshness
 
     @model_validator(mode="after")
     def validate_slot_strategy(self):
@@ -423,6 +424,10 @@ class MealTemplateSlotBase(BaseModel):
             raise ValueError("search_criteria is required for SEARCH strategy")
         if self.strategy == MealTemplateSlotStrategy.LIST and not self.recipe_ids:
             raise ValueError("recipe_ids is required for LIST strategy")
+        # Warn if use_freshness_scoring is set for DIRECT (has no effect)
+        if self.strategy == MealTemplateSlotStrategy.DIRECT and self.use_freshness_scoring:
+            # Reset to False since it has no effect for DIRECT strategy
+            object.__setattr__(self, 'use_freshness_scoring', False)
         return self
 
 

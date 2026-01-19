@@ -646,3 +646,244 @@ def test_generate_meal_without_scheduled_date(
     data = gen_res.json()
     assert data["status"] == "Draft"
     assert data["date"] is None
+
+
+# --- Freshness Scoring Tests ---
+
+def test_create_template_with_freshness_scoring_list(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test creating a template with use_freshness_scoring enabled for LIST strategy."""
+    r1 = create_recipe(db, normal_user.id, "Fresh Recipe 1")
+    r2 = create_recipe(db, normal_user.id, "Fresh Recipe 2")
+
+    template_data = {
+        "name": "Freshness List Template",
+        "slots": [
+            {
+                "strategy": "List",
+                "recipe_ids": [str(r1.id), str(r2.id)],
+                "use_freshness_scoring": True
+            }
+        ]
+    }
+
+    response = client.post(
+        "/meals/templates",
+        headers=normal_user_token_headers,
+        json=template_data
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["slots"][0]["use_freshness_scoring"] is True
+
+    # Verify DB persistence
+    template_id = UUID(data["id"])
+    db_template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id).first()
+    list_slot = db_template.slots[0]
+    assert list_slot.use_freshness_scoring is True
+
+
+def test_create_template_with_freshness_scoring_search(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test creating a template with use_freshness_scoring enabled for SEARCH strategy."""
+    template_data = {
+        "name": "Freshness Search Template",
+        "slots": [
+            {
+                "strategy": "Search",
+                "search_criteria": [{"field": "category", "operator": "eq", "value": "Dinner"}],
+                "use_freshness_scoring": True
+            }
+        ]
+    }
+
+    response = client.post(
+        "/meals/templates",
+        headers=normal_user_token_headers,
+        json=template_data
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["slots"][0]["use_freshness_scoring"] is True
+
+
+def test_freshness_scoring_ignored_for_direct_strategy(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test that use_freshness_scoring is ignored (set to False) for DIRECT strategy."""
+    recipe = create_recipe(db, normal_user.id, "Direct Recipe Freshness")
+
+    template_data = {
+        "name": "Direct Strategy Freshness Test",
+        "slots": [
+            {
+                "strategy": "Direct",
+                "recipe_id": str(recipe.id),
+                "use_freshness_scoring": True  # This should be ignored for DIRECT
+            }
+        ]
+    }
+
+    response = client.post(
+        "/meals/templates",
+        headers=normal_user_token_headers,
+        json=template_data
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    # Freshness scoring should be reset to False for DIRECT strategy
+    assert data["slots"][0]["use_freshness_scoring"] is False
+
+
+def test_freshness_scoring_defaults_to_false(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test that use_freshness_scoring defaults to False when not specified."""
+    r1 = create_recipe(db, normal_user.id, "Default Freshness Recipe")
+
+    template_data = {
+        "name": "Default Freshness Template",
+        "slots": [
+            {
+                "strategy": "List",
+                "recipe_ids": [str(r1.id)]
+                # use_freshness_scoring not specified
+            }
+        ]
+    }
+
+    response = client.post(
+        "/meals/templates",
+        headers=normal_user_token_headers,
+        json=template_data
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["slots"][0]["use_freshness_scoring"] is False
+
+
+def test_generate_meal_with_freshness_scoring_list(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test generating a meal from a LIST template with freshness scoring."""
+    from datetime import datetime
+
+    # Create recipes
+    r1 = create_recipe(db, normal_user.id, "Recently Cooked Recipe")
+    r2 = create_recipe(db, normal_user.id, "Not Recently Cooked Recipe")
+
+    # Mark r1 as recently cooked by creating a COOKED meal
+    recent_meal = models.Meal(
+        user_id=normal_user.id,
+        name="Recent Meal",
+        status=models.MealStatus.COOKED,
+        date=datetime.now()
+    )
+    db.add(recent_meal)
+    db.commit()
+    db.refresh(recent_meal)
+
+    meal_item = models.MealItem(
+        meal_id=recent_meal.id,
+        recipe_id=r1.id
+    )
+    db.add(meal_item)
+    db.commit()
+
+    # Create template with freshness scoring
+    template_data = {
+        "name": "Freshness Gen Template",
+        "slots": [
+            {
+                "strategy": "List",
+                "recipe_ids": [str(r1.id), str(r2.id)],
+                "use_freshness_scoring": True
+            }
+        ]
+    }
+
+    create_res = client.post(
+        "/meals/templates",
+        headers=normal_user_token_headers,
+        json=template_data
+    )
+    assert create_res.status_code == 201
+    template_id = create_res.json()["id"]
+
+    # Generate multiple meals to verify statistical preference for r2
+    # Since r2 has freshness score of 1.0 and r1 has lower score,
+    # r2 should be selected more often
+    r2_count = 0
+    num_trials = 20
+
+    for _ in range(num_trials):
+        gen_res = client.post(
+            f"/meals/generate?template_id={template_id}",
+            headers=normal_user_token_headers
+        )
+        assert gen_res.status_code == 201
+        if gen_res.json()["items"][0]["recipe_id"] == str(r2.id):
+            r2_count += 1
+
+    # With freshness scoring, r2 should be selected more often than r1
+    # Since r1 was cooked recently (freshness ~0) and r2 was never cooked (freshness 1.0),
+    # r2 should be heavily favored. We expect at least 60% r2 selections.
+    assert r2_count >= num_trials * 0.5, f"Expected r2 to be selected more often, got {r2_count}/{num_trials}"
+
+
+def test_generate_meal_with_freshness_scoring_search(client: TestClient, db: Session, normal_user_token_headers, normal_user):
+    """Test generating a meal from a SEARCH template with freshness scoring."""
+    from datetime import datetime
+
+    # Create recipes with unique category
+    r1 = create_recipe(db, normal_user.id, "Search Fresh Recipe 1")
+    r1.category = "FreshnessTest"
+    db.add(r1)
+
+    r2 = create_recipe(db, normal_user.id, "Search Fresh Recipe 2")
+    r2.category = "FreshnessTest"
+    db.add(r2)
+    db.commit()
+
+    # Mark r1 as recently cooked
+    recent_meal = models.Meal(
+        user_id=normal_user.id,
+        name="Search Recent Meal",
+        status=models.MealStatus.COOKED,
+        date=datetime.now()
+    )
+    db.add(recent_meal)
+    db.commit()
+    db.refresh(recent_meal)
+
+    meal_item = models.MealItem(
+        meal_id=recent_meal.id,
+        recipe_id=r1.id
+    )
+    db.add(meal_item)
+    db.commit()
+
+    # Create template with freshness scoring
+    template_data = {
+        "name": "Freshness Search Gen Template",
+        "slots": [
+            {
+                "strategy": "Search",
+                "search_criteria": [{"field": "category", "operator": "eq", "value": "FreshnessTest"}],
+                "use_freshness_scoring": True
+            }
+        ]
+    }
+
+    create_res = client.post(
+        "/meals/templates",
+        headers=normal_user_token_headers,
+        json=template_data
+    )
+    assert create_res.status_code == 201
+    template_id = create_res.json()["id"]
+
+    # Generate a meal
+    gen_res = client.post(
+        f"/meals/generate?template_id={template_id}",
+        headers=normal_user_token_headers
+    )
+    assert gen_res.status_code == 201
+    # Should succeed with freshness-weighted selection
+    assert len(gen_res.json()["items"]) == 1

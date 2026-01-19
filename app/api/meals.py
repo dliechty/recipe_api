@@ -136,6 +136,7 @@ def create_meal_template(
             strategy=slot_in.strategy,
             recipe_id=slot_in.recipe_id,
             search_criteria=criteria_json,
+            use_freshness_scoring=slot_in.use_freshness_scoring
         )
 
         if slot_in.recipe_ids:
@@ -295,10 +296,16 @@ def resolve_recipe_for_slot(
         )
 
     elif slot.strategy == models.MealTemplateSlotStrategy.LIST:
-        # Pick random from the list
-        # Pick random
         if not slot.recipes:
             return None
+
+        # Use freshness-weighted selection if enabled
+        if slot.use_freshness_scoring:
+            return meal_planning.select_recipe_weighted_by_freshness(
+                db, list(slot.recipes), user_id
+            )
+
+        # Default: uniform random selection
         return random.choice(slot.recipes)
 
     elif slot.strategy == models.MealTemplateSlotStrategy.SEARCH:
@@ -323,9 +330,17 @@ def resolve_recipe_for_slot(
         if filters_list:
             query = filters.apply_filters(query, filters_list)
 
-        # Optimization: Don't fetch all, just fetch one random
-        # But we need to know count to pick random offset?
-        # Or order by random() which is db specific but usually works.
+        # Use freshness-weighted selection if enabled
+        if slot.use_freshness_scoring:
+            # Fetch all matching recipes for weighted selection
+            matching_recipes = query.all()
+            if not matching_recipes:
+                return None
+            return meal_planning.select_recipe_weighted_by_freshness(
+                db, matching_recipes, user_id
+            )
+
+        # Default: random selection via database
         match = query.order_by(func.random()).first()
         return match
 

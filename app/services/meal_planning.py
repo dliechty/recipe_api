@@ -3,7 +3,6 @@
 
 import random
 from datetime import datetime, timedelta
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -512,6 +511,60 @@ def unpin_meal(
     db.commit()
     db.refresh(db_meal)
     return db_meal
+
+
+def select_recipe_weighted_by_freshness(
+    db: Session,
+    recipes: list[models.Recipe],
+    user_id: UUID,
+    freshness_window_days: int = 30
+) -> models.Recipe | None:
+    """
+    Select a recipe from the list using freshness scores as weights for random selection.
+
+    Recipes not cooked recently are more likely to be selected.
+    Uses weighted random selection where the weight is the freshness score.
+
+    Args:
+        db: Database session
+        recipes: List of candidate recipes
+        user_id: User ID for querying cooked meals
+        freshness_window_days: Window for freshness calculation (default 30)
+
+    Returns:
+        Selected recipe, or None if the list is empty
+    """
+    if not recipes:
+        return None
+
+    if len(recipes) == 1:
+        return recipes[0]
+
+    # Get last cooked dates for all recipes
+    recipe_ids = [r.id for r in recipes]
+    last_cooked_dates = crud.get_recipes_last_cooked_dates(db, recipe_ids, user_id)
+
+    # Calculate freshness scores
+    weights = []
+    for recipe in recipes:
+        score = calculate_freshness_score(
+            recipe.id, last_cooked_dates, freshness_window_days
+        )
+        # Ensure minimum weight to avoid zero probability
+        weights.append(max(score, 0.01))
+
+    # Weighted random selection
+    total_weight = sum(weights)
+    r = random.random() * total_weight
+
+    cumulative = 0.0
+    for recipe, weight in zip(recipes, weights):
+        cumulative += weight
+        if r <= cumulative:
+            return recipe
+
+    # Fallback (should not reach here)
+    return recipes[-1]
 
 
 def get_meal_plan_with_scores(

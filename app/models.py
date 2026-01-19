@@ -340,6 +340,9 @@ class MealTemplateSlot(Base):
     # For SEARCH strategy
     search_criteria = Column(JSON, nullable=True)
 
+    # For LIST/SEARCH: use freshness-weighted random selection instead of uniform random
+    use_freshness_scoring = Column(Boolean, default=False, nullable=False)
+
     template = relationship("MealTemplate", back_populates="slots")
     recipe = relationship("Recipe")  # For DIRECT strategy
 

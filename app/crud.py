@@ -594,7 +594,19 @@ def get_recipe_list(db: Session, list_id: UUID):
     return (
         db.query(models.RecipeList)
         .options(joinedload(models.RecipeList.items))
-        .filter(models.RecipeList.id == list_id)
+        .filter(models.RecipeList.id == list_id))
+
+# --- Meal Plan CRUD Functions ---
+
+def get_meal_plan(db: Session, plan_id: UUID, user_id: UUID):
+    """Retrieve a meal plan by ID for a specific user."""
+    return (
+        db.query(models.MealPlan)
+        .options(selectinload(models.MealPlan.meals).selectinload(models.Meal.items))
+        .filter(
+            models.MealPlan.id == plan_id,
+            models.MealPlan.user_id == user_id
+        )
         .first()
     )
 
@@ -721,3 +733,139 @@ def get_recipe_list_item(db: Session, list_id: UUID, recipe_id: UUID):
         )
         .first()
     )
+def get_meal_plans(db: Session, user_id: UUID, skip: int = 0, limit: int = 100):
+    """Retrieve all meal plans for a user."""
+    return (
+        db.query(models.MealPlan)
+        .filter(models.MealPlan.user_id == user_id)
+        .order_by(models.MealPlan.start_date.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def count_meal_plans(db: Session, user_id: UUID) -> int:
+    """Count meal plans for a user."""
+    return (
+        db.query(models.MealPlan)
+        .filter(models.MealPlan.user_id == user_id)
+        .count()
+    )
+
+
+def create_meal_plan(
+    db: Session,
+    user_id: UUID,
+    name: str,
+    start_date,
+    end_date,
+    config: dict = None
+) -> models.MealPlan:
+    """Create a new meal plan."""
+    db_plan = models.MealPlan(
+        user_id=user_id,
+        name=name,
+        start_date=start_date,
+        end_date=end_date,
+        status=models.MealPlanStatus.DRAFT,
+        config=config
+    )
+    db.add(db_plan)
+    db.commit()
+    db.refresh(db_plan)
+    return db_plan
+
+
+def update_meal_plan(
+    db: Session,
+    plan_id: UUID,
+    user_id: UUID,
+    name: str = None,
+    config: dict = None
+) -> models.MealPlan | None:
+    """Update a meal plan's name or config."""
+    db_plan = get_meal_plan(db, plan_id, user_id)
+    if not db_plan:
+        return None
+
+    if name is not None:
+        db_plan.name = name
+    if config is not None:
+        db_plan.config = config
+
+    db.commit()
+    db.refresh(db_plan)
+    return db_plan
+
+
+def finalize_meal_plan(db: Session, plan_id: UUID, user_id: UUID) -> models.MealPlan | None:
+    """Finalize a meal plan - lock it and move meals to SCHEDULED."""
+    db_plan = get_meal_plan(db, plan_id, user_id)
+    if not db_plan:
+        return None
+
+    if db_plan.status == models.MealPlanStatus.FINALIZED:
+        return db_plan  # Already finalized
+
+    # Update plan status
+    db_plan.status = models.MealPlanStatus.FINALIZED
+
+    # Move all meals to SCHEDULED
+    for meal in db_plan.meals:
+        meal.status = models.MealStatus.SCHEDULED
+
+    db.commit()
+    db.refresh(db_plan)
+    return db_plan
+
+
+def delete_meal_plan(db: Session, plan_id: UUID, user_id: UUID) -> models.MealPlan | None:
+    """Delete a meal plan and its meals (cascade)."""
+    db_plan = get_meal_plan(db, plan_id, user_id)
+    if not db_plan:
+        return None
+
+    db.delete(db_plan)
+    db.commit()
+    return db_plan
+
+
+def get_recipe_last_cooked_date(db: Session, recipe_id: UUID, user_id: UUID):
+    """Get the last date a recipe was cooked by this user."""
+    result = (
+        db.query(models.Meal.date)
+        .join(models.MealItem)
+        .filter(
+            models.MealItem.recipe_id == recipe_id,
+            models.Meal.user_id == user_id,
+            models.Meal.status == models.MealStatus.COOKED,
+            models.Meal.date.isnot(None)
+        )
+        .order_by(models.Meal.date.desc())
+        .first()
+    )
+    return result[0] if result else None
+
+
+def get_recipes_last_cooked_dates(db: Session, recipe_ids: list[UUID], user_id: UUID) -> dict[UUID, datetime]:
+    """Get the last cooked dates for multiple recipes at once."""
+    from sqlalchemy import func as sqla_func
+
+    results = (
+        db.query(
+            models.MealItem.recipe_id,
+            sqla_func.max(models.Meal.date).label("last_cooked")
+        )
+        .join(models.Meal)
+        .filter(
+            models.MealItem.recipe_id.in_(recipe_ids),
+            models.Meal.user_id == user_id,
+            models.Meal.status == models.MealStatus.COOKED,
+            models.Meal.date.isnot(None)
+        )
+        .group_by(models.MealItem.recipe_id)
+        .all()
+    )
+
+    return {r.recipe_id: r.last_cooked for r in results}

@@ -265,8 +265,14 @@ class MealClassification(str, enum.Enum):
 
 class MealStatus(str, enum.Enum):
     DRAFT = "Draft"
+    PROPOSED = "Proposed"
     SCHEDULED = "Scheduled"
     COOKED = "Cooked"
+
+
+class MealPlanStatus(str, enum.Enum):
+    DRAFT = "Draft"        # Can regenerate individual meals
+    FINALIZED = "Finalized"  # Locked, meals moved to SCHEDULED
 
 
 class MealTemplateSlotStrategy(str, enum.Enum):
@@ -347,6 +353,27 @@ class MealTemplateSlot(Base):
         return []
 
 
+class MealPlan(Base):
+    """
+    Groups proposed meals for a date range.
+    """
+    __tablename__ = "meal_plans"
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    name = Column(String, nullable=True)  # "Week of Jan 20, 2026"
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+    status = Column(Enum(MealPlanStatus), default=MealPlanStatus.DRAFT, nullable=False)
+    config = Column(JSON, nullable=True)  # constraints, scoring weights
+
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    user = relationship("User")
+    meals = relationship("Meal", back_populates="meal_plan", cascade="all, delete-orphan")
+
+
 class Meal(Base):
     """
     A specific instance of a meal, potentially generated from a template.
@@ -361,11 +388,13 @@ class Meal(Base):
     template_id = Column(
         Uuid(as_uuid=True), ForeignKey("meal_templates.id"), nullable=True, index=True
     )
+    meal_plan_id = Column(Uuid(as_uuid=True), ForeignKey("meal_plans.id"), nullable=True, index=True)
 
     name = Column(String, nullable=True)
-    status = Column(Enum(MealStatus), default=MealStatus.DRAFT, nullable=False)
+    status = Column(Enum(MealStatus), default=MealStatus.PROPOSED, nullable=False)
     classification = Column(Enum(MealClassification), nullable=True)
     date = Column(DateTime, nullable=True)
+    pinned = Column(Boolean, default=False, nullable=False)  # Whether this meal is pinned in a plan
 
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -375,6 +404,7 @@ class Meal(Base):
     items = relationship(
         "MealItem", back_populates="meal", cascade="all, delete-orphan"
     )
+    meal_plan = relationship("MealPlan", back_populates="meals")
 
 
 class MealItem(Base):

@@ -6,10 +6,11 @@ from uuid import UUID
 import random
 import hashlib
 from app.db.session import get_db
-from app import models, schemas
+from app import models, schemas, crud
 from app.api import auth
 from app import filters
 from app.filters import parse_filters
+from app.services import meal_planning
 
 router = APIRouter()
 
@@ -471,6 +472,220 @@ def get_meals(
     meals = query.distinct().offset(skip).limit(limit).all()
     return meals
 
+
+# --- Meal Plans ---
+# NOTE: These routes must come BEFORE /{meal_id} to avoid path conflicts
+
+@router.post("/plans", response_model=schemas.MealPlan, status_code=status.HTTP_201_CREATED)
+def create_meal_plan(
+    plan_request: schemas.MealPlanCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """
+    Generate a new meal plan with intelligent recipe selection.
+
+    The algorithm scores recipes based on:
+    - Freshness: Prefers recipes not cooked recently
+    - Variety: Avoids similar proteins/cuisines/categories within the plan
+    - Random factor: Adds some unpredictability
+
+    Pinned meals will use the specified recipes; other meals are auto-generated.
+    """
+    db_plan = meal_planning.generate_meal_plan(db, current_user.id, plan_request)
+    return db_plan
+
+
+@router.get("/plans", response_model=List[schemas.MealPlan])
+def get_meal_plans(
+    response: Response,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """List all meal plans for the current user."""
+    total_count = crud.count_meal_plans(db, current_user.id)
+    response.headers["X-Total-Count"] = str(total_count)
+
+    plans = crud.get_meal_plans(db, current_user.id, skip=skip, limit=limit)
+    return plans
+
+
+@router.get("/plans/{plan_id}", response_model=schemas.MealPlan)
+def get_meal_plan(
+    plan_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Get a specific meal plan with all its meals."""
+    db_plan = crud.get_meal_plan(db, plan_id, current_user.id)
+    if not db_plan:
+        raise HTTPException(status_code=404, detail="Meal plan not found")
+    return db_plan
+
+
+@router.get("/plans/{plan_id}/scores", response_model=schemas.MealPlanWithScores)
+def get_meal_plan_with_scores(
+    plan_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Get a meal plan with freshness/variety scores for each meal."""
+    result = meal_planning.get_meal_plan_with_scores(db, plan_id, current_user.id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Meal plan not found")
+
+    db_plan = result["plan"]
+    meals_with_scores = result["meals_with_scores"]
+
+    return schemas.MealPlanWithScores(
+        id=db_plan.id,
+        user_id=db_plan.user_id,
+        name=db_plan.name,
+        start_date=db_plan.start_date,
+        end_date=db_plan.end_date,
+        status=db_plan.status,
+        config=db_plan.config,
+        created_at=db_plan.created_at,
+        updated_at=db_plan.updated_at,
+        meals=[
+            schemas.MealWithScore(
+                meal=schemas.Meal.model_validate(m["meal"]),
+                freshness_score=m["freshness_score"],
+                variety_score=m["variety_score"],
+                combined_score=m["combined_score"]
+            )
+            for m in meals_with_scores
+        ]
+    )
+
+
+@router.put("/plans/{plan_id}", response_model=schemas.MealPlan)
+def update_meal_plan(
+    plan_id: UUID,
+    plan_update: schemas.MealPlanUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Update a meal plan's name or configuration."""
+    db_plan = crud.get_meal_plan(db, plan_id, current_user.id)
+    if not db_plan:
+        raise HTTPException(status_code=404, detail="Meal plan not found")
+
+    if db_plan.status == models.MealPlanStatus.FINALIZED:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot modify a finalized meal plan"
+        )
+
+    config_dict = plan_update.config.model_dump() if plan_update.config else None
+    updated_plan = crud.update_meal_plan(
+        db, plan_id, current_user.id,
+        name=plan_update.name,
+        config=config_dict
+    )
+    return updated_plan
+
+
+@router.post("/plans/{plan_id}/finalize", response_model=schemas.MealPlan)
+def finalize_meal_plan(
+    plan_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """
+    Finalize a meal plan.
+
+    This locks the plan and transitions all meals to SCHEDULED status.
+    Finalized plans cannot be modified.
+    """
+    db_plan = crud.get_meal_plan(db, plan_id, current_user.id)
+    if not db_plan:
+        raise HTTPException(status_code=404, detail="Meal plan not found")
+
+    finalized_plan = crud.finalize_meal_plan(db, plan_id, current_user.id)
+    return finalized_plan
+
+
+@router.delete("/plans/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_meal_plan(
+    plan_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Delete a meal plan and all its meals."""
+    db_plan = crud.get_meal_plan(db, plan_id, current_user.id)
+    if not db_plan:
+        raise HTTPException(status_code=404, detail="Meal plan not found")
+
+    crud.delete_meal_plan(db, plan_id, current_user.id)
+    return None
+
+
+@router.post("/plans/{plan_id}/meals/{meal_id}/regenerate", response_model=schemas.Meal)
+def regenerate_plan_meal(
+    plan_id: UUID,
+    meal_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """
+    Regenerate a single meal within a plan.
+
+    Selects a new recipe based on freshness and variety scoring.
+    Cannot regenerate pinned meals or meals in finalized plans.
+    """
+    try:
+        db_meal = meal_planning.regenerate_meal(db, plan_id, meal_id, current_user.id)
+        if not db_meal:
+            raise HTTPException(status_code=404, detail="Meal plan or meal not found")
+        return db_meal
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/plans/{plan_id}/meals/{meal_id}/pin", response_model=schemas.Meal)
+def pin_plan_meal(
+    plan_id: UUID,
+    meal_id: UUID,
+    recipe_id: Optional[UUID] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """
+    Pin a meal in the plan.
+
+    Optionally swap to a specific recipe. Pinned meals won't be changed
+    during plan regeneration.
+    """
+    try:
+        db_meal = meal_planning.pin_meal(db, plan_id, meal_id, current_user.id, recipe_id)
+        if not db_meal:
+            raise HTTPException(status_code=404, detail="Meal plan or meal not found")
+        return db_meal
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/plans/{plan_id}/meals/{meal_id}/unpin", response_model=schemas.Meal)
+def unpin_plan_meal(
+    plan_id: UUID,
+    meal_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Unpin a meal, allowing it to be regenerated."""
+    try:
+        db_meal = meal_planning.unpin_meal(db, plan_id, meal_id, current_user.id)
+        if not db_meal:
+            raise HTTPException(status_code=404, detail="Meal plan or meal not found")
+        return db_meal
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# --- Individual Meal Routes ---
 
 @router.get("/{meal_id}", response_model=schemas.Meal)
 def get_meal(

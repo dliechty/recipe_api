@@ -17,6 +17,7 @@ from app.models import (
     DietType,
     MealClassification,
     MealStatus,
+    MealPlanStatus,
     MealTemplateSlotStrategy,
 )
 from app.unit_conversion import UnitSystem
@@ -512,6 +513,8 @@ class Meal(MealBase):
     id: UUID
     user_id: UUID
     template_id: Optional[UUID] = None
+    meal_plan_id: Optional[UUID] = None
+    pinned: bool = False
     created_at: datetime
     updated_at: datetime
     items: List[MealItem]
@@ -564,6 +567,104 @@ class RecipeList(RecipeListBase):
     updated_at: datetime
     items: List[RecipeListItem] = []
 
+# --- Meal Plan Schemas ---
+
+class MealPlanConstraints(BaseModel):
+    """Constraints for meal plan generation."""
+    dietary_restrictions: List[DietType] = []
+    excluded_proteins: List[str] = []
+    max_difficulty: Optional[DifficultyLevel] = None
+    max_total_time_minutes: Optional[int] = None
+
+
+class MealPlanScoringWeights(BaseModel):
+    """Weights for the scoring algorithm."""
+    freshness_weight: float = Field(default=0.5, ge=0.0, le=1.0)
+    variety_weight: float = Field(default=0.4, ge=0.0, le=1.0)
+    random_weight: float = Field(default=0.1, ge=0.0, le=1.0)
+
+    @model_validator(mode='after')
+    def validate_weights_sum(self):
+        total = self.freshness_weight + self.variety_weight + self.random_weight
+        if not (0.99 <= total <= 1.01):  # Allow small floating point tolerance
+            raise ValueError(f"Scoring weights must sum to 1.0, got {total}")
+        return self
+
+
+class MealPlanConfig(BaseModel):
+    """Configuration for meal plan generation."""
+    constraints: MealPlanConstraints = MealPlanConstraints()
+    scoring_weights: MealPlanScoringWeights = MealPlanScoringWeights()
+    freshness_window_days: int = Field(default=30, ge=1, le=365)
+
+
+class PinnedMeal(BaseModel):
+    """A pre-specified meal in the plan."""
+    date: datetime
+    classification: MealClassification
+    recipe_id: UUID
+
+
+class MealPlanCreate(BaseModel):
+    """Request to create/generate a meal plan."""
+    name: Optional[str] = None
+    start_date: datetime
+    end_date: datetime
+    meals_per_day: dict[str, int] = Field(
+        default={"Dinner": 1},
+        description="Map of classification name to count per day"
+    )
+    config: MealPlanConfig = MealPlanConfig()
+    pinned_meals: List[PinnedMeal] = []
+
+    @model_validator(mode='after')
+    def validate_dates(self):
+        if self.end_date < self.start_date:
+            raise ValueError("end_date must be >= start_date")
+        return self
+
+    @field_validator("meals_per_day")
+    @classmethod
+    def validate_meal_classifications(cls, v: dict) -> dict:
+        valid_classifications = {c.value for c in MealClassification}
+        for key in v.keys():
+            if key not in valid_classifications:
+                raise ValueError(
+                    f"Invalid classification '{key}'. Valid: {valid_classifications}"
+                )
+        return v
+
+
+class MealPlanUpdate(BaseModel):
+    """Request to update a meal plan."""
+    name: Optional[str] = None
+    config: Optional[MealPlanConfig] = None
+
+
+class MealWithScore(BaseModel):
+    """A meal with its scoring information."""
+    meal: Meal
+    freshness_score: Optional[float] = None
+    variety_score: Optional[float] = None
+    combined_score: Optional[float] = None
+
+
+class MealPlanBase(BaseModel):
+    name: Optional[str] = None
+    start_date: datetime
+    end_date: datetime
+    status: MealPlanStatus = MealPlanStatus.DRAFT
+
+
+class MealPlan(MealPlanBase):
+    """Full meal plan response."""
+    id: UUID
+    user_id: UUID
+    config: Optional[dict] = None
+    created_at: datetime
+    updated_at: datetime
+    meals: List[Meal] = []
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -573,3 +674,14 @@ class RecipeListAddRecipe(BaseModel):
 
 class RecipeListRemoveRecipe(BaseModel):
     recipe_id: UUID
+
+class MealPlanWithScores(MealPlanBase):
+    """Meal plan response with scoring information."""
+    id: UUID
+    user_id: UUID
+    config: Optional[dict] = None
+    created_at: datetime
+    updated_at: datetime
+    meals: List[MealWithScore] = []
+
+    model_config = ConfigDict(from_attributes=True)

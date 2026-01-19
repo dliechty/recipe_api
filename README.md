@@ -4,19 +4,17 @@ API for recipe and meal planning written using FastAPI, SqlAlchemy, and Alembic.
 
 ## Development Setup
 
-1. Create python virtual environment: `python3 -m venv .venv`
-2. Activate virtual environment: `source .venv/bin/activate`
-3. Install python dependencies: `pip install -r ./requirements.txt`
-4. Run alembic migration: `alembic upgrade head`
-5. Run the application: `uvicorn app.main:app --reload`
-6. Connect to swagger API docs for testing: [http://localhost:8000/docs](http://localhost:8000/docs)
+1. Create python virtual environment: `uv sync`
+2. Run alembic migration: `uv run alembic upgrade head`
+3. Run the application: `uv run uvicorn app.main:app --reload`
+4. Connect to swagger API docs for testing: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ## Testing
 
 Run the test suite using pytest:
 
 ```bash
-pytest
+uv run pytest
 ```
 
 ## Deployment
@@ -69,7 +67,7 @@ To create the initial Superuser account:
 2. Run the initialization script:
 
 ```bash
-python3 -m app.initial_data
+uv run app/initial_data.py
 ```
 
 This will ensure a superuser exists. You can then log in and manage other users or requests.
@@ -80,7 +78,7 @@ This will ensure a superuser exists. You can then log in and manage other users 
 To generate an updated `openapi.json` file reflecting the current API schema:
 
 ```bash
-python3 generate_openapi.py
+uv run generate_openapi.py
 ```
 
 ## Database Migrations (Alembic)
@@ -92,7 +90,7 @@ This project uses [Alembic](https://alembic.sqlalchemy.org) for database migrati
 When you make changes to the existing models in `app/models`, you need to generate a new migration script:
 
 ```bash
-alembic revision --autogenerate -m "Description of changes"
+uv run alembic revision --autogenerate -m "Description of changes"
 ```
 
 This will create a new file in `alembic/versions`. **Always review the generated script** to ensure it accurately reflects your intended changes.
@@ -102,7 +100,7 @@ This will create a new file in `alembic/versions`. **Always review the generated
 To apply pending migrations to your database (upgrade to the latest version):
 
 ```bash
-alembic upgrade head
+uv run alembic upgrade head
 ```
 
 ### Downgrading
@@ -110,5 +108,5 @@ alembic upgrade head
 If you need to revert the last migration:
 
 ```bash
-alembic downgrade -1
+uv run alembic downgrade -1
 ```

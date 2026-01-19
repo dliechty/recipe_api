@@ -10,41 +10,41 @@ Recipe API - A REST API for recipe and meal planning built with FastAPI, SQLAlch
 
 ```bash
 # Development
-uvicorn app.main:app --reload          # Run dev server (http://localhost:8000/docs)
+uv run uvicorn app.main:app --reload          # Run dev server (http://localhost:8000/docs)
 
 # Testing
-pytest                                  # Run all tests
-pytest tests/test_api.py               # Run specific test file
-pytest tests/test_api.py::test_name    # Run single test
+uv run pytest                                  # Run all tests
+uv run pytest tests/test_api.py               # Run specific test file
+uv run pytest tests/test_api.py::test_name    # Run single test
 
 # Database Migrations
-alembic upgrade head                              # Apply all migrations
-alembic revision --autogenerate -m "description"  # Create new migration
-alembic downgrade -1                              # Revert last migration
+uv run alembic upgrade head                              # Apply all migrations
+uv run alembic revision --autogenerate -m "description"  # Create new migration
+uv run alembic downgrade -1                              # Revert last migration
 
 # Linting
-ruff check .                                      # Run linter
-ruff check --fix .                                # Run linter and fix issues
-ruff format .                                     # Format code
+uv run ruff check .                                      # Run linter
+uv run ruff check --fix .                                # Run linter and fix issues
+uv run ruff format .                                     # Format code
 
 # Utilities
-python3 -m app.initial_data            # Create initial superuser
-python3 generate_openapi.py            # Generate OpenAPI spec
+uv run app/initial_data.py            # Create initial superuser
+uv run generate_openapi.py            # Generate OpenAPI spec
 
 # Data Migration (from MS Access)
-python3 migration_scripts/master_migration.py migrate-all      # Migrate recipes then meals
-python3 migration_scripts/master_migration.py migrate-recipes  # Migrate only recipes
-python3 migration_scripts/master_migration.py migrate-meals    # Migrate only meals
-python3 migration_scripts/master_migration.py purge-all        # Purge meals then recipes
-python3 migration_scripts/master_migration.py purge-recipes    # Purge only recipes
-python3 migration_scripts/master_migration.py purge-meals      # Purge only meals
+uv run migration_scripts/master_migration.py migrate-all      # Migrate recipes then meals
+uv run migration_scripts/master_migration.py migrate-recipes  # Migrate only recipes
+uv run migration_scripts/master_migration.py migrate-meals    # Migrate only meals
+uv run migration_scripts/master_migration.py purge-all        # Purge meals then recipes
+uv run migration_scripts/master_migration.py purge-recipes    # Purge only recipes
+uv run migration_scripts/master_migration.py purge-meals      # Purge only meals
 ```
 
 ## Development Workflow
 
 Before committing any changes, ensure the following steps are completed:
-1. **Linting**: Run `ruff check .` to identify issues. Use `ruff check --fix .` to auto-fix where possible. All linting issues must be addressed.
-2. **Testing**: Run the full test suite with `pytest`. Ensure all tests pass before proceeding with a commit.
+1. **Linting**: Run `uv run ruff check .` to identify issues. Use `uv run ruff check --fix .` to auto-fix where possible. All linting issues must be addressed.
+2. **Testing**: Run the full test suite with `uv run pytest`. Ensure all tests pass before proceeding with a commit.
 
 ## Migration Scripts
 

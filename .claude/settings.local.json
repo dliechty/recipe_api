@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(tree:*)",
+      "Skill(commit-commands:commit)",
+      "Bash(pytest:*)",
+      "Bash(alembic revision:*)",
+      "Bash(alembic upgrade:*)",
+      "Bash(ruff check:*)",
+      "Bash(ls:*)",
+      "Bash(xargs:*)",
+      "Bash(mdb-export:*)"
+    ]
+  }
+}

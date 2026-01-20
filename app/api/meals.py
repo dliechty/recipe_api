@@ -1,5 +1,5 @@
 from typing import List, Optional, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Response, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from uuid import UUID
@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app import models, schemas
 from app.api import auth
 from app import filters
+from app.filters import parse_filters
 
 router = APIRouter()
 
@@ -142,6 +143,7 @@ def create_meal_template(
 
 @router.get("/templates", response_model=List[schemas.MealTemplate])
 def get_meal_templates(
+    request: Request,
     response: Response,
     skip: int = 0,
     limit: int = 100,
@@ -150,13 +152,18 @@ def get_meal_templates(
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
     query = db.query(models.MealTemplate).filter(models.MealTemplate.user_id == current_user.id)
-    
-    # Calculate total count before pagination
-    total_count = query.count()
+
+    # Parse and apply filters
+    filters_list = parse_filters(request.query_params)
+    if filters_list:
+        query = filters.apply_template_filters(query, filters_list)
+
+    # Calculate total count after filtering but before pagination
+    total_count = query.distinct().count()
     response.headers["X-Total-Count"] = str(total_count)
-    
+
     query = filters.apply_sorting(query, sort, filters.MEAL_TEMPLATE_SORT_FIELDS, default_sort_col=models.MealTemplate.name)
-    templates = query.offset(skip).limit(limit).all()
+    templates = query.distinct().offset(skip).limit(limit).all()
     return templates
 
 @router.get("/templates/{template_id}", response_model=schemas.MealTemplate)
@@ -324,6 +331,7 @@ def create_meal(
 
 @router.get("/", response_model=List[schemas.Meal])
 def get_meals(
+    request: Request,
     response: Response,
     skip: int = 0,
     limit: int = 100,
@@ -332,13 +340,19 @@ def get_meals(
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
     query = db.query(models.Meal).filter(models.Meal.user_id == current_user.id)
-    
-    # Calculate total count before pagination
-    total_count = query.count()
+
+    # Parse and apply filters
+    filters_list = parse_filters(request.query_params)
+    if filters_list:
+        query = filters.apply_meal_filters(query, filters_list)
+
+    # Calculate total count after filtering but before pagination
+    total_count = query.distinct().count()
     response.headers["X-Total-Count"] = str(total_count)
-    
-    query = filters.apply_sorting(query, sort, filters.MEAL_SORT_FIELDS, default_sort_col=models.Meal.date)
-    meals = query.offset(skip).limit(limit).all()
+
+    # Apply sorting - use special meal sorting that puts null dates first on default
+    query = filters.apply_meal_sorting(query, sort)
+    meals = query.distinct().offset(skip).limit(limit).all()
     return meals
 
 @router.get("/{meal_id}", response_model=schemas.Meal)

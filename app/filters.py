@@ -1,7 +1,8 @@
 # app/filters.py
 from typing import List, Any
 from sqlalchemy.orm import Query
-from sqlalchemy import asc, desc, or_
+from sqlalchemy import asc, desc, or_, case
+from uuid import UUID
 import re
 
 from app import models
@@ -64,6 +65,26 @@ MEAL_TEMPLATE_SORT_FIELDS = {
     'updated_at': models.MealTemplate.updated_at,
     'name': models.MealTemplate.name,
     'classification': models.MealTemplate.classification,
+}
+
+# Allowed filter fields for Meals
+ALLOWED_FIELDS_MEAL = {
+    'id': models.Meal.id,
+    'name': models.Meal.name,
+    'status': models.Meal.status,
+    'classification': models.Meal.classification,
+    'date': models.Meal.date,
+    'created_at': models.Meal.created_at,
+    'updated_at': models.Meal.updated_at,
+}
+
+# Allowed filter fields for Meal Templates
+ALLOWED_FIELDS_MEAL_TEMPLATE = {
+    'id': models.MealTemplate.id,
+    'name': models.MealTemplate.name,
+    'classification': models.MealTemplate.classification,
+    'created_at': models.MealTemplate.created_at,
+    'updated_at': models.MealTemplate.updated_at,
 }
 
 def parse_filters(query_params: dict) -> List[Filter]:
@@ -222,9 +243,271 @@ def apply_sorting(query: Query, sort_param: str, sort_fields_map: dict = None, d
         if field.startswith('-'):
             direction = desc
             field = field[1:]
-        
+
         model_attr = sort_fields_map.get(field)
         if model_attr is not None:
             query = query.order_by(direction(model_attr))
-    
+
+    return query
+
+
+def apply_meal_filters(query: Query, filters: List[Filter]) -> Query:
+    """Apply filters to a Meal query."""
+    for f in filters:
+        # Special handling for Name
+        if f.field == 'name':
+            if f.operator == 'like':
+                query = query.filter(models.Meal.name.ilike(f"%{f.value}%"))
+            elif f.operator == 'eq':
+                query = query.filter(models.Meal.name == f.value)
+            continue
+
+        # Special handling for ID (UUID conversion)
+        if f.field == 'id':
+            if f.operator == 'in':
+                val_list = [UUID(v) for v in f.value.split(',')]
+                query = query.filter(models.Meal.id.in_(val_list))
+            elif f.operator == 'eq':
+                query = query.filter(models.Meal.id == UUID(f.value))
+            continue
+
+        # Special handling for created_by/owner (filter by user)
+        if f.field == 'created_by' or f.field == 'owner':
+            query = query.join(models.User, models.Meal.user_id == models.User.id)
+            if f.operator == 'eq':
+                query = query.filter(or_(
+                    models.User.email == f.value,
+                    models.User.first_name == f.value,
+                    models.User.last_name == f.value
+                ))
+            elif f.operator == 'like':
+                query = query.filter(or_(
+                    models.User.email.ilike(f"%{f.value}%"),
+                    models.User.first_name.ilike(f"%{f.value}%"),
+                    models.User.last_name.ilike(f"%{f.value}%")
+                ))
+            continue
+
+        # Special handling for recipe (filter by associated recipe)
+        if f.field == 'recipe':
+            # Join through MealItem to Recipe
+            query = query.join(models.MealItem, models.Meal.id == models.MealItem.meal_id)
+            query = query.join(models.Recipe, models.MealItem.recipe_id == models.Recipe.id)
+            if f.operator == 'eq':
+                # Match by recipe ID
+                try:
+                    recipe_uuid = UUID(f.value)
+                    query = query.filter(models.Recipe.id == recipe_uuid)
+                except ValueError:
+                    # If not a valid UUID, try matching by name
+                    query = query.filter(models.Recipe.name == f.value)
+            elif f.operator == 'like':
+                query = query.filter(models.Recipe.name.ilike(f"%{f.value}%"))
+            elif f.operator == 'in':
+                # Support comma-separated recipe IDs
+                try:
+                    val_list = [UUID(v) for v in f.value.split(',')]
+                    query = query.filter(models.Recipe.id.in_(val_list))
+                except ValueError:
+                    # If not valid UUIDs, try matching by names
+                    val_list = [v.strip() for v in f.value.split(',')]
+                    query = query.filter(models.Recipe.name.in_(val_list))
+            continue
+
+        # General Field Handling
+        model_attr = ALLOWED_FIELDS_MEAL.get(f.field)
+        if not model_attr:
+            continue
+
+        if f.operator == 'eq':
+            query = query.filter(model_attr == f.value)
+        elif f.operator == 'neq':
+            query = query.filter(model_attr != f.value)
+        elif f.operator == 'gt':
+            query = query.filter(model_attr > f.value)
+        elif f.operator == 'gte':
+            query = query.filter(model_attr >= f.value)
+        elif f.operator == 'lt':
+            query = query.filter(model_attr < f.value)
+        elif f.operator == 'lte':
+            query = query.filter(model_attr <= f.value)
+        elif f.operator == 'in':
+            vals = f.value.split(',')
+            query = query.filter(model_attr.in_(vals))
+        elif f.operator == 'like':
+            query = query.filter(model_attr.ilike(f"%{f.value}%"))
+
+    return query
+
+
+def apply_meal_sorting(query: Query, sort_param: str, nulls_first_on_default: bool = True) -> Query:
+    """
+    Apply sorting to a Meal query.
+
+    By default (no sort param), sorts by date descending with NULL dates at the top.
+    When an explicit sort param is provided, normal sorting behavior is used.
+    """
+    if not sort_param:
+        # Default sort: date descending, but with NULL dates at the top
+        if nulls_first_on_default:
+            # Use CASE to put NULLs first: CASE WHEN date IS NULL THEN 0 ELSE 1 END, then date DESC
+            query = query.order_by(
+                case((models.Meal.date.is_(None), 0), else_=1),
+                desc(models.Meal.date)
+            )
+        else:
+            query = query.order_by(desc(models.Meal.date))
+        return query
+
+    # Explicit sort parameter provided - use normal sorting behavior
+    sort_fields = sort_param.split(',')
+    for field in sort_fields:
+        field = field.strip()
+        direction = asc
+        if field.startswith('-'):
+            direction = desc
+            field = field[1:]
+
+        model_attr = MEAL_SORT_FIELDS.get(field)
+        if model_attr is not None:
+            query = query.order_by(direction(model_attr))
+
+    return query
+
+
+def apply_template_filters(query: Query, filters: List[Filter]) -> Query:
+    """Apply filters to a MealTemplate query."""
+    for f in filters:
+        # Special handling for Name
+        if f.field == 'name':
+            if f.operator == 'like':
+                query = query.filter(models.MealTemplate.name.ilike(f"%{f.value}%"))
+            elif f.operator == 'eq':
+                query = query.filter(models.MealTemplate.name == f.value)
+            continue
+
+        # Special handling for ID (UUID conversion)
+        if f.field == 'id':
+            if f.operator == 'in':
+                val_list = [UUID(v) for v in f.value.split(',')]
+                query = query.filter(models.MealTemplate.id.in_(val_list))
+            elif f.operator == 'eq':
+                query = query.filter(models.MealTemplate.id == UUID(f.value))
+            continue
+
+        # Special handling for created_by/owner (filter by user)
+        if f.field == 'created_by' or f.field == 'owner':
+            query = query.join(models.User, models.MealTemplate.user_id == models.User.id)
+            if f.operator == 'eq':
+                query = query.filter(or_(
+                    models.User.email == f.value,
+                    models.User.first_name == f.value,
+                    models.User.last_name == f.value
+                ))
+            elif f.operator == 'like':
+                query = query.filter(or_(
+                    models.User.email.ilike(f"%{f.value}%"),
+                    models.User.first_name.ilike(f"%{f.value}%"),
+                    models.User.last_name.ilike(f"%{f.value}%")
+                ))
+            continue
+
+        # Special handling for num_slots (number of slots)
+        if f.field == 'num_slots' or f.field == 'slots':
+            from sqlalchemy import func
+            # Subquery to count slots per template
+            slot_count = func.count(models.MealTemplateSlot.id)
+            if f.operator == 'eq':
+                query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count == int(f.value))
+            elif f.operator == 'gt':
+                query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count > int(f.value))
+            elif f.operator == 'gte':
+                query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count >= int(f.value))
+            elif f.operator == 'lt':
+                query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count < int(f.value))
+            elif f.operator == 'lte':
+                query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count <= int(f.value))
+            continue
+
+        # Special handling for recipe (filter by associated recipe in slots)
+        if f.field == 'recipe':
+            # Templates can have recipes via DIRECT slots (recipe_id) or LIST slots (recipes relationship)
+            # Join through MealTemplateSlot
+            query = query.join(models.MealTemplateSlot, models.MealTemplate.id == models.MealTemplateSlot.template_id)
+
+            if f.operator == 'eq':
+                try:
+                    recipe_uuid = UUID(f.value)
+                    # Check both direct recipe_id and list recipes (via association table)
+                    query = query.outerjoin(
+                        models.MealTemplateSlotRecipe,
+                        models.MealTemplateSlot.id == models.MealTemplateSlotRecipe.slot_id
+                    ).filter(or_(
+                        models.MealTemplateSlot.recipe_id == recipe_uuid,
+                        models.MealTemplateSlotRecipe.recipe_id == recipe_uuid
+                    ))
+                except ValueError:
+                    # If not a valid UUID, try matching by recipe name
+                    query = query.outerjoin(
+                        models.Recipe,
+                        models.MealTemplateSlot.recipe_id == models.Recipe.id
+                    ).outerjoin(
+                        models.MealTemplateSlotRecipe,
+                        models.MealTemplateSlot.id == models.MealTemplateSlotRecipe.slot_id
+                    ).filter(models.Recipe.name == f.value)
+            elif f.operator == 'like':
+                # For LIKE, we need to join to Recipe table to search by name
+                # This gets complex because recipes can be linked via direct or list slots
+                from sqlalchemy.orm import aliased
+                DirectRecipe = aliased(models.Recipe)
+                query = query.outerjoin(
+                    DirectRecipe,
+                    models.MealTemplateSlot.recipe_id == DirectRecipe.id
+                ).outerjoin(
+                    models.MealTemplateSlotRecipe,
+                    models.MealTemplateSlot.id == models.MealTemplateSlotRecipe.slot_id
+                ).outerjoin(
+                    models.Recipe,
+                    models.MealTemplateSlotRecipe.recipe_id == models.Recipe.id
+                ).filter(or_(
+                    DirectRecipe.name.ilike(f"%{f.value}%"),
+                    models.Recipe.name.ilike(f"%{f.value}%")
+                ))
+            elif f.operator == 'in':
+                try:
+                    val_list = [UUID(v) for v in f.value.split(',')]
+                    query = query.outerjoin(
+                        models.MealTemplateSlotRecipe,
+                        models.MealTemplateSlot.id == models.MealTemplateSlotRecipe.slot_id
+                    ).filter(or_(
+                        models.MealTemplateSlot.recipe_id.in_(val_list),
+                        models.MealTemplateSlotRecipe.recipe_id.in_(val_list)
+                    ))
+                except ValueError:
+                    pass  # Invalid UUIDs, skip filter
+            continue
+
+        # General Field Handling
+        model_attr = ALLOWED_FIELDS_MEAL_TEMPLATE.get(f.field)
+        if not model_attr:
+            continue
+
+        if f.operator == 'eq':
+            query = query.filter(model_attr == f.value)
+        elif f.operator == 'neq':
+            query = query.filter(model_attr != f.value)
+        elif f.operator == 'gt':
+            query = query.filter(model_attr > f.value)
+        elif f.operator == 'gte':
+            query = query.filter(model_attr >= f.value)
+        elif f.operator == 'lt':
+            query = query.filter(model_attr < f.value)
+        elif f.operator == 'lte':
+            query = query.filter(model_attr <= f.value)
+        elif f.operator == 'in':
+            vals = f.value.split(',')
+            query = query.filter(model_attr.in_(vals))
+        elif f.operator == 'like':
+            query = query.filter(model_attr.ilike(f"%{f.value}%"))
+
     return query

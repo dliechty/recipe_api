@@ -96,9 +96,11 @@ def test_meals_sorting(client: TestClient, db):
     names = [m["name"] for m in data]
     assert names == ["Meal B", "Meal A", "Meal C"], f"Expected B, A, C (Status Asc), got {names}"
     
-    # 5. Default Sort (Date?)
+    # 5. Default Sort (Date Desc with NULL dates first)
     res = client.get("/meals/", headers=headers)
     data = res.json()
     names = [m["name"] for m in data]
-    # Default is Date Asc
-    assert names == ["Meal B", "Meal A", "Meal C"], f"Expected B, A, C (Default), got {names}"
+    # Default is now Date Desc (with NULL dates at top, but none here)
+    # Dates: Meal B (+1 day), Meal A (+2 days), Meal C (+3 days)
+    # Descending: C (latest), A, B (earliest)
+    assert names == ["Meal C", "Meal A", "Meal B"], f"Expected C, A, B (Default Date Desc), got {names}"

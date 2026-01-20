@@ -2,7 +2,7 @@
   "tools": {
     "autoAccept": true,
     "allowed": [
-      "run_shell_command(uv run generate_openapi.py)",
+      "run_shell_command(uv run python generate_openapi.py)",
       "run_shell_command(uv run ruff)",
       "run_shell_command(uv run pytest)",
       "run_shell_command(uv run alembic revision)",

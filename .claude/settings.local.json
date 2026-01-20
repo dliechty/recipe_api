@@ -6,7 +6,6 @@
       "Bash(tree:*)",
       "Skill(commit-commands:commit)",
       "Bash(uv run pytest:*)",
-      "Bash(uv run generate_openapi.py)",
       "Bash(uv run alembic revision:*)",
       "Bash(uv run alembic upgrade:*)",
       "Bash(uv run ruff check:*)",
@@ -14,7 +13,8 @@
       "Bash(ls:*)",
       "Bash(xargs:*)",
       "Bash(grep:*)",
-      "Bash(mdb-export:*)"
+      "Bash(mdb-export:*)",
+      "Bash(uv run python generate_openapi.py)"
     ]
   }
 }

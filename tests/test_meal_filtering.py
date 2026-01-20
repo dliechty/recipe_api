@@ -243,8 +243,8 @@ def test_apply_meal_filters_compound(db: Session, filter_user):
     assert results[0].name == "Draft Dinner"
 
 
-def test_apply_meal_filters_by_recipe(db: Session, filter_user):
-    """Test filtering meals by associated recipe."""
+def test_apply_meal_filters_by_recipe_id(db: Session, filter_user):
+    """Test filtering meals by associated recipe ID."""
     recipe1 = create_recipe(db, filter_user.id, "Spaghetti")
     recipe2 = create_recipe(db, filter_user.id, "Salad")
 
@@ -259,9 +259,9 @@ def test_apply_meal_filters_by_recipe(db: Session, filter_user):
     db.add_all([item1, item2])
     db.commit()
 
-    # Filter by recipe name
+    # Filter by recipe ID
     query = db.query(models.Meal).filter(models.Meal.user_id == filter_user.id)
-    filters_list = [Filter("recipe", "like", "Spag")]
+    filters_list = [Filter("recipe_id", "eq", str(recipe1.id))]
     query = apply_meal_filters(query, filters_list)
     results = query.distinct().all()
 
@@ -385,8 +385,8 @@ def test_apply_template_filters_by_num_slots(db: Session, filter_user):
     assert results[0].name == "Multi Slot"
 
 
-def test_apply_template_filters_by_recipe_direct(db: Session, filter_user):
-    """Test filtering templates by associated recipe (DIRECT slot)."""
+def test_apply_template_filters_by_recipe_id_direct(db: Session, filter_user):
+    """Test filtering templates by associated recipe ID (DIRECT slot)."""
     recipe1 = create_recipe(db, filter_user.id, "Target Recipe")
     recipe2 = create_recipe(db, filter_user.id, "Other Recipe")
 
@@ -410,7 +410,7 @@ def test_apply_template_filters_by_recipe_direct(db: Session, filter_user):
 
     # Filter by recipe ID
     query = db.query(models.MealTemplate).filter(models.MealTemplate.user_id == filter_user.id)
-    filters_list = [Filter("recipe", "eq", str(recipe1.id))]
+    filters_list = [Filter("recipe_id", "eq", str(recipe1.id))]
     query = apply_template_filters(query, filters_list)
     results = query.distinct().all()
 
@@ -492,8 +492,8 @@ def test_api_filter_meals_by_date(client: TestClient, db: Session, filter_user_h
     assert data[0]["name"] == "Jan 15 Meal"
 
 
-def test_api_filter_meals_by_recipe(client: TestClient, db: Session, filter_user_headers, filter_user):
-    """Test filtering meals by associated recipe via API."""
+def test_api_filter_meals_by_recipe_id(client: TestClient, db: Session, filter_user_headers, filter_user):
+    """Test filtering meals by associated recipe ID via API."""
     # Create recipes
     recipe1 = create_recipe(db, filter_user.id, "Lasagna")
     recipe2 = create_recipe(db, filter_user.id, "Soup")
@@ -504,8 +504,8 @@ def test_api_filter_meals_by_recipe(client: TestClient, db: Session, filter_user
     client.post("/meals/", json=payload1, headers=filter_user_headers)
     client.post("/meals/", json=payload2, headers=filter_user_headers)
 
-    # Filter by recipe name
-    response = client.get("/meals/?recipe[like]=lasag", headers=filter_user_headers)
+    # Filter by recipe ID
+    response = client.get(f"/meals/?recipe_id[eq]={recipe1.id}", headers=filter_user_headers)
     assert response.status_code == 200
     data = response.json()
 
@@ -704,8 +704,8 @@ def test_api_filter_templates_by_num_slots_lte(client: TestClient, db: Session, 
     assert data[0]["name"] == "Two Slot Template"
 
 
-def test_api_filter_templates_by_recipe(client: TestClient, db: Session, filter_user_headers, filter_user):
-    """Test filtering templates by associated recipe via API."""
+def test_api_filter_templates_by_recipe_id(client: TestClient, db: Session, filter_user_headers, filter_user):
+    """Test filtering templates by associated recipe ID via API."""
     recipe1 = create_recipe(db, filter_user.id, "Target Recipe For Template")
     recipe2 = create_recipe(db, filter_user.id, "Other Recipe For Template")
 
@@ -722,7 +722,7 @@ def test_api_filter_templates_by_recipe(client: TestClient, db: Session, filter_
 
     # Filter by recipe ID
     response = client.get(
-        f"/meals/templates?recipe[eq]={recipe1.id}",
+        f"/meals/templates?recipe_id[eq]={recipe1.id}",
         headers=filter_user_headers
     )
     assert response.status_code == 200
@@ -732,33 +732,8 @@ def test_api_filter_templates_by_recipe(client: TestClient, db: Session, filter_
     assert data[0]["name"] == "Has Target"
 
 
-def test_api_filter_templates_by_recipe_like(client: TestClient, db: Session, filter_user_headers, filter_user):
-    """Test filtering templates by recipe name using LIKE via API."""
-    recipe1 = create_recipe(db, filter_user.id, "Chicken Casserole")
-    recipe2 = create_recipe(db, filter_user.id, "Beef Stew")
-
-    template1 = {
-        "name": "Chicken Template",
-        "slots": [{"strategy": "Direct", "recipe_id": str(recipe1.id)}]
-    }
-    template2 = {
-        "name": "Beef Template",
-        "slots": [{"strategy": "Direct", "recipe_id": str(recipe2.id)}]
-    }
-    client.post("/meals/templates", json=template1, headers=filter_user_headers)
-    client.post("/meals/templates", json=template2, headers=filter_user_headers)
-
-    # Filter by recipe name using LIKE
-    response = client.get("/meals/templates?recipe[like]=chicken", headers=filter_user_headers)
-    assert response.status_code == 200
-    data = response.json()
-
-    assert len(data) == 1
-    assert data[0]["name"] == "Chicken Template"
-
-
-def test_api_filter_templates_by_recipe_list_slot(client: TestClient, db: Session, filter_user_headers, filter_user):
-    """Test filtering templates by recipe in a LIST slot via API."""
+def test_api_filter_templates_by_recipe_id_list_slot(client: TestClient, db: Session, filter_user_headers, filter_user):
+    """Test filtering templates by recipe ID in a LIST slot via API."""
     recipe1 = create_recipe(db, filter_user.id, "List Target Recipe")
     recipe2 = create_recipe(db, filter_user.id, "List Other Recipe")
     recipe3 = create_recipe(db, filter_user.id, "Unrelated Recipe")
@@ -776,7 +751,7 @@ def test_api_filter_templates_by_recipe_list_slot(client: TestClient, db: Sessio
 
     # Filter by recipe ID that's in a LIST slot
     response = client.get(
-        f"/meals/templates?recipe[eq]={recipe1.id}",
+        f"/meals/templates?recipe_id[eq]={recipe1.id}",
         headers=filter_user_headers
     )
     assert response.status_code == 200

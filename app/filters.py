@@ -288,30 +288,16 @@ def apply_meal_filters(query: Query, filters: List[Filter]) -> Query:
                 ))
             continue
 
-        # Special handling for recipe (filter by associated recipe)
-        if f.field == 'recipe':
+        # Special handling for recipe_id (filter by associated recipe ID)
+        if f.field == 'recipe_id':
             # Join through MealItem to Recipe
             query = query.join(models.MealItem, models.Meal.id == models.MealItem.meal_id)
-            query = query.join(models.Recipe, models.MealItem.recipe_id == models.Recipe.id)
             if f.operator == 'eq':
-                # Match by recipe ID
-                try:
-                    recipe_uuid = UUID(f.value)
-                    query = query.filter(models.Recipe.id == recipe_uuid)
-                except ValueError:
-                    # If not a valid UUID, try matching by name
-                    query = query.filter(models.Recipe.name == f.value)
-            elif f.operator == 'like':
-                query = query.filter(models.Recipe.name.ilike(f"%{f.value}%"))
+                recipe_uuid = UUID(f.value)
+                query = query.filter(models.MealItem.recipe_id == recipe_uuid)
             elif f.operator == 'in':
-                # Support comma-separated recipe IDs
-                try:
-                    val_list = [UUID(v) for v in f.value.split(',')]
-                    query = query.filter(models.Recipe.id.in_(val_list))
-                except ValueError:
-                    # If not valid UUIDs, try matching by names
-                    val_list = [v.strip() for v in f.value.split(',')]
-                    query = query.filter(models.Recipe.name.in_(val_list))
+                val_list = [UUID(v) for v in f.value.split(',')]
+                query = query.filter(models.MealItem.recipe_id.in_(val_list))
             continue
 
         # General Field Handling
@@ -429,62 +415,31 @@ def apply_template_filters(query: Query, filters: List[Filter]) -> Query:
                 query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count <= int(f.value))
             continue
 
-        # Special handling for recipe (filter by associated recipe in slots)
-        if f.field == 'recipe':
+        # Special handling for recipe_id (filter by associated recipe ID in slots)
+        if f.field == 'recipe_id':
             # Templates can have recipes via DIRECT slots (recipe_id) or LIST slots (recipes relationship)
             # Join through MealTemplateSlot
             query = query.join(models.MealTemplateSlot, models.MealTemplate.id == models.MealTemplateSlot.template_id)
 
             if f.operator == 'eq':
-                try:
-                    recipe_uuid = UUID(f.value)
-                    # Check both direct recipe_id and list recipes (via association table)
-                    query = query.outerjoin(
-                        models.MealTemplateSlotRecipe,
-                        models.MealTemplateSlot.id == models.MealTemplateSlotRecipe.slot_id
-                    ).filter(or_(
-                        models.MealTemplateSlot.recipe_id == recipe_uuid,
-                        models.MealTemplateSlotRecipe.recipe_id == recipe_uuid
-                    ))
-                except ValueError:
-                    # If not a valid UUID, try matching by recipe name
-                    query = query.outerjoin(
-                        models.Recipe,
-                        models.MealTemplateSlot.recipe_id == models.Recipe.id
-                    ).outerjoin(
-                        models.MealTemplateSlotRecipe,
-                        models.MealTemplateSlot.id == models.MealTemplateSlotRecipe.slot_id
-                    ).filter(models.Recipe.name == f.value)
-            elif f.operator == 'like':
-                # For LIKE, we need to join to Recipe table to search by name
-                # This gets complex because recipes can be linked via direct or list slots
-                from sqlalchemy.orm import aliased
-                DirectRecipe = aliased(models.Recipe)
+                recipe_uuid = UUID(f.value)
+                # Check both direct recipe_id and list recipes (via association table)
                 query = query.outerjoin(
-                    DirectRecipe,
-                    models.MealTemplateSlot.recipe_id == DirectRecipe.id
-                ).outerjoin(
                     models.MealTemplateSlotRecipe,
                     models.MealTemplateSlot.id == models.MealTemplateSlotRecipe.slot_id
-                ).outerjoin(
-                    models.Recipe,
-                    models.MealTemplateSlotRecipe.recipe_id == models.Recipe.id
                 ).filter(or_(
-                    DirectRecipe.name.ilike(f"%{f.value}%"),
-                    models.Recipe.name.ilike(f"%{f.value}%")
+                    models.MealTemplateSlot.recipe_id == recipe_uuid,
+                    models.MealTemplateSlotRecipe.recipe_id == recipe_uuid
                 ))
             elif f.operator == 'in':
-                try:
-                    val_list = [UUID(v) for v in f.value.split(',')]
-                    query = query.outerjoin(
-                        models.MealTemplateSlotRecipe,
-                        models.MealTemplateSlot.id == models.MealTemplateSlotRecipe.slot_id
-                    ).filter(or_(
-                        models.MealTemplateSlot.recipe_id.in_(val_list),
-                        models.MealTemplateSlotRecipe.recipe_id.in_(val_list)
-                    ))
-                except ValueError:
-                    pass  # Invalid UUIDs, skip filter
+                val_list = [UUID(v) for v in f.value.split(',')]
+                query = query.outerjoin(
+                    models.MealTemplateSlotRecipe,
+                    models.MealTemplateSlot.id == models.MealTemplateSlotRecipe.slot_id
+                ).filter(or_(
+                    models.MealTemplateSlot.recipe_id.in_(val_list),
+                    models.MealTemplateSlotRecipe.recipe_id.in_(val_list)
+                ))
             continue
 
         # General Field Handling

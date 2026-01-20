@@ -171,13 +171,14 @@ def get_meal_templates(
 
     Operators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`.
 
-    Filter fields: `id`, `name`, `classification`, `created_at`, `updated_at`, `num_slots` (or `slots`), `recipe`, `owner` (or `created_by`).
+    Filter fields: `id`, `name`, `classification`, `created_at`, `updated_at`, `num_slots` (or `slots`), `recipe_id`, `owner` (or `created_by`).
 
     Examples:
     - `?name[like]=weekly` - Templates with 'weekly' in name
     - `?classification[eq]=dinner` - Dinner templates only
     - `?num_slots[gte]=3` - Templates with 3+ slots
-    - `?recipe[like]=chicken` - Templates containing recipes with 'chicken'
+    - `?recipe_id[eq]=<uuid>` - Templates containing specific recipe
+    - `?recipe_id[in]=<uuid1>,<uuid2>` - Templates containing any of the specified recipes
 
     **Sorting:** Use the `sort` parameter with comma-separated fields. Prefix with `-` for descending.
 
@@ -392,13 +393,14 @@ def get_meals(
 
     Operators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`.
 
-    Filter fields: `id`, `name`, `status`, `classification`, `date`, `created_at`, `updated_at`, `recipe`, `owner` (or `created_by`).
+    Filter fields: `id`, `name`, `status`, `classification`, `date`, `created_at`, `updated_at`, `recipe_id`, `owner` (or `created_by`).
 
     Examples:
     - `?name[like]=weekly` - Meals with 'weekly' in name
     - `?status[eq]=scheduled` - Scheduled meals only
     - `?date[gte]=2024-01-01&date[lte]=2024-01-31` - Meals in January 2024
-    - `?recipe[like]=chicken` - Meals containing recipes with 'chicken'
+    - `?recipe_id[eq]=<uuid>` - Meals containing specific recipe
+    - `?recipe_id[in]=<uuid1>,<uuid2>` - Meals containing any of the specified recipes
     - `?classification[in]=breakfast,lunch` - Breakfast or lunch meals
 
     **Sorting:** Use the `sort` parameter with comma-separated fields. Prefix with `-` for descending.

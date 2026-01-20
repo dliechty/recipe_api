@@ -5,7 +5,7 @@ import logging
 import os
 from collections import defaultdict
 from threading import Lock
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
@@ -157,8 +157,17 @@ def get_user_name(
 
 @router.get("/users", response_model=list[schemas.UserPublic])
 def list_active_users(
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(
+        default=0,
+        ge=0,
+        description="Number of records to skip for pagination"
+    ),
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=1000,
+        description="Maximum number of records to return (1-1000)"
+    ),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):

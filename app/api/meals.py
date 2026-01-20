@@ -145,12 +145,44 @@ def create_meal_template(
 def get_meal_templates(
     request: Request,
     response: Response,
-    skip: int = 0,
-    limit: int = 100,
-    sort: str = Query(None),
+    skip: int = Query(
+        default=0,
+        ge=0,
+        description="Number of records to skip for pagination"
+    ),
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=1000,
+        description="Maximum number of records to return (1-1000)"
+    ),
+    sort: str = Query(
+        default=None,
+        description="Comma-separated sort fields. Prefix with '-' for descending order. "
+                    "Valid fields: name, classification, created_at, updated_at. Example: 'name,-created_at'"
+    ),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
+    """
+    Retrieve a list of meal templates with optional filtering and sorting.
+
+    **Filtering:** Use bracket notation `field[operator]=value` for filters.
+
+    Operators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`.
+
+    Filter fields: `id`, `name`, `classification`, `created_at`, `updated_at`, `num_slots` (or `slots`), `recipe`, `owner` (or `created_by`).
+
+    Examples:
+    - `?name[like]=weekly` - Templates with 'weekly' in name
+    - `?classification[eq]=dinner` - Dinner templates only
+    - `?num_slots[gte]=3` - Templates with 3+ slots
+    - `?recipe[like]=chicken` - Templates containing recipes with 'chicken'
+
+    **Sorting:** Use the `sort` parameter with comma-separated fields. Prefix with `-` for descending.
+
+    Returns total count in `X-Total-Count` response header.
+    """
     query = db.query(models.MealTemplate).filter(models.MealTemplate.user_id == current_user.id)
 
     # Parse and apply filters
@@ -333,12 +365,46 @@ def create_meal(
 def get_meals(
     request: Request,
     response: Response,
-    skip: int = 0,
-    limit: int = 100,
-    sort: str = Query(None),
+    skip: int = Query(
+        default=0,
+        ge=0,
+        description="Number of records to skip for pagination"
+    ),
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=1000,
+        description="Maximum number of records to return (1-1000)"
+    ),
+    sort: str = Query(
+        default=None,
+        description="Comma-separated sort fields. Prefix with '-' for descending order. "
+                    "Valid fields: date, classification, status, created_at, updated_at, name. "
+                    "Default: date descending with unscheduled (null) dates first. Example: '-date,name'"
+    ),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
+    """
+    Retrieve a list of meals with optional filtering and sorting.
+
+    **Filtering:** Use bracket notation `field[operator]=value` for filters.
+
+    Operators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`.
+
+    Filter fields: `id`, `name`, `status`, `classification`, `date`, `created_at`, `updated_at`, `recipe`, `owner` (or `created_by`).
+
+    Examples:
+    - `?name[like]=weekly` - Meals with 'weekly' in name
+    - `?status[eq]=scheduled` - Scheduled meals only
+    - `?date[gte]=2024-01-01&date[lte]=2024-01-31` - Meals in January 2024
+    - `?recipe[like]=chicken` - Meals containing recipes with 'chicken'
+    - `?classification[in]=breakfast,lunch` - Breakfast or lunch meals
+
+    **Sorting:** Use the `sort` parameter with comma-separated fields. Prefix with `-` for descending.
+
+    Returns total count in `X-Total-Count` response header.
+    """
     query = db.query(models.Meal).filter(models.Meal.user_id == current_user.id)
 
     # Parse and apply filters

@@ -46,16 +46,46 @@ def create_recipe(
 def read_recipes(
         request: Request,
         response: Response,
-        skip: int = 0,
-        limit: int = 100,
-        sort: str = None,
+        skip: int = Query(
+            default=0,
+            ge=0,
+            description="Number of records to skip for pagination"
+        ),
+        limit: int = Query(
+            default=100,
+            ge=1,
+            le=1000,
+            description="Maximum number of records to return (1-1000)"
+        ),
+        sort: str = Query(
+            default=None,
+            description="Comma-separated sort fields. Prefix with '-' for descending order. "
+                        "Valid fields: name, calories, total_time_minutes, difficulty, category, "
+                        "cuisine, prep_time_minutes, cook_time_minutes, active_time_minutes, "
+                        "yield_amount, protein, created_at, updated_at. Example: '-created_at,name'"
+        ),
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_active_user)
 ):
     """
     Retrieve a list of all recipes with optional filtering and sorting.
-    Filters: field[eq]=value, field[gt]=value, etc.
-    Sort: sort=field1,-field2
+
+    **Filtering:** Use bracket notation `field[operator]=value` for filters.
+
+    Operators: `eq` (equals), `neq` (not equals), `gt`, `gte`, `lt`, `lte`, `in` (comma-separated list), `like` (case-insensitive substring), `all` (must match all values).
+
+    Filter fields: `id`, `name`, `description`, `category`, `cuisine`, `difficulty`, `protein`, `yield_amount`, `calories`, `prep_time_minutes`, `cook_time_minutes`, `active_time_minutes`, `total_time_minutes`, `owner`, `ingredients`, `suitable_for_diet`.
+
+    Examples:
+    - `?name[like]=chicken` - Recipes with 'chicken' in name
+    - `?difficulty[eq]=easy` - Easy recipes only
+    - `?calories[gte]=200&calories[lte]=500` - Calories between 200-500
+    - `?category[in]=breakfast,lunch` - Breakfast or lunch recipes
+    - `?ingredients[all]=flour,eggs` - Recipes containing both flour AND eggs
+
+    **Sorting:** Use the `sort` parameter with comma-separated fields. Prefix with `-` for descending.
+
+    Returns total count in `X-Total-Count` response header.
     """
     filters_list = parse_filters(request.query_params)
     logger.debug(f"Fetching recipes with skip={skip}, limit={limit}, filters={filters_list}, sort={sort}")
@@ -225,8 +255,17 @@ def create_comment(
 @router.get("/{recipe_id}/comments", response_model=List[schemas.Comment])
 def read_comments(
     recipe_id: UUID,
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(
+        default=0,
+        ge=0,
+        description="Number of records to skip for pagination"
+    ),
+    limit: int = Query(
+        default=100,
+        ge=1,
+        le=1000,
+        description="Maximum number of records to return (1-1000)"
+    ),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):

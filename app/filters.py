@@ -363,6 +363,9 @@ def apply_meal_sorting(query: Query, sort_param: str, nulls_first_on_default: bo
 
 def apply_template_filters(query: Query, filters: List[Filter]) -> Query:
     """Apply filters to a MealTemplate query."""
+    # Collect num_slots filters to apply them together with a single join/group_by
+    num_slots_filters = []
+
     for f in filters:
         # Special handling for Name
         if f.field == 'name':
@@ -398,21 +401,9 @@ def apply_template_filters(query: Query, filters: List[Filter]) -> Query:
                 ))
             continue
 
-        # Special handling for num_slots (number of slots)
+        # Collect num_slots filters to process together
         if f.field == 'num_slots' or f.field == 'slots':
-            from sqlalchemy import func
-            # Subquery to count slots per template
-            slot_count = func.count(models.MealTemplateSlot.id)
-            if f.operator == 'eq':
-                query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count == int(f.value))
-            elif f.operator == 'gt':
-                query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count > int(f.value))
-            elif f.operator == 'gte':
-                query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count >= int(f.value))
-            elif f.operator == 'lt':
-                query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count < int(f.value))
-            elif f.operator == 'lte':
-                query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id).having(slot_count <= int(f.value))
+            num_slots_filters.append(f)
             continue
 
         # Special handling for recipe_id (filter by associated recipe ID in slots)
@@ -464,5 +455,23 @@ def apply_template_filters(query: Query, filters: List[Filter]) -> Query:
             query = query.filter(model_attr.in_(vals))
         elif f.operator == 'like':
             query = query.filter(model_attr.ilike(f"%{f.value}%"))
+
+    # Apply all num_slots filters together with a single join/group_by
+    if num_slots_filters:
+        from sqlalchemy import func
+        slot_count = func.count(models.MealTemplateSlot.id)
+        query = query.join(models.MealTemplateSlot).group_by(models.MealTemplate.id)
+
+        for f in num_slots_filters:
+            if f.operator == 'eq':
+                query = query.having(slot_count == int(f.value))
+            elif f.operator == 'gt':
+                query = query.having(slot_count > int(f.value))
+            elif f.operator == 'gte':
+                query = query.having(slot_count >= int(f.value))
+            elif f.operator == 'lt':
+                query = query.having(slot_count < int(f.value))
+            elif f.operator == 'lte':
+                query = query.having(slot_count <= int(f.value))
 
     return query

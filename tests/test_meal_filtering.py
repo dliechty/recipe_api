@@ -856,3 +856,47 @@ def test_api_meals_pagination_with_filter(client: TestClient, db: Session, filte
     response = client.get("/meals/?status[eq]=Draft&skip=5&limit=5", headers=filter_user_headers)
     data = response.json()
     assert len(data) == 5
+
+
+def test_api_filter_templates_by_num_slots_range(client: TestClient, db: Session, filter_user_headers, filter_user):
+    """Test filtering templates by number of slots using multiple operators (gt and lt)."""
+    recipe = create_recipe(db, filter_user.id, "Range Slot Recipe")
+
+    # 1 slot template
+    template1 = {
+        "name": "One Slot Template",
+        "slots": [{"strategy": "Direct", "recipe_id": str(recipe.id)}]
+    }
+    client.post("/meals/templates", json=template1, headers=filter_user_headers)
+
+    # 3 slot template
+    template2 = {
+        "name": "Three Slot Template",
+        "slots": [
+            {"strategy": "Direct", "recipe_id": str(recipe.id)},
+            {"strategy": "Search", "search_criteria": [{"field": "category", "operator": "eq", "value": "Dinner"}]},
+            {"strategy": "Search", "search_criteria": [{"field": "difficulty", "operator": "eq", "value": "Easy"}]},
+        ]
+    }
+    client.post("/meals/templates", json=template2, headers=filter_user_headers)
+
+    # 5 slot template
+    template3 = {
+        "name": "Five Slot Template",
+        "slots": [
+            {"strategy": "Direct", "recipe_id": str(recipe.id)},
+            {"strategy": "Search", "search_criteria": [{"field": "category", "operator": "eq", "value": "Dinner"}]},
+            {"strategy": "Search", "search_criteria": [{"field": "category", "operator": "eq", "value": "Lunch"}]},
+            {"strategy": "Search", "search_criteria": [{"field": "difficulty", "operator": "eq", "value": "Easy"}]},
+            {"strategy": "Search", "search_criteria": [{"field": "difficulty", "operator": "eq", "value": "Medium"}]},
+        ]
+    }
+    client.post("/meals/templates", json=template3, headers=filter_user_headers)
+
+    # Filter for templates with > 1 slots AND < 5 slots (should return only the 3-slot template)
+    response = client.get("/meals/templates?num_slots[gt]=1&num_slots[lt]=5", headers=filter_user_headers)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["name"] == "Three Slot Template"

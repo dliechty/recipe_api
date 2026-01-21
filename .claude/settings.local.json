@@ -14,7 +14,8 @@
       "Bash(xargs:*)",
       "Bash(grep:*)",
       "Bash(mdb-export:*)",
-      "Bash(uv run python generate_openapi.py)"
+      "Bash(uv run python generate_openapi.py)",
+      "Bash(uv run ruff format:*)"
     ]
   }
 }

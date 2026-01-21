@@ -184,7 +184,7 @@ def get_meal_templates(
 
     Returns total count in `X-Total-Count` response header.
     """
-    query = db.query(models.MealTemplate).filter(models.MealTemplate.user_id == current_user.id)
+    query = db.query(models.MealTemplate)
 
     # Parse and apply filters
     filters_list = parse_filters(request.query_params)
@@ -205,7 +205,7 @@ def get_meal_template(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
-    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id, models.MealTemplate.user_id == current_user.id).first()
+    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id).first()
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
     return template
@@ -217,9 +217,11 @@ def update_meal_template(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
-    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id, models.MealTemplate.user_id == current_user.id).first()
+    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id).first()
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
+    if template.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to update this template")
     
     if template_in.name is not None:
         template.name = template_in.name
@@ -236,9 +238,11 @@ def delete_meal_template(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
-    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id, models.MealTemplate.user_id == current_user.id).first()
+    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id).first()
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
+    if template.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this template")
     
     db.delete(template)
     db.commit()
@@ -294,7 +298,7 @@ def generate_meal(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
-    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id, models.MealTemplate.user_id == current_user.id).first()
+    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id).first()
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
 
@@ -407,7 +411,7 @@ def get_meals(
 
     Returns total count in `X-Total-Count` response header.
     """
-    query = db.query(models.Meal).filter(models.Meal.user_id == current_user.id)
+    query = db.query(models.Meal)
 
     # Parse and apply filters
     filters_list = parse_filters(request.query_params)
@@ -429,7 +433,7 @@ def get_meal(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
-    meal = db.query(models.Meal).filter(models.Meal.id == meal_id, models.Meal.user_id == current_user.id).first()
+    meal = db.query(models.Meal).filter(models.Meal.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
     return meal
@@ -441,9 +445,11 @@ def update_meal(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
-    meal = db.query(models.Meal).filter(models.Meal.id == meal_id, models.Meal.user_id == current_user.id).first()
+    meal = db.query(models.Meal).filter(models.Meal.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
+    if meal.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to update this meal")
         
     if meal_in.name is not None:
         meal.name = meal_in.name
@@ -481,9 +487,11 @@ def delete_meal(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
-    meal = db.query(models.Meal).filter(models.Meal.id == meal_id, models.Meal.user_id == current_user.id).first()
+    meal = db.query(models.Meal).filter(models.Meal.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
+    if meal.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this meal")
 
     db.delete(meal)
     db.commit()

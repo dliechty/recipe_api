@@ -276,6 +276,9 @@ def apply_meal_filters(query: Query, filters: List[Filter]) -> Query:
             if f.operator == 'eq':
                 user_uuid = UUID(f.value)
                 query = query.filter(models.Meal.user_id == user_uuid)
+            elif f.operator == 'in':
+                val_list = [UUID(v) for v in f.value.split(',')]
+                query = query.filter(models.Meal.user_id.in_(val_list))
             continue
 
         # Special handling for recipe_id (filter by associated recipe ID)
@@ -379,6 +382,9 @@ def apply_template_filters(query: Query, filters: List[Filter]) -> Query:
             if f.operator == 'eq':
                 user_uuid = UUID(f.value)
                 query = query.filter(models.MealTemplate.user_id == user_uuid)
+            elif f.operator == 'in':
+                val_list = [UUID(v) for v in f.value.split(',')]
+                query = query.filter(models.MealTemplate.user_id.in_(val_list))
             continue
 
         # Collect num_slots filters to process together

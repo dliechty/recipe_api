@@ -992,3 +992,112 @@ def test_api_filter_templates_by_owner(client: TestClient, db: Session, filter_u
     names = [t["name"] for t in data]
     assert "My Template 1" in names
     assert "My Template 2" in names
+
+
+def test_apply_meal_filters_by_owner_in(db: Session, filter_user, other_user):
+    """Test filtering meals by owner using in operator (multiple user IDs)."""
+    # Create a third user
+    third_user_data = schemas.UserCreate(
+        email="thirduser@example.com",
+        password="testpassword",
+        first_name="Third",
+        last_name="User"
+    )
+    third_user = crud.create_user(db, third_user_data)
+
+    meal1 = models.Meal(user_id=filter_user.id, name="Filter User Meal")
+    meal2 = models.Meal(user_id=other_user.id, name="Other User Meal")
+    meal3 = models.Meal(user_id=third_user.id, name="Third User Meal")
+    db.add_all([meal1, meal2, meal3])
+    db.commit()
+
+    # Filter by filter_user and other_user IDs (should exclude third_user)
+    query = db.query(models.Meal)
+    filters_list = [Filter("owner", "in", f"{filter_user.id},{other_user.id}")]
+    query = apply_meal_filters(query, filters_list)
+    results = query.all()
+
+    assert len(results) == 2
+    names = [r.name for r in results]
+    assert "Filter User Meal" in names
+    assert "Other User Meal" in names
+    assert "Third User Meal" not in names
+
+
+def test_apply_template_filters_by_owner_in(db: Session, filter_user, other_user):
+    """Test filtering templates by owner using in operator (multiple user IDs)."""
+    # Create a third user
+    third_user_data = schemas.UserCreate(
+        email="thirduser2@example.com",
+        password="testpassword",
+        first_name="Third",
+        last_name="User"
+    )
+    third_user = crud.create_user(db, third_user_data)
+
+    template1 = models.MealTemplate(user_id=filter_user.id, name="Filter User Template")
+    template2 = models.MealTemplate(user_id=other_user.id, name="Other User Template")
+    template3 = models.MealTemplate(user_id=third_user.id, name="Third User Template")
+    db.add_all([template1, template2, template3])
+    db.commit()
+
+    # Filter by filter_user and other_user IDs (should exclude third_user)
+    query = db.query(models.MealTemplate)
+    filters_list = [Filter("owner", "in", f"{filter_user.id},{other_user.id}")]
+    query = apply_template_filters(query, filters_list)
+    results = query.all()
+
+    assert len(results) == 2
+    names = [r.name for r in results]
+    assert "Filter User Template" in names
+    assert "Other User Template" in names
+    assert "Third User Template" not in names
+
+
+def test_api_filter_meals_by_owner_in(client: TestClient, db: Session, filter_user_headers, filter_user, other_user):
+    """Test filtering meals by owner using in operator via API."""
+    # Create meals for the current user
+    client.post("/meals/", json={"name": "My Meal 1", "items": []}, headers=filter_user_headers)
+    client.post("/meals/", json={"name": "My Meal 2", "items": []}, headers=filter_user_headers)
+
+    # Create a meal for other_user directly in db
+    other_meal = models.Meal(user_id=other_user.id, name="Other User Meal")
+    db.add(other_meal)
+    db.commit()
+
+    # Filter by both user IDs
+    response = client.get(f"/meals/?owner[in]={filter_user.id},{other_user.id}", headers=filter_user_headers)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert len(data) == 3
+    names = [m["name"] for m in data]
+    assert "My Meal 1" in names
+    assert "My Meal 2" in names
+    assert "Other User Meal" in names
+
+
+def test_api_filter_templates_by_owner_in(client: TestClient, db: Session, filter_user_headers, filter_user, other_user):
+    """Test filtering templates by owner using in operator via API."""
+    recipe = create_recipe(db, filter_user.id, "Owner In Test Recipe")
+
+    # Create templates for the current user
+    client.post("/meals/templates", json={
+        "name": "My Template 1",
+        "slots": [{"strategy": "Direct", "recipe_id": str(recipe.id)}]
+    }, headers=filter_user_headers)
+
+    # Create a template for other_user directly in db
+    other_template = models.MealTemplate(user_id=other_user.id, name="Other User Template")
+    db.add(other_template)
+    db.commit()
+
+    # Filter by both user IDs
+    response = client.get(f"/meals/templates?owner[in]={filter_user.id},{other_user.id}", headers=filter_user_headers)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert len(data) == 2
+    names = [t["name"] for t in data]
+    assert "My Template 1" in names
+    assert "Other User Template" in names

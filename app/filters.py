@@ -271,21 +271,11 @@ def apply_meal_filters(query: Query, filters: List[Filter]) -> Query:
                 query = query.filter(models.Meal.id == UUID(f.value))
             continue
 
-        # Special handling for created_by/owner (filter by user)
-        if f.field == 'created_by' or f.field == 'owner':
-            query = query.join(models.User, models.Meal.user_id == models.User.id)
+        # Special handling for created_by (filter by user ID)
+        if f.field == 'created_by':
             if f.operator == 'eq':
-                query = query.filter(or_(
-                    models.User.email == f.value,
-                    models.User.first_name == f.value,
-                    models.User.last_name == f.value
-                ))
-            elif f.operator == 'like':
-                query = query.filter(or_(
-                    models.User.email.ilike(f"%{f.value}%"),
-                    models.User.first_name.ilike(f"%{f.value}%"),
-                    models.User.last_name.ilike(f"%{f.value}%")
-                ))
+                user_uuid = UUID(f.value)
+                query = query.filter(models.Meal.user_id == user_uuid)
             continue
 
         # Special handling for recipe_id (filter by associated recipe ID)
@@ -384,21 +374,11 @@ def apply_template_filters(query: Query, filters: List[Filter]) -> Query:
                 query = query.filter(models.MealTemplate.id == UUID(f.value))
             continue
 
-        # Special handling for created_by/owner (filter by user)
-        if f.field == 'created_by' or f.field == 'owner':
-            query = query.join(models.User, models.MealTemplate.user_id == models.User.id)
+        # Special handling for created_by (filter by user ID)
+        if f.field == 'created_by':
             if f.operator == 'eq':
-                query = query.filter(or_(
-                    models.User.email == f.value,
-                    models.User.first_name == f.value,
-                    models.User.last_name == f.value
-                ))
-            elif f.operator == 'like':
-                query = query.filter(or_(
-                    models.User.email.ilike(f"%{f.value}%"),
-                    models.User.first_name.ilike(f"%{f.value}%"),
-                    models.User.last_name.ilike(f"%{f.value}%")
-                ))
+                user_uuid = UUID(f.value)
+                query = query.filter(models.MealTemplate.user_id == user_uuid)
             continue
 
         # Collect num_slots filters to process together

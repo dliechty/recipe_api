@@ -902,7 +902,7 @@ def test_api_filter_templates_by_num_slots_range(client: TestClient, db: Session
     assert data[0]["name"] == "Three Slot Template"
 
 
-# --- Unit Tests for created_by filter ---
+# --- Unit Tests for owner filter ---
 
 @pytest.fixture
 def other_user(db):
@@ -916,8 +916,8 @@ def other_user(db):
     return crud.create_user(db, user_data)
 
 
-def test_apply_meal_filters_by_created_by(db: Session, filter_user, other_user):
-    """Test filtering meals by created_by (user ID)."""
+def test_apply_meal_filters_by_owner(db: Session, filter_user, other_user):
+    """Test filtering meals by owner (user ID)."""
     meal1 = models.Meal(user_id=filter_user.id, name="Filter User Meal")
     meal2 = models.Meal(user_id=other_user.id, name="Other User Meal")
     db.add_all([meal1, meal2])
@@ -925,7 +925,7 @@ def test_apply_meal_filters_by_created_by(db: Session, filter_user, other_user):
 
     # Filter by filter_user's ID
     query = db.query(models.Meal)
-    filters_list = [Filter("created_by", "eq", str(filter_user.id))]
+    filters_list = [Filter("owner", "eq", str(filter_user.id))]
     query = apply_meal_filters(query, filters_list)
     results = query.all()
 
@@ -933,8 +933,8 @@ def test_apply_meal_filters_by_created_by(db: Session, filter_user, other_user):
     assert results[0].name == "Filter User Meal"
 
 
-def test_apply_template_filters_by_created_by(db: Session, filter_user, other_user):
-    """Test filtering templates by created_by (user ID)."""
+def test_apply_template_filters_by_owner(db: Session, filter_user, other_user):
+    """Test filtering templates by owner (user ID)."""
     template1 = models.MealTemplate(user_id=filter_user.id, name="Filter User Template")
     template2 = models.MealTemplate(user_id=other_user.id, name="Other User Template")
     db.add_all([template1, template2])
@@ -942,7 +942,7 @@ def test_apply_template_filters_by_created_by(db: Session, filter_user, other_us
 
     # Filter by filter_user's ID
     query = db.query(models.MealTemplate)
-    filters_list = [Filter("created_by", "eq", str(filter_user.id))]
+    filters_list = [Filter("owner", "eq", str(filter_user.id))]
     query = apply_template_filters(query, filters_list)
     results = query.all()
 
@@ -950,16 +950,16 @@ def test_apply_template_filters_by_created_by(db: Session, filter_user, other_us
     assert results[0].name == "Filter User Template"
 
 
-# --- API Tests for created_by filter ---
+# --- API Tests for owner filter ---
 
-def test_api_filter_meals_by_created_by(client: TestClient, db: Session, filter_user_headers, filter_user):
-    """Test filtering meals by created_by (user ID) via API."""
+def test_api_filter_meals_by_owner(client: TestClient, db: Session, filter_user_headers, filter_user):
+    """Test filtering meals by owner (user ID) via API."""
     # Create meals for the current user
     client.post("/meals/", json={"name": "My Meal 1", "items": []}, headers=filter_user_headers)
     client.post("/meals/", json={"name": "My Meal 2", "items": []}, headers=filter_user_headers)
 
     # Filter by user ID
-    response = client.get(f"/meals/?created_by[eq]={filter_user.id}", headers=filter_user_headers)
+    response = client.get(f"/meals/?owner[eq]={filter_user.id}", headers=filter_user_headers)
     assert response.status_code == 200
     data = response.json()
 
@@ -969,9 +969,9 @@ def test_api_filter_meals_by_created_by(client: TestClient, db: Session, filter_
     assert "My Meal 2" in names
 
 
-def test_api_filter_templates_by_created_by(client: TestClient, db: Session, filter_user_headers, filter_user):
-    """Test filtering templates by created_by (user ID) via API."""
-    recipe = create_recipe(db, filter_user.id, "Created By Test Recipe")
+def test_api_filter_templates_by_owner(client: TestClient, db: Session, filter_user_headers, filter_user):
+    """Test filtering templates by owner (user ID) via API."""
+    recipe = create_recipe(db, filter_user.id, "Owner Test Recipe")
 
     # Create templates for the current user
     client.post("/meals/templates", json={
@@ -984,7 +984,7 @@ def test_api_filter_templates_by_created_by(client: TestClient, db: Session, fil
     }, headers=filter_user_headers)
 
     # Filter by user ID
-    response = client.get(f"/meals/templates?created_by[eq]={filter_user.id}", headers=filter_user_headers)
+    response = client.get(f"/meals/templates?owner[eq]={filter_user.id}", headers=filter_user_headers)
     assert response.status_code == 200
     data = response.json()
 

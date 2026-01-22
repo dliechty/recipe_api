@@ -271,8 +271,8 @@ def apply_meal_filters(query: Query, filters: List[Filter]) -> Query:
                 query = query.filter(models.Meal.id == UUID(f.value))
             continue
 
-        # Special handling for created_by (filter by user ID)
-        if f.field == 'created_by':
+        # Special handling for owner (filter by user ID)
+        if f.field == 'owner':
             if f.operator == 'eq':
                 user_uuid = UUID(f.value)
                 query = query.filter(models.Meal.user_id == user_uuid)
@@ -374,8 +374,8 @@ def apply_template_filters(query: Query, filters: List[Filter]) -> Query:
                 query = query.filter(models.MealTemplate.id == UUID(f.value))
             continue
 
-        # Special handling for created_by (filter by user ID)
-        if f.field == 'created_by':
+        # Special handling for owner (filter by user ID)
+        if f.field == 'owner':
             if f.operator == 'eq':
                 user_uuid = UUID(f.value)
                 query = query.filter(models.MealTemplate.user_id == user_uuid)

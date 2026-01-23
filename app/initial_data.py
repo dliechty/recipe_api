@@ -1,4 +1,3 @@
-
 import logging
 from sqlalchemy.orm import Session
 
@@ -8,6 +7,7 @@ from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def init_db(db: Session) -> None:
     if not settings.FIRST_SUPERUSER_EMAIL or not settings.FIRST_SUPERUSER_PASSWORD:
@@ -21,6 +21,7 @@ def init_db(db: Session) -> None:
     else:
         logger.info(f"Creating superuser {settings.FIRST_SUPERUSER_EMAIL}...")
         import uuid
+
         user = models.User(
             id=uuid.uuid4(),
             email=settings.FIRST_SUPERUSER_EMAIL,
@@ -35,9 +36,11 @@ def init_db(db: Session) -> None:
         db.refresh(user)
         logger.info("Superuser created successfully.")
 
+
 def main() -> None:
     db = SessionLocal()
     init_db(db)
+
 
 if __name__ == "__main__":
     main()

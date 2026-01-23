@@ -9,7 +9,7 @@ from alembic import context
 
 # Add the project's root directory to the Python path.
 # This ensures that Alembic can locate your application's modules.
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import your models' Base. This is crucial for autogeneration to work.
 # Import your models' Base. This is crucial for autogeneration to work.
@@ -80,7 +80,8 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata,
+            connection=connection,
+            target_metadata=target_metadata,
             render_as_batch=True,
         )
 

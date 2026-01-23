@@ -1,9 +1,11 @@
-
 from fastapi.testclient import TestClient
 
 from app import crud, schemas
 
-def get_auth_headers(client: TestClient, db, email="user@example.com", password="password"):
+
+def get_auth_headers(
+    client: TestClient, db, email="user@example.com", password="password"
+):
     # Directly create user in DB
     try:
         user_in = schemas.UserCreate(email=email, password=password)
@@ -20,6 +22,7 @@ def get_auth_headers(client: TestClient, db, email="user@example.com", password=
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
+
 def test_create_recipe(client: TestClient, db):
     headers = get_auth_headers(client, db)
 
@@ -29,29 +32,24 @@ def test_create_recipe(client: TestClient, db):
             "description": "Fluffy breakfast",
             "difficulty": "Easy",
             "yield_amount": 4,
-            "protein": "Dairy"
+            "protein": "Dairy",
         },
-        "times": {
-            "prep_time_minutes": 10,
-            "cook_time_minutes": 15
-        },
-        "nutrition": {
-            "calories": 300
-        },
+        "times": {"prep_time_minutes": 10, "cook_time_minutes": 15},
+        "nutrition": {"calories": 300},
         "components": [
             {
                 "name": "Main",
                 "ingredients": [
                     {"ingredient_name": "Flour", "quantity": 2, "unit": "cups"},
-                    {"ingredient_name": "Milk", "quantity": 1.5, "unit": "cups"}
-                ]
+                    {"ingredient_name": "Milk", "quantity": 1.5, "unit": "cups"},
+                ],
             }
         ],
         "instructions": [
             {"step_number": 1, "text": "Mix ingredients"},
-            {"step_number": 2, "text": "Cook on pan"}
+            {"step_number": 2, "text": "Cook on pan"},
         ],
-        "suitable_for_diet": ["vegetarian", "low-calorie"]
+        "suitable_for_diet": ["vegetarian", "low-calorie"],
     }
     response = client.post("/recipes/", json=recipe_data, headers=headers)
     assert response.status_code == 201, response.text
@@ -63,6 +61,7 @@ def test_create_recipe(client: TestClient, db):
     assert "vegetarian" in data["suitable_for_diet"]
     assert "low-calorie" in data["suitable_for_diet"]
 
+
 def test_read_recipes(client: TestClient, db):
     # Create a recipe first
     headers = get_auth_headers(client, db)
@@ -72,7 +71,7 @@ def test_read_recipes(client: TestClient, db):
         "times": {"prep_time_minutes": 1},
         "nutrition": {},
         "components": [],
-        "instructions": []
+        "instructions": [],
     }
     client.post("/recipes/", json=recipe_data, headers=headers)
 
@@ -85,6 +84,7 @@ def test_read_recipes(client: TestClient, db):
     assert len(data) >= 1
     assert data[0]["core"]["name"] == "Toast"
 
+
 def test_read_recipe_by_id(client: TestClient, db):
     headers = get_auth_headers(client, db)
 
@@ -93,7 +93,7 @@ def test_read_recipe_by_id(client: TestClient, db):
         "times": {"prep_time_minutes": 10},
         "nutrition": {},
         "components": [],
-        "instructions": []
+        "instructions": [],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
@@ -101,6 +101,7 @@ def test_read_recipe_by_id(client: TestClient, db):
     response = client.get(f"/recipes/{recipe_id}", headers=headers)
     assert response.status_code == 200
     assert response.json()["core"]["name"] == "Soup"
+
 
 def test_update_recipe(client: TestClient, db):
     headers = get_auth_headers(client, db)
@@ -110,7 +111,7 @@ def test_update_recipe(client: TestClient, db):
         "times": {"prep_time_minutes": 5},
         "nutrition": {},
         "components": [],
-        "instructions": []
+        "instructions": [],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
@@ -119,11 +120,12 @@ def test_update_recipe(client: TestClient, db):
     update_data["core"]["name"] = "New Name"
     update_data["suitable_for_diet"] = ["vegan"]
     # Need to send all required fields. Pydantic schema validation!
-    
+
     response = client.put(f"/recipes/{recipe_id}", json=update_data, headers=headers)
     assert response.status_code == 200
     assert response.json()["core"]["name"] == "New Name"
     assert response.json()["suitable_for_diet"] == ["vegan"]
+
 
 def test_delete_recipe(client: TestClient, db):
     headers = get_auth_headers(client, db)
@@ -133,20 +135,21 @@ def test_delete_recipe(client: TestClient, db):
         "times": {},
         "nutrition": {},
         "components": [],
-        "instructions": []
+        "instructions": [],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
 
     response = client.delete(f"/recipes/{recipe_id}", headers=headers)
     assert response.status_code == 200
-    
+
     # Verify it's gone
     get_res = client.get(f"/recipes/{recipe_id}", headers=headers)
     assert get_res.status_code == 404
 
 
 # --- Ingredient Scaling Tests ---
+
 
 def test_read_recipe_with_scale_factor(client: TestClient, db):
     """Test that scale parameter correctly multiplies ingredient quantities."""
@@ -162,10 +165,10 @@ def test_read_recipe_with_scale_factor(client: TestClient, db):
                 "ingredients": [
                     {"ingredient_name": "Flour", "quantity": 2.0, "unit": "cups"},
                     {"ingredient_name": "Sugar", "quantity": 0.5, "unit": "cups"},
-                ]
+                ],
             }
         ],
-        "instructions": [{"step_number": 1, "text": "Mix"}]
+        "instructions": [{"step_number": 1, "text": "Mix"}],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
@@ -197,10 +200,10 @@ def test_read_recipe_with_scale_half(client: TestClient, db):
                 "name": "Main",
                 "ingredients": [
                     {"ingredient_name": "Butter", "quantity": 1.0, "unit": "cup"},
-                ]
+                ],
             }
         ],
-        "instructions": []
+        "instructions": [],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
@@ -226,10 +229,10 @@ def test_read_recipe_scale_one_unchanged(client: TestClient, db):
                 "name": "Main",
                 "ingredients": [
                     {"ingredient_name": "Salt", "quantity": 1.5, "unit": "tsp"},
-                ]
+                ],
             }
         ],
-        "instructions": []
+        "instructions": [],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
@@ -254,10 +257,10 @@ def test_read_recipe_no_scale_unchanged(client: TestClient, db):
                 "name": "Main",
                 "ingredients": [
                     {"ingredient_name": "Pepper", "quantity": 0.25, "unit": "tsp"},
-                ]
+                ],
             }
         ],
-        "instructions": []
+        "instructions": [],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
@@ -278,7 +281,7 @@ def test_read_recipe_scale_zero_rejected(client: TestClient, db):
         "times": {},
         "nutrition": {},
         "components": [],
-        "instructions": []
+        "instructions": [],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
@@ -296,7 +299,7 @@ def test_read_recipe_scale_negative_rejected(client: TestClient, db):
         "times": {},
         "nutrition": {},
         "components": [],
-        "instructions": []
+        "instructions": [],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
@@ -318,10 +321,10 @@ def test_read_recipe_scale_large_value(client: TestClient, db):
                 "name": "Main",
                 "ingredients": [
                     {"ingredient_name": "Water", "quantity": 1.0, "unit": "cup"},
-                ]
+                ],
             }
         ],
-        "instructions": []
+        "instructions": [],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
@@ -346,17 +349,17 @@ def test_read_recipe_scale_multiple_components(client: TestClient, db):
                 "name": "Dough",
                 "ingredients": [
                     {"ingredient_name": "Flour", "quantity": 3.0, "unit": "cups"},
-                ]
+                ],
             },
             {
                 "name": "Filling",
                 "ingredients": [
                     {"ingredient_name": "Cheese", "quantity": 2.0, "unit": "cups"},
                     {"ingredient_name": "Spinach", "quantity": 1.0, "unit": "cup"},
-                ]
-            }
+                ],
+            },
         ],
-        "instructions": []
+        "instructions": [],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]
@@ -382,12 +385,17 @@ def test_read_recipe_scale_preserves_other_fields(client: TestClient, db):
             {
                 "name": "Main",
                 "ingredients": [
-                    {"ingredient_name": "Onion", "quantity": 1.0, "unit": "whole", "notes": "diced"},
-                ]
+                    {
+                        "ingredient_name": "Onion",
+                        "quantity": 1.0,
+                        "unit": "whole",
+                        "notes": "diced",
+                    },
+                ],
             }
         ],
         "instructions": [{"step_number": 1, "text": "Dice the onion"}],
-        "suitable_for_diet": ["vegan"]
+        "suitable_for_diet": ["vegan"],
     }
     create_res = client.post("/recipes/", json=recipe_data, headers=headers)
     recipe_id = create_res.json()["core"]["id"]

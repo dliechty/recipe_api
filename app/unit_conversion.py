@@ -13,6 +13,7 @@ ureg = pint.UnitRegistry()
 
 class UnitSystem(str, Enum):
     """Unit system for recipe ingredients."""
+
     METRIC = "metric"
     IMPERIAL = "imperial"
 
@@ -44,7 +45,6 @@ UNIT_ALIASES = {
     "gallon": "gallon",
     "gallons": "gallon",
     "gal": "gallon",
-
     # Imperial weight
     "ounce": "ounce",
     "ounces": "ounce",
@@ -53,12 +53,10 @@ UNIT_ALIASES = {
     "pounds": "pound",
     "lb": "pound",
     "lbs": "pound",
-
     # Imperial length
     "inch": "inch",
     "inches": "inch",
     "in": "inch",
-
     # Metric volume
     "milliliter": "milliliter",
     "milliliters": "milliliter",
@@ -68,7 +66,6 @@ UNIT_ALIASES = {
     "litre": "liter",
     "litres": "liter",
     "l": "liter",
-
     # Metric weight
     "gram": "gram",
     "grams": "gram",
@@ -76,7 +73,6 @@ UNIT_ALIASES = {
     "kilogram": "kilogram",
     "kilograms": "kilogram",
     "kg": "kilogram",
-
     # Metric length
     "centimeter": "centimeter",
     "centimeters": "centimeter",
@@ -88,16 +84,32 @@ UNIT_ALIASES = {
 
 # Classification of units by system
 IMPERIAL_UNITS = {
-    "cup", "tablespoon", "teaspoon", "fluid_ounce", "pint", "quart", "gallon",
-    "ounce", "pound", "inch"
+    "cup",
+    "tablespoon",
+    "teaspoon",
+    "fluid_ounce",
+    "pint",
+    "quart",
+    "gallon",
+    "ounce",
+    "pound",
+    "inch",
 }
 
-METRIC_UNITS = {
-    "milliliter", "liter", "gram", "kilogram", "centimeter", "millimeter"
-}
+METRIC_UNITS = {"milliliter", "liter", "gram", "kilogram", "centimeter", "millimeter"}
 
 # Unit type classification
-VOLUME_UNITS = {"cup", "tablespoon", "teaspoon", "fluid_ounce", "pint", "quart", "gallon", "milliliter", "liter"}
+VOLUME_UNITS = {
+    "cup",
+    "tablespoon",
+    "teaspoon",
+    "fluid_ounce",
+    "pint",
+    "quart",
+    "gallon",
+    "milliliter",
+    "liter",
+}
 WEIGHT_UNITS = {"ounce", "pound", "gram", "kilogram"}
 LENGTH_UNITS = {"inch", "centimeter", "millimeter"}
 
@@ -224,9 +236,7 @@ def detect_recipe_unit_system(ingredients: list) -> UnitSystem:
 
 
 def convert_quantity(
-    quantity: float,
-    from_unit: str,
-    target_system: UnitSystem
+    quantity: float, from_unit: str, target_system: UnitSystem
 ) -> Tuple[float, str]:
     """
     Convert a quantity from one unit to the target system using pint.

@@ -1,4 +1,3 @@
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
 from typing import List, Optional
@@ -18,6 +17,7 @@ _INSECURE_PASSWORDS = {
     "admin",
     "changeme",
 }
+
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Recipe Management API"
@@ -84,11 +84,9 @@ class Settings(BaseSettings):
 
     # CORS
     # In production, you would handle this more robustly, possibly parsing a comma-separated string
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:5173", 
-        "http://localhost:3000"
-    ]
+    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env")
+
 
 settings = Settings()

@@ -63,6 +63,7 @@ def _clear_failed_attempts(email: str) -> None:
     with _failed_attempts_lock:
         _failed_attempts[email] = []
 
+
 # --- Configuration for JWT ---
 # Loaded from settings
 
@@ -76,8 +77,8 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-
 # --- Utility Functions for JWT ---
+
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """
@@ -89,13 +90,18 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
     return encoded_jwt
 
 
 # --- Dependency for Getting Current User ---
 
-async def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+
+async def get_current_user(
+    request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
     """
     Decodes the JWT token to get the current user.
     This function is a dependency that can be used to protect endpoints.
@@ -106,7 +112,9 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         user_id_str: str = payload.get("sub")
         if user_id_str is None:
             logger.error("Could not verify user id")
@@ -127,7 +135,9 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
     return user
 
 
-async def get_current_active_user(current_user: models.User = Depends(get_current_user)):
+async def get_current_active_user(
+    current_user: models.User = Depends(get_current_user),
+):
     """
     Checks if the current user is active.
     """
@@ -142,9 +152,9 @@ async def get_current_active_user(current_user: models.User = Depends(get_curren
 
 @router.get("/users/{user_id}", response_model=schemas.UserPublic)
 def get_user_name(
-    user_id: UUID, 
+    user_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user)
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """
     Get user public information (name) by ID.
@@ -158,18 +168,16 @@ def get_user_name(
 @router.get("/users", response_model=list[schemas.UserPublic])
 def list_active_users(
     skip: int = Query(
-        default=0,
-        ge=0,
-        description="Number of records to skip for pagination"
+        default=0, ge=0, description="Number of records to skip for pagination"
     ),
     limit: int = Query(
         default=100,
         ge=1,
         le=1000,
-        description="Maximum number of records to return (1-1000)"
+        description="Maximum number of records to return (1-1000)",
     ),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user)
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """
     List all active users. Admin only.
@@ -181,7 +189,11 @@ def list_active_users(
 
 @router.post("/token", response_model=schemas.Token)
 @limiter.limit("5/minute")  # Limit login attempts to prevent brute force
-async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
     """
     Endpoint to log in a user and get an access token.
     Rate limited to 5 attempts per minute per IP address.
@@ -231,7 +243,11 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
 
 @router.post("/request-account", status_code=status.HTTP_202_ACCEPTED)
 @limiter.limit("3/minute")  # Limit account requests to prevent abuse
-def request_account(request: Request, account_request: schemas.UserRequestCreate, db: Session = Depends(get_db)):
+def request_account(
+    request: Request,
+    account_request: schemas.UserRequestCreate,
+    db: Session = Depends(get_db),
+):
     """
     Submit a request for a new user account.
     Rate limited to 3 requests per minute per IP address.
@@ -242,20 +258,24 @@ def request_account(request: Request, account_request: schemas.UserRequestCreate
     # Check if user already exists or request already pending
     # We still perform these checks but don't reveal the result to the user
     user_exists = crud.get_user_by_email(db, email=account_request.email) is not None
-    request_exists = crud.get_user_request_by_email(db, email=account_request.email) is not None
+    request_exists = (
+        crud.get_user_request_by_email(db, email=account_request.email) is not None
+    )
 
     # Only create a new request if email is not already registered or pending
     if not user_exists and not request_exists:
         crud.create_user_request(db, account_request)
 
     # Always return the same response to prevent enumeration
-    return {"message": "If this email is not already registered, an account request has been submitted"}
+    return {
+        "message": "If this email is not already registered, an account request has been submitted"
+    }
 
 
 @router.get("/pending-requests", response_model=list[schemas.UserRequest])
 def list_pending_requests(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user)
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """
     List all pending account requests. Admin only.
@@ -270,36 +290,36 @@ def approve_request(
     request_id: UUID,
     approval: schemas.ApproveRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user)
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """
     Approve a pending account request and create the user. Admin only.
     """
     if not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     user_request = crud.get_user_request(db, request_id)
     if not user_request:
         raise HTTPException(status_code=404, detail="Request not found")
-    
+
     # Create the user
     user_create = schemas.UserCreate(
         email=user_request.email,
         password=approval.initial_password,
         first_name=user_request.first_name,
-        last_name=user_request.last_name
+        last_name=user_request.last_name,
     )
     new_user = crud.create_user(db, user_create)
-    
+
     # Set first login flag
     new_user.is_first_login = True
     db.add(new_user)
-    
+
     # Delete the request
     crud.delete_user_request(db, request_id)
-    db.commit() # Commit all changes including delete
+    db.commit()  # Commit all changes including delete
     db.refresh(new_user)
-    
+
     return new_user
 
 
@@ -307,14 +327,16 @@ def approve_request(
 def change_password(
     password_data: schemas.PasswordChange,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user)
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """
     Change the current user's password.
     """
-    if not crud.verify_password(password_data.old_password, current_user.hashed_password):
+    if not crud.verify_password(
+        password_data.old_password, current_user.hashed_password
+    ):
         raise HTTPException(status_code=400, detail="Incorrect old password")
-    
+
     crud.change_password(db, current_user.id, password_data.new_password)
     return {"message": "Password updated successfully"}
 
@@ -324,19 +346,19 @@ def update_user(
     user_id: UUID,
     user_update: schemas.UserUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user)
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """
     Update user profile. Users can update themselves; Admins can update anyone.
     """
     if user_id != current_user.id and not current_user.is_admin:
-         raise HTTPException(status_code=403, detail="Not authorized")
-    
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     # Check if trying to update permissions
     if user_update.is_admin is not None:
         if not current_user.is_admin:
-             raise HTTPException(status_code=403, detail="Only admins can promote users")
-    
+            raise HTTPException(status_code=403, detail="Only admins can promote users")
+
     updated_user = crud.update_user(db, user_id, user_update)
     if not updated_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -347,14 +369,14 @@ def update_user(
 def delete_user(
     user_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user)
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """
     Delete a user account. Admin only.
     """
     if not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     if crud.delete_user(db, user_id):
         return {"message": "User deleted"}
     raise HTTPException(status_code=404, detail="User not found")
@@ -363,18 +385,18 @@ def delete_user(
 @router.post("/users/{user_id}/reset")
 def reset_user(
     user_id: UUID,
-    approval: schemas.ApproveRequest, # Reusing schema for passing password
+    approval: schemas.ApproveRequest,  # Reusing schema for passing password
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user)
+    current_user: models.User = Depends(get_current_active_user),
 ):
     """
     Reset a user's password and set is_first_login to True. Admin only.
     """
     if not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     user = crud.reset_user_password(db, user_id, approval.initial_password)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     return {"message": "User reset successfully"}

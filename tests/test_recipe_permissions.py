@@ -1,8 +1,10 @@
-
 from fastapi.testclient import TestClient
 from app import crud, schemas
 
-def get_auth_headers(client: TestClient, db, email, password="password", is_admin=False):
+
+def get_auth_headers(
+    client: TestClient, db, email, password="password", is_admin=False
+):
     # Directly create user in DB
     try:
         user_in = schemas.UserCreate(email=email, password=password)
@@ -27,17 +29,19 @@ def get_auth_headers(client: TestClient, db, email, password="password", is_admi
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
+
 def create_dummy_recipe(client, headers, name="Test Recipe"):
     recipe_data = {
         "core": {"name": name},
         "times": {},
         "nutrition": {},
         "components": [],
-        "instructions": []
+        "instructions": [],
     }
     response = client.post("/recipes/", json=recipe_data, headers=headers)
     assert response.status_code == 201
     return response.json()
+
 
 def test_admin_can_update_other_user_recipe(client, db):
     # 1. Create User A (Owner)
@@ -46,7 +50,9 @@ def test_admin_can_update_other_user_recipe(client, db):
     recipe_id = recipe["core"]["id"]
 
     # 2. Create Admin User
-    admin_headers = get_auth_headers(client, db, email="admin@example.com", is_admin=True)
+    admin_headers = get_auth_headers(
+        client, db, email="admin@example.com", is_admin=True
+    )
 
     # 3. Admin tries to update
     update_data = {
@@ -54,13 +60,16 @@ def test_admin_can_update_other_user_recipe(client, db):
         "times": {},
         "nutrition": {},
         "components": [],
-        "instructions": []
+        "instructions": [],
     }
-    response = client.put(f"/recipes/{recipe_id}", json=update_data, headers=admin_headers)
-    
+    response = client.put(
+        f"/recipes/{recipe_id}", json=update_data, headers=admin_headers
+    )
+
     # 4. Assert Success
     assert response.status_code == 200
     assert response.json()["core"]["name"] == "Admin Edited"
+
 
 def test_admin_can_delete_other_user_recipe(client, db):
     # 1. Create User A (Owner)
@@ -69,17 +78,20 @@ def test_admin_can_delete_other_user_recipe(client, db):
     recipe_id = recipe["core"]["id"]
 
     # 2. Create Admin User
-    admin_headers = get_auth_headers(client, db, email="admin2@example.com", is_admin=True)
+    admin_headers = get_auth_headers(
+        client, db, email="admin2@example.com", is_admin=True
+    )
 
     # 3. Admin tries to delete
     response = client.delete(f"/recipes/{recipe_id}", headers=admin_headers)
-    
+
     # 4. Assert Success
     assert response.status_code == 200
-    
+
     # Verify deletion
     get_res = client.get(f"/recipes/{recipe_id}", headers=owner_headers)
     assert get_res.status_code == 404
+
 
 def test_non_owner_cannot_update(client, db):
     # 1. Create User A (Owner)
@@ -96,12 +108,15 @@ def test_non_owner_cannot_update(client, db):
         "times": {},
         "nutrition": {},
         "components": [],
-        "instructions": []
+        "instructions": [],
     }
-    response = client.put(f"/recipes/{recipe_id}", json=update_data, headers=stranger_headers)
-    
+    response = client.put(
+        f"/recipes/{recipe_id}", json=update_data, headers=stranger_headers
+    )
+
     # 4. Assert Failure
     assert response.status_code == 403
+
 
 def test_non_owner_cannot_delete(client, db):
     # 1. Create User A (Owner)
@@ -114,6 +129,6 @@ def test_non_owner_cannot_delete(client, db):
 
     # 3. Stranger tries to delete
     response = client.delete(f"/recipes/{recipe_id}", headers=stranger_headers)
-    
+
     # 4. Assert Failure
     assert response.status_code == 403

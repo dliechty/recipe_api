@@ -5,6 +5,7 @@ Revises: cf20728c63d3
 Create Date: 2026-01-09 22:23:04.474869
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '80c0e2d6ef2c'
-down_revision: Union[str, Sequence[str], None] = 'cf20728c63d3'
+revision: str = "80c0e2d6ef2c"
+down_revision: Union[str, Sequence[str], None] = "cf20728c63d3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -25,86 +26,160 @@ def upgrade() -> None:
     inspector = sa.inspect(bind)
     existing_tables = inspector.get_table_names()
 
-    if 'meal_templates' not in existing_tables:
-        op.create_table('meal_templates',
-        sa.Column('id', sa.Uuid(), nullable=False),
-        sa.Column('user_id', sa.Uuid(), nullable=False),
-        sa.Column('name', sa.String(), nullable=False),
-        sa.Column('classification', sa.Enum('BREAKFAST', 'BRUNCH', 'LUNCH', 'DINNER', 'SNACK', name='mealclassification'), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.Column('updated_at', sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-        sa.PrimaryKeyConstraint('id')
+    if "meal_templates" not in existing_tables:
+        op.create_table(
+            "meal_templates",
+            sa.Column("id", sa.Uuid(), nullable=False),
+            sa.Column("user_id", sa.Uuid(), nullable=False),
+            sa.Column("name", sa.String(), nullable=False),
+            sa.Column(
+                "classification",
+                sa.Enum(
+                    "BREAKFAST",
+                    "BRUNCH",
+                    "LUNCH",
+                    "DINNER",
+                    "SNACK",
+                    name="mealclassification",
+                ),
+                nullable=True,
+            ),
+            sa.Column("created_at", sa.DateTime(), nullable=True),
+            sa.Column("updated_at", sa.DateTime(), nullable=True),
+            sa.ForeignKeyConstraint(
+                ["user_id"],
+                ["users.id"],
+            ),
+            sa.PrimaryKeyConstraint("id"),
         )
-        with op.batch_alter_table('meal_templates', schema=None) as batch_op:
-            batch_op.create_index(batch_op.f('ix_meal_templates_id'), ['id'], unique=False)
+        with op.batch_alter_table("meal_templates", schema=None) as batch_op:
+            batch_op.create_index(
+                batch_op.f("ix_meal_templates_id"), ["id"], unique=False
+            )
 
-    if 'meal_template_slots' not in existing_tables:
-        op.create_table('meal_template_slots',
-        sa.Column('id', sa.Uuid(), nullable=False),
-        sa.Column('template_id', sa.Uuid(), nullable=False),
-        sa.Column('strategy', sa.Enum('DIRECT', 'LIST', 'SEARCH', name='mealtemplateslotstrategy'), nullable=False),
-        sa.Column('recipe_id', sa.Uuid(), nullable=True),
-        sa.Column('search_criteria', sa.JSON(), nullable=True),
-        sa.ForeignKeyConstraint(['recipe_id'], ['recipes.id'], ),
-        sa.ForeignKeyConstraint(['template_id'], ['meal_templates.id'], ),
-        sa.PrimaryKeyConstraint('id')
+    if "meal_template_slots" not in existing_tables:
+        op.create_table(
+            "meal_template_slots",
+            sa.Column("id", sa.Uuid(), nullable=False),
+            sa.Column("template_id", sa.Uuid(), nullable=False),
+            sa.Column(
+                "strategy",
+                sa.Enum("DIRECT", "LIST", "SEARCH", name="mealtemplateslotstrategy"),
+                nullable=False,
+            ),
+            sa.Column("recipe_id", sa.Uuid(), nullable=True),
+            sa.Column("search_criteria", sa.JSON(), nullable=True),
+            sa.ForeignKeyConstraint(
+                ["recipe_id"],
+                ["recipes.id"],
+            ),
+            sa.ForeignKeyConstraint(
+                ["template_id"],
+                ["meal_templates.id"],
+            ),
+            sa.PrimaryKeyConstraint("id"),
         )
-        with op.batch_alter_table('meal_template_slots', schema=None) as batch_op:
-            batch_op.create_index(batch_op.f('ix_meal_template_slots_id'), ['id'], unique=False)
+        with op.batch_alter_table("meal_template_slots", schema=None) as batch_op:
+            batch_op.create_index(
+                batch_op.f("ix_meal_template_slots_id"), ["id"], unique=False
+            )
 
-    if 'meals' not in existing_tables:
-        op.create_table('meals',
-        sa.Column('id', sa.Uuid(), nullable=False),
-        sa.Column('user_id', sa.Uuid(), nullable=False),
-        sa.Column('template_id', sa.Uuid(), nullable=True),
-        sa.Column('name', sa.String(), nullable=True),
-        sa.Column('status', sa.Enum('PROPOSED', 'SCHEDULED', 'COOKED', name='mealstatus'), nullable=False),
-        sa.Column('classification', sa.Enum('BREAKFAST', 'BRUNCH', 'LUNCH', 'DINNER', 'SNACK', name='mealclassification'), nullable=True),
-        sa.Column('date', sa.DateTime(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.Column('updated_at', sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(['template_id'], ['meal_templates.id'], ),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-        sa.PrimaryKeyConstraint('id')
+    if "meals" not in existing_tables:
+        op.create_table(
+            "meals",
+            sa.Column("id", sa.Uuid(), nullable=False),
+            sa.Column("user_id", sa.Uuid(), nullable=False),
+            sa.Column("template_id", sa.Uuid(), nullable=True),
+            sa.Column("name", sa.String(), nullable=True),
+            sa.Column(
+                "status",
+                sa.Enum("PROPOSED", "SCHEDULED", "COOKED", name="mealstatus"),
+                nullable=False,
+            ),
+            sa.Column(
+                "classification",
+                sa.Enum(
+                    "BREAKFAST",
+                    "BRUNCH",
+                    "LUNCH",
+                    "DINNER",
+                    "SNACK",
+                    name="mealclassification",
+                ),
+                nullable=True,
+            ),
+            sa.Column("date", sa.DateTime(), nullable=True),
+            sa.Column("created_at", sa.DateTime(), nullable=True),
+            sa.Column("updated_at", sa.DateTime(), nullable=True),
+            sa.ForeignKeyConstraint(
+                ["template_id"],
+                ["meal_templates.id"],
+            ),
+            sa.ForeignKeyConstraint(
+                ["user_id"],
+                ["users.id"],
+            ),
+            sa.PrimaryKeyConstraint("id"),
         )
-        with op.batch_alter_table('meals', schema=None) as batch_op:
-            batch_op.create_index(batch_op.f('ix_meals_id'), ['id'], unique=False)
+        with op.batch_alter_table("meals", schema=None) as batch_op:
+            batch_op.create_index(batch_op.f("ix_meals_id"), ["id"], unique=False)
 
-    if 'meal_items' not in existing_tables:
-        op.create_table('meal_items',
-        sa.Column('id', sa.Uuid(), nullable=False),
-        sa.Column('meal_id', sa.Uuid(), nullable=False),
-        sa.Column('slot_id', sa.Uuid(), nullable=True),
-        sa.Column('recipe_id', sa.Uuid(), nullable=False),
-        sa.ForeignKeyConstraint(['meal_id'], ['meals.id'], ),
-        sa.ForeignKeyConstraint(['recipe_id'], ['recipes.id'], ),
-        sa.ForeignKeyConstraint(['slot_id'], ['meal_template_slots.id'], ),
-        sa.PrimaryKeyConstraint('id')
+    if "meal_items" not in existing_tables:
+        op.create_table(
+            "meal_items",
+            sa.Column("id", sa.Uuid(), nullable=False),
+            sa.Column("meal_id", sa.Uuid(), nullable=False),
+            sa.Column("slot_id", sa.Uuid(), nullable=True),
+            sa.Column("recipe_id", sa.Uuid(), nullable=False),
+            sa.ForeignKeyConstraint(
+                ["meal_id"],
+                ["meals.id"],
+            ),
+            sa.ForeignKeyConstraint(
+                ["recipe_id"],
+                ["recipes.id"],
+            ),
+            sa.ForeignKeyConstraint(
+                ["slot_id"],
+                ["meal_template_slots.id"],
+            ),
+            sa.PrimaryKeyConstraint("id"),
         )
-        with op.batch_alter_table('meal_items', schema=None) as batch_op:
-            batch_op.create_index(batch_op.f('ix_meal_items_id'), ['id'], unique=False)
+        with op.batch_alter_table("meal_items", schema=None) as batch_op:
+            batch_op.create_index(batch_op.f("ix_meal_items_id"), ["id"], unique=False)
 
-    if 'meal_template_slot_recipes' not in existing_tables:
-        op.create_table('meal_template_slot_recipes',
-        sa.Column('slot_id', sa.Uuid(), nullable=False),
-        sa.Column('recipe_id', sa.Uuid(), nullable=False),
-        sa.ForeignKeyConstraint(['recipe_id'], ['recipes.id'], ),
-        sa.ForeignKeyConstraint(['slot_id'], ['meal_template_slots.id'], ),
-        sa.PrimaryKeyConstraint('slot_id', 'recipe_id')
+    if "meal_template_slot_recipes" not in existing_tables:
+        op.create_table(
+            "meal_template_slot_recipes",
+            sa.Column("slot_id", sa.Uuid(), nullable=False),
+            sa.Column("recipe_id", sa.Uuid(), nullable=False),
+            sa.ForeignKeyConstraint(
+                ["recipe_id"],
+                ["recipes.id"],
+            ),
+            sa.ForeignKeyConstraint(
+                ["slot_id"],
+                ["meal_template_slots.id"],
+            ),
+            sa.PrimaryKeyConstraint("slot_id", "recipe_id"),
         )
 
     # This part failed previously, so we want it to run.
-    # We can rely on Alembic/SQLAlchemy to handle "if exists" for constraint creation 
+    # We can rely on Alembic/SQLAlchemy to handle "if exists" for constraint creation
     # if we were checking manually, or just assume if it failed it wasn't created.
-    # However, to be extra safe and purely idempotent, we could check constraints, 
+    # However, to be extra safe and purely idempotent, we could check constraints,
     # but that's harder with batch mode. Since it threw an error before, it likely didn't commit.
-    with op.batch_alter_table('recipes', schema=None) as batch_op:
-        # Check if column exists first to be safe? No, we know column exists. 
+    with op.batch_alter_table("recipes", schema=None) as batch_op:
+        # Check if column exists first to be safe? No, we know column exists.
         # We just want to ensure we don't double-add if run multiple times successfully?
         # For now, let's assume the user will fix the DB or this will run once successfully.
         # The prompt only asked to fix "Table already exists".
-        batch_op.create_foreign_key('fk_recipes_parent_recipe_id_recipes', 'recipes', ['parent_recipe_id'], ['id'])
+        batch_op.create_foreign_key(
+            "fk_recipes_parent_recipe_id_recipes",
+            "recipes",
+            ["parent_recipe_id"],
+            ["id"],
+        )
 
     # ### end Alembic commands ###
 
@@ -112,24 +187,26 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    with op.batch_alter_table('recipes', schema=None) as batch_op:
-        batch_op.drop_constraint('fk_recipes_parent_recipe_id_recipes', type_='foreignkey')
+    with op.batch_alter_table("recipes", schema=None) as batch_op:
+        batch_op.drop_constraint(
+            "fk_recipes_parent_recipe_id_recipes", type_="foreignkey"
+        )
 
-    op.drop_table('meal_template_slot_recipes')
-    with op.batch_alter_table('meal_items', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_meal_items_id'))
+    op.drop_table("meal_template_slot_recipes")
+    with op.batch_alter_table("meal_items", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_meal_items_id"))
 
-    op.drop_table('meal_items')
-    with op.batch_alter_table('meals', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_meals_id'))
+    op.drop_table("meal_items")
+    with op.batch_alter_table("meals", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_meals_id"))
 
-    op.drop_table('meals')
-    with op.batch_alter_table('meal_template_slots', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_meal_template_slots_id'))
+    op.drop_table("meals")
+    with op.batch_alter_table("meal_template_slots", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_meal_template_slots_id"))
 
-    op.drop_table('meal_template_slots')
-    with op.batch_alter_table('meal_templates', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_meal_templates_id'))
+    op.drop_table("meal_template_slots")
+    with op.batch_alter_table("meal_templates", schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f("ix_meal_templates_id"))
 
-    op.drop_table('meal_templates')
+    op.drop_table("meal_templates")
     # ### end Alembic commands ###

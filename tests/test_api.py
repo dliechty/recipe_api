@@ -1,15 +1,17 @@
-
 from fastapi.testclient import TestClient
 from app.core.config import settings
+
 
 def test_read_root(client: TestClient):
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Welcome to the Recipe Management API!"}
 
+
 def test_docs_redirect(client: TestClient):
     response = client.get("/docs")
     assert response.status_code == 200
+
 
 def test_cors_headers(client: TestClient):
     # Simulate a cross-origin request by setting the Origin header
@@ -31,7 +33,7 @@ def test_security_headers(client: TestClient):
     assert response.headers.get("X-Content-Type-Options") == "nosniff"
     assert response.headers.get("X-XSS-Protection") == "1; mode=block"
     assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
-    
+
     if settings.ENVIRONMENT in ["development", "testing"]:
         expected_csp = (
             "default-src 'self'; "
@@ -41,5 +43,5 @@ def test_security_headers(client: TestClient):
         )
     else:
         expected_csp = "default-src 'self'"
-        
+
     assert response.headers.get("Content-Security-Policy") == expected_csp

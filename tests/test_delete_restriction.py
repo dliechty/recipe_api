@@ -2,7 +2,10 @@ from fastapi.testclient import TestClient
 from app import crud, schemas
 from uuid import uuid4, UUID
 
-def get_auth_headers(client: TestClient, db, email_prefix="user_del", password="password"):
+
+def get_auth_headers(
+    client: TestClient, db, email_prefix="user_del", password="password"
+):
     email = f"{email_prefix}_{uuid4()}@example.com"
     try:
         user_in = schemas.UserCreate(email=email, password=password)
@@ -17,6 +20,7 @@ def get_auth_headers(client: TestClient, db, email_prefix="user_del", password="
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
+
 def test_delete_recipe_with_variants_fails(client: TestClient, db):
     headers = get_auth_headers(client, db)
 
@@ -26,7 +30,7 @@ def test_delete_recipe_with_variants_fails(client: TestClient, db):
         "times": {},
         "nutrition": {},
         "components": [],
-        "instructions": []
+        "instructions": [],
     }
     parent_res = client.post("/recipes/", json=parent_data, headers=headers)
     assert parent_res.status_code == 201
@@ -39,7 +43,7 @@ def test_delete_recipe_with_variants_fails(client: TestClient, db):
         "nutrition": {},
         "components": [],
         "instructions": [],
-        "parent_recipe_id": parent_id
+        "parent_recipe_id": parent_id,
     }
     # Note: Using json=child_data assuming the schema supports parent_recipe_id on create.
     # If not supported, we'd need to link it manually, but previous analysis suggests it works or is expected.
@@ -53,11 +57,13 @@ def test_delete_recipe_with_variants_fails(client: TestClient, db):
 
     # 3. Attempt to delete Parent
     delete_res = client.delete(f"/recipes/{parent_id}", headers=headers)
-    
+
     # Expected behavior: 400 Bad Request
     # Current behavior (likely): 200 OK
-    
-    assert delete_res.status_code == 400, f"Expected 400, got {delete_res.status_code}. Response: {delete_res.text}"
+
+    assert delete_res.status_code == 400, (
+        f"Expected 400, got {delete_res.status_code}. Response: {delete_res.text}"
+    )
     assert "variants" in delete_res.json()["detail"].lower()
 
     # Verify Parent still exists

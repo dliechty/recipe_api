@@ -28,24 +28,29 @@ def check_cycle(db: Session, child_id: UUID, parent_id: UUID):
     """
     if child_id == parent_id:
         raise ValueError("A recipe cannot be its own parent")
-    
+
     current_id = parent_id
     while current_id:
         # Fetch parent
         # Optimization: We only need the parent_recipe_id of the current node
-        parent_node = db.query(models.Recipe.parent_recipe_id).filter(models.Recipe.id == current_id).first()
+        parent_node = (
+            db.query(models.Recipe.parent_recipe_id)
+            .filter(models.Recipe.id == current_id)
+            .first()
+        )
         if not parent_node:
-            break # Parent not found? connection broken or root reached if we consider query failure (unlikely for valid IDs)
-        
+            break  # Parent not found? connection broken or root reached if we consider query failure (unlikely for valid IDs)
+
         # parent_node is a named tuple or result row? .parent_recipe_id accessed directly?
         # query(Column) returns a Row. row[0] or row.parent_recipe_id
         pid = parent_node[0]
-        
-        if pid == child_id:
-            raise ValueError("Cycle detected: This would make a recipe a descendant of its own child")
-        
-        current_id = pid
 
+        if pid == child_id:
+            raise ValueError(
+                "Cycle detected: This would make a recipe a descendant of its own child"
+            )
+
+        current_id = pid
 
 
 def verify_password(plain_password, hashed_password):
@@ -57,7 +62,7 @@ def get_password_hash(password):
 
 
 # --- User CRUD Functions ---
-def get_user(db: Session, user_id: UUID): # Changed to UUID
+def get_user(db: Session, user_id: UUID):  # Changed to UUID
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 
@@ -70,16 +75,22 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 
 
 def get_active_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.User).filter(models.User.is_active).offset(skip).limit(limit).all()
+    return (
+        db.query(models.User)
+        .filter(models.User.is_active)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def create_user(db: Session, user: schemas.UserCreate):
     hashed_password = get_password_hash(user.password)
     db_user = models.User(
-        email=user.email, 
+        email=user.email,
         hashed_password=hashed_password,
         first_name=user.first_name,
-        last_name=user.last_name
+        last_name=user.last_name,
     )
     db.add(db_user)
     db.commit()
@@ -91,11 +102,11 @@ def update_user(db: Session, user_id: UUID, user_update: schemas.UserUpdate):
     db_user = get_user(db, user_id)
     if not db_user:
         return None
-    
+
     update_data = user_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_user, key, value)
-    
+
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -114,7 +125,7 @@ def reset_user_password(db: Session, user_id: UUID, new_password: str):
     db_user = get_user(db, user_id)
     if not db_user:
         return None
-    
+
     db_user.hashed_password = get_password_hash(new_password)
     db_user.is_first_login = True
     db.add(db_user)
@@ -127,7 +138,7 @@ def change_password(db: Session, user_id: UUID, new_password: str):
     db_user = get_user(db, user_id)
     if not db_user:
         return None
-    
+
     db_user.hashed_password = get_password_hash(new_password)
     db_user.is_first_login = False
     db.add(db_user)
@@ -138,12 +149,19 @@ def change_password(db: Session, user_id: UUID, new_password: str):
 
 # --- User Request CRUD Functions ---
 
+
 def get_user_request(db: Session, request_id: UUID):
-    return db.query(models.UserRequest).filter(models.UserRequest.id == request_id).first()
+    return (
+        db.query(models.UserRequest).filter(models.UserRequest.id == request_id).first()
+    )
 
 
 def get_user_request_by_email(db: Session, email: str):
-    return db.query(models.UserRequest).filter(models.UserRequest.email == email.lower()).first()
+    return (
+        db.query(models.UserRequest)
+        .filter(models.UserRequest.email == email.lower())
+        .first()
+    )
 
 
 def get_user_requests(db: Session, skip: int = 0, limit: int = 100):
@@ -152,9 +170,7 @@ def get_user_requests(db: Session, skip: int = 0, limit: int = 100):
 
 def create_user_request(db: Session, request: schemas.UserRequestCreate):
     db_request = models.UserRequest(
-        email=request.email,
-        first_name=request.first_name,
-        last_name=request.last_name
+        email=request.email, first_name=request.first_name, last_name=request.last_name
     )
     db.add(db_request)
     db.commit()
@@ -171,7 +187,7 @@ def delete_user_request(db: Session, request_id: UUID):
 
 
 # --- Recipe CRUD Functions ---
-def get_recipe(db: Session, recipe_id: UUID): # Changed to UUID
+def get_recipe(db: Session, recipe_id: UUID):  # Changed to UUID
     """
     Retrieve a single recipe with its related ingredients, instructions, and tags.
     Now also loads components.
@@ -180,120 +196,172 @@ def get_recipe(db: Session, recipe_id: UUID): # Changed to UUID
     return (
         db.query(models.Recipe)
         .options(
-            joinedload(models.Recipe.components).joinedload(models.RecipeComponent.ingredients).joinedload(models.RecipeIngredient.ingredient),
+            joinedload(models.Recipe.components)
+            .joinedload(models.RecipeComponent.ingredients)
+            .joinedload(models.RecipeIngredient.ingredient),
             joinedload(models.Recipe.instructions),
             joinedload(models.Recipe.diets),
-            selectinload(models.Recipe.variants)
+            selectinload(models.Recipe.variants),
         )
         .filter(models.Recipe.id == recipe_id)
         .first()
     )
 
 
-def get_recipes(db: Session, skip: int = 0, limit: int = 100, filters_list: list = None, sort_by: str = None):
+def get_recipes(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    filters_list: list = None,
+    sort_by: str = None,
+):
     """
     Retrieve a list of recipes with filtering and sorting.
     """
-    logger.debug(f"Retrieving recipes skip={skip}, limit={limit}, filters={filters_list}, sort={sort_by}")
-    
+    logger.debug(
+        f"Retrieving recipes skip={skip}, limit={limit}, filters={filters_list}, sort={sort_by}"
+    )
+
     query = db.query(models.Recipe)
-    
+
     if filters_list:
         query = filters.apply_filters(query, filters_list)
 
     # Perform counting before pagination, but AFTER filtering
-    total_count = query.distinct().count() # distinct important if joins were added by filters
+    total_count = (
+        query.distinct().count()
+    )  # distinct important if joins were added by filters
 
     # Apply sorting
     query = filters.apply_sorting(query, sort_by)
 
     # Apply pagination
     recipes = query.offset(skip).limit(limit).all()
-    
+
     return recipes, total_count
+
 
 def get_unique_values(db: Session, field: str):
     """
     Retrieve unique values for a specific field for metadata usage.
     """
-    if field == 'category':
-        return [r[0] for r in db.query(models.Recipe.category).distinct().filter(models.Recipe.category is not None).order_by(models.Recipe.category).all()]
-    elif field == 'cuisine':
-        return [r[0] for r in db.query(models.Recipe.cuisine).distinct().filter(models.Recipe.cuisine is not None).order_by(models.Recipe.cuisine).all()]
-    elif field == 'difficulty':
-        return [r[0].value for r in db.query(models.Recipe.difficulty).distinct().filter(models.Recipe.difficulty is not None).all()]
-    elif field == 'suitable_for_diet':
+    if field == "category":
+        return [
+            r[0]
+            for r in db.query(models.Recipe.category)
+            .distinct()
+            .filter(models.Recipe.category is not None)
+            .order_by(models.Recipe.category)
+            .all()
+        ]
+    elif field == "cuisine":
+        return [
+            r[0]
+            for r in db.query(models.Recipe.cuisine)
+            .distinct()
+            .filter(models.Recipe.cuisine is not None)
+            .order_by(models.Recipe.cuisine)
+            .all()
+        ]
+    elif field == "difficulty":
+        return [
+            r[0].value
+            for r in db.query(models.Recipe.difficulty)
+            .distinct()
+            .filter(models.Recipe.difficulty is not None)
+            .all()
+        ]
+    elif field == "suitable_for_diet":
         # Many-to-Many logic? No, RecipeDiet is a table
-        return [r[0].value for r in db.query(models.RecipeDiet.diet_type).distinct().all()]
-    elif field == 'owner':
-         # Return list of dicts? or just names? 
-         # Plan said "return user emails or names"
-         # Let's return objects `{"id": uuid, "name": "First Last"}` or similar?
-         # Simplest for now: List of names
-         users = db.query(models.User).join(models.Recipe).distinct().all()
-         return [{"id": u.id, "name": f"{u.first_name} {u.last_name}" if u.first_name else u.email} for u in users]
-    elif field == 'protein':
-        return [r[0] for r in db.query(models.Recipe.protein).distinct().filter(models.Recipe.protein is not None).order_by(models.Recipe.protein).all()]
-    
+        return [
+            r[0].value for r in db.query(models.RecipeDiet.diet_type).distinct().all()
+        ]
+    elif field == "owner":
+        # Return list of dicts? or just names?
+        # Plan said "return user emails or names"
+        # Let's return objects `{"id": uuid, "name": "First Last"}` or similar?
+        # Simplest for now: List of names
+        users = db.query(models.User).join(models.Recipe).distinct().all()
+        return [
+            {
+                "id": u.id,
+                "name": f"{u.first_name} {u.last_name}" if u.first_name else u.email,
+            }
+            for u in users
+        ]
+    elif field == "protein":
+        return [
+            r[0]
+            for r in db.query(models.Recipe.protein)
+            .distinct()
+            .filter(models.Recipe.protein is not None)
+            .order_by(models.Recipe.protein)
+            .all()
+        ]
+
     return []
 
 
-
-def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID): # user_id is UUID
+def create_user_recipe(
+    db: Session, recipe: schemas.RecipeCreate, user_id: UUID
+):  # user_id is UUID
     """
     Create a new recipe and its associated ingredients, instructions.
     """
     logger.debug(f"Creating recipe: {recipe}")
-    
+
     # Extract data from nested schema groups
     core_data = recipe.core.model_dump()
     # Remove owner_id from core_data (handled by user_id arg) or verify match?
     # We'll use user_id argument as the authoritative source
-    if 'owner_id' in core_data:
-        del core_data['owner_id']
-    if 'id' in core_data: # If ID is provided (bad practice usually for create, but if it is..)
-        del core_data['id'] # Let DB/Model generate uuid
+    if "owner_id" in core_data:
+        del core_data["owner_id"]
+    if (
+        "id" in core_data
+    ):  # If ID is provided (bad practice usually for create, but if it is..)
+        del core_data["id"]  # Let DB/Model generate uuid
 
     times_data = recipe.times.model_dump()
     nutrition_data = recipe.nutrition.model_dump()
     audit_data = recipe.audit.model_dump(exclude_unset=True) if recipe.audit else {}
-    
+
     # Explicit timestamp logic
-    if 'created_at' not in audit_data:
-        audit_data['created_at'] = datetime.now(timezone.utc)
-    if 'updated_at' not in audit_data:
-        audit_data['updated_at'] = datetime.now(timezone.utc)
+    if "created_at" not in audit_data:
+        audit_data["created_at"] = datetime.now(timezone.utc)
+    if "updated_at" not in audit_data:
+        audit_data["updated_at"] = datetime.now(timezone.utc)
 
     # Calculate Checksum
-    checksum = calculate_recipe_checksum(recipe.model_dump(exclude={'audit'}))
+    checksum = calculate_recipe_checksum(recipe.model_dump(exclude={"audit"}))
 
     # Merge all flat fields
     recipe_kwargs = {**core_data, **times_data, **nutrition_data, **audit_data}
-    
+
     # Create the main recipe object
     db_recipe = models.Recipe(
         **recipe_kwargs,
         owner_id=user_id,
         checksum=checksum,
         version=1,
-        parent_recipe_id=recipe.parent_recipe_id
+        parent_recipe_id=recipe.parent_recipe_id,
     )
     db.add(db_recipe)
     db.flush()  # Get recipe ID without committing transaction
 
     # Handle Components and Ingredients
     for comp in recipe.components:
-        db_component = models.RecipeComponent(
-            name=comp.name,
-            recipe_id=db_recipe.id
-        )
+        db_component = models.RecipeComponent(name=comp.name, recipe_id=db_recipe.id)
         db.add(db_component)
         db.flush()  # Get component ID without committing transaction
 
         for idx, item in enumerate(comp.ingredients):
             # Find or create the master ingredient
             ingredient_name = item.item
-            ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == ingredient_name).first()
+            ingredient = (
+                db.query(models.Ingredient)
+                .filter(models.Ingredient.name == ingredient_name)
+                .first()
+            )
             if not ingredient:
                 ingredient = models.Ingredient(name=ingredient_name)
                 db.add(ingredient)
@@ -306,25 +374,20 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
                 quantity=item.quantity,
                 unit=item.unit,
                 notes=item.notes,
-                order=idx
+                order=idx,
             )
             db.add(recipe_ingredient)
 
     # Handle Instructions
     for item in recipe.instructions:
         instruction = models.Instruction(
-            recipe_id=db_recipe.id,
-            step_number=item.step_number,
-            text=item.text
+            recipe_id=db_recipe.id, step_number=item.step_number, text=item.text
         )
         db.add(instruction)
 
     # Handle Diets
     for diet in recipe.suitable_for_diet:
-        recipe_diet = models.RecipeDiet(
-            recipe_id=db_recipe.id,
-            diet_type=diet
-        )
+        recipe_diet = models.RecipeDiet(recipe_id=db_recipe.id, diet_type=diet)
         db.add(recipe_diet)
 
     # Single commit for the entire transaction
@@ -335,7 +398,7 @@ def create_user_recipe(db: Session, recipe: schemas.RecipeCreate, user_id: UUID)
 
 def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCreate):
     """
-    Update an existing recipe. 
+    Update an existing recipe.
     Full replacement strategy for sub-resources is simplest for this complexity.
     """
     logger.debug(f"Updating recipe {recipe_id} with: {recipe_update}")
@@ -344,37 +407,45 @@ def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCre
         return None
 
     # Merge updates
-    core_data = recipe_update.core.model_dump(exclude={'id', 'owner_id'}) 
+    core_data = recipe_update.core.model_dump(exclude={"id", "owner_id"})
     times_data = recipe_update.times.model_dump()
     nutrition_data = recipe_update.nutrition.model_dump()
-    
-    audit_data = recipe_update.audit.model_dump(exclude_unset=True) if recipe_update.audit else {}
-    if 'updated_at' not in audit_data:
-        audit_data['updated_at'] = datetime.now(timezone.utc)
+
+    audit_data = (
+        recipe_update.audit.model_dump(exclude_unset=True)
+        if recipe_update.audit
+        else {}
+    )
+    if "updated_at" not in audit_data:
+        audit_data["updated_at"] = datetime.now(timezone.utc)
 
     update_data = {**core_data, **times_data, **nutrition_data, **audit_data}
-    
+
     # Calculate new checksum
-    new_checksum = calculate_recipe_checksum(recipe_update.model_dump(exclude={'audit'}))
-    
+    new_checksum = calculate_recipe_checksum(
+        recipe_update.model_dump(exclude={"audit"})
+    )
+
     # Handle parent_recipe_id update
     if recipe_update.parent_recipe_id is not None:
         # Check if it changed
         if db_recipe.parent_recipe_id != recipe_update.parent_recipe_id:
-             check_cycle(db, recipe_id, recipe_update.parent_recipe_id)
-             db_recipe.parent_recipe_id = recipe_update.parent_recipe_id
-    elif recipe_update.parent_recipe_id is None and 'parent_recipe_id' in recipe_update.model_dump(exclude_unset=True):
-         # Explicitly set to None?
-         # Schema has default=None, checking if it was intentionally unset or just default.
-         # Actually Pydantic v2 `exclude_unset=True` works if the field was passed.
-         # But usually update schemas use Optional fields for everything. 
-         # recipe_update is RecipeCreate which has required fields for core etc. 
-         # But parent_recipe_id is Optional=None.
-         # If user PUTs the whole object and leaves parent_recipe_id as null, we should probably clear it?
-         # Yes, "Full replacement strategy"
-         db_recipe.parent_recipe_id = None
+            check_cycle(db, recipe_id, recipe_update.parent_recipe_id)
+            db_recipe.parent_recipe_id = recipe_update.parent_recipe_id
+    elif (
+        recipe_update.parent_recipe_id is None
+        and "parent_recipe_id" in recipe_update.model_dump(exclude_unset=True)
+    ):
+        # Explicitly set to None?
+        # Schema has default=None, checking if it was intentionally unset or just default.
+        # Actually Pydantic v2 `exclude_unset=True` works if the field was passed.
+        # But usually update schemas use Optional fields for everything.
+        # recipe_update is RecipeCreate which has required fields for core etc.
+        # But parent_recipe_id is Optional=None.
+        # If user PUTs the whole object and leaves parent_recipe_id as null, we should probably clear it?
+        # Yes, "Full replacement strategy"
+        db_recipe.parent_recipe_id = None
 
-    
     if db_recipe.checksum != new_checksum:
         db_recipe.version = (db_recipe.version or 1) + 1
         db_recipe.checksum = new_checksum
@@ -384,19 +455,22 @@ def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCre
 
     # Clear and replace components
     # Cascade delete should handle their ingredients
-    db.query(models.RecipeComponent).filter(models.RecipeComponent.recipe_id == recipe_id).delete()
+    db.query(models.RecipeComponent).filter(
+        models.RecipeComponent.recipe_id == recipe_id
+    ).delete()
 
     for comp in recipe_update.components:
-        db_component = models.RecipeComponent(
-            name=comp.name,
-            recipe_id=recipe_id
-        )
+        db_component = models.RecipeComponent(name=comp.name, recipe_id=recipe_id)
         db.add(db_component)
         db.flush()  # Get component ID without committing transaction
 
         for idx, item in enumerate(comp.ingredients):
             ingredient_name = item.item
-            ingredient = db.query(models.Ingredient).filter(models.Ingredient.name == ingredient_name).first()
+            ingredient = (
+                db.query(models.Ingredient)
+                .filter(models.Ingredient.name == ingredient_name)
+                .first()
+            )
             if not ingredient:
                 ingredient = models.Ingredient(name=ingredient_name)
                 db.add(ingredient)
@@ -408,27 +482,26 @@ def update_recipe(db: Session, recipe_id: UUID, recipe_update: schemas.RecipeCre
                 quantity=item.quantity,
                 unit=item.unit,
                 notes=item.notes,
-                order=idx
+                order=idx,
             )
             db.add(recipe_ingredient)
 
     # Clear and replace instructions
-    db.query(models.Instruction).filter(models.Instruction.recipe_id == recipe_id).delete()
+    db.query(models.Instruction).filter(
+        models.Instruction.recipe_id == recipe_id
+    ).delete()
     for item in recipe_update.instructions:
         instruction = models.Instruction(
-            recipe_id=recipe_id,
-            step_number=item.step_number,
-            text=item.text
+            recipe_id=recipe_id, step_number=item.step_number, text=item.text
         )
         db.add(instruction)
 
     # Clear and replace diets
-    db.query(models.RecipeDiet).filter(models.RecipeDiet.recipe_id == recipe_id).delete()
+    db.query(models.RecipeDiet).filter(
+        models.RecipeDiet.recipe_id == recipe_id
+    ).delete()
     for diet in recipe_update.suitable_for_diet:
-        recipe_diet = models.RecipeDiet(
-            recipe_id=recipe_id,
-            diet_type=diet
-        )
+        recipe_diet = models.RecipeDiet(recipe_id=recipe_id, diet_type=diet)
         db.add(recipe_diet)
 
     # Single commit for the entire transaction
@@ -454,6 +527,7 @@ def delete_recipe(db: Session, recipe_id: UUID):
 
 # --- Comment CRUD Functions ---
 
+
 def get_comment(db: Session, comment_id: UUID):
     return db.query(models.Comment).filter(models.Comment.id == comment_id).first()
 
@@ -462,7 +536,7 @@ def get_comments(db: Session, recipe_id: UUID, skip: int = 0, limit: int = 100):
     """
     Retrieve comments for a specific recipe.
     """
-    # Assuming we want to show latest first? 
+    # Assuming we want to show latest first?
     # Logic in User story didn't specify, but models has order_by desc(created_at).
     # Relationship loading usually respects that, but explicit query is safer if we access directly.
     return (
@@ -475,29 +549,29 @@ def get_comments(db: Session, recipe_id: UUID, skip: int = 0, limit: int = 100):
     )
 
 
-def create_comment(db: Session, comment: schemas.CommentCreate, user_id: UUID, recipe_id: UUID):
-    db_comment = models.Comment(
-        text=comment.text,
-        user_id=user_id,
-        recipe_id=recipe_id
-    )
+def create_comment(
+    db: Session, comment: schemas.CommentCreate, user_id: UUID, recipe_id: UUID
+):
+    db_comment = models.Comment(text=comment.text, user_id=user_id, recipe_id=recipe_id)
     db.add(db_comment)
     db.commit()
     db.refresh(db_comment)
     return db_comment
 
 
-def update_comment(db: Session, comment_id: UUID, comment_update: schemas.CommentUpdate):
+def update_comment(
+    db: Session, comment_id: UUID, comment_update: schemas.CommentUpdate
+):
     db_comment = get_comment(db, comment_id)
     if not db_comment:
         return None
-    
+
     db_comment.text = comment_update.text
     # created_at/updated_at handles itself via onupdate in model?
-    # actually only if we use server_onupdate. 
+    # actually only if we use server_onupdate.
     # Our model says: updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     # So SQLAlchemy should handle it on flush.
-    
+
     db.add(db_comment)
     db.commit()
     db.refresh(db_comment)
@@ -510,3 +584,140 @@ def delete_comment(db: Session, comment_id: UUID):
         db.delete(db_comment)
         db.commit()
     return db_comment
+
+
+# --- Recipe List CRUD Functions ---
+
+
+def get_recipe_list(db: Session, list_id: UUID):
+    """Retrieve a single recipe list by ID."""
+    return (
+        db.query(models.RecipeList)
+        .options(joinedload(models.RecipeList.items))
+        .filter(models.RecipeList.id == list_id)
+        .first()
+    )
+
+
+def get_recipe_lists(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    filters_list: list = None,
+    sort_by: str = None,
+    user_id: UUID = None,
+):
+    """Retrieve recipe lists with optional filtering and sorting.
+
+    Args:
+        user_id: If provided, only return lists owned by this user.
+    """
+    query = db.query(models.RecipeList)
+
+    # Filter by user if specified (non-admin users)
+    if user_id:
+        query = query.filter(models.RecipeList.user_id == user_id)
+
+    if filters_list:
+        query = filters.apply_recipe_list_filters(query, filters_list)
+
+    total_count = query.distinct().count()
+
+    query = filters.apply_sorting(
+        query,
+        sort_by,
+        filters.RECIPE_LIST_SORT_FIELDS,
+        default_sort_col=models.RecipeList.name,
+    )
+
+    lists = query.offset(skip).limit(limit).all()
+    return lists, total_count
+
+
+def create_recipe_list(
+    db: Session, recipe_list: schemas.RecipeListCreate, user_id: UUID
+):
+    """Create a new recipe list for a user."""
+    db_list = models.RecipeList(
+        user_id=user_id, name=recipe_list.name, description=recipe_list.description
+    )
+    db.add(db_list)
+    db.commit()
+    db.refresh(db_list)
+    return db_list
+
+
+def update_recipe_list(
+    db: Session, list_id: UUID, list_update: schemas.RecipeListUpdate
+):
+    """Update a recipe list's name and/or description."""
+    db_list = get_recipe_list(db, list_id)
+    if not db_list:
+        return None
+
+    update_data = list_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_list, key, value)
+
+    db.add(db_list)
+    db.commit()
+    db.refresh(db_list)
+    return db_list
+
+
+def delete_recipe_list(db: Session, list_id: UUID):
+    """Delete a recipe list (cascade will remove items)."""
+    db_list = get_recipe_list(db, list_id)
+    if db_list:
+        db.delete(db_list)
+        db.commit()
+    return db_list
+
+
+def add_recipe_to_list(db: Session, list_id: UUID, recipe_id: UUID):
+    """Add a recipe to a recipe list."""
+    # Check if already in list
+    existing = (
+        db.query(models.RecipeListItem)
+        .filter(
+            models.RecipeListItem.recipe_list_id == list_id,
+            models.RecipeListItem.recipe_id == recipe_id,
+        )
+        .first()
+    )
+    if existing:
+        return existing
+
+    db_item = models.RecipeListItem(recipe_list_id=list_id, recipe_id=recipe_id)
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+
+def remove_recipe_from_list(db: Session, list_id: UUID, recipe_id: UUID):
+    """Remove a recipe from a recipe list."""
+    db_item = (
+        db.query(models.RecipeListItem)
+        .filter(
+            models.RecipeListItem.recipe_list_id == list_id,
+            models.RecipeListItem.recipe_id == recipe_id,
+        )
+        .first()
+    )
+    if db_item:
+        db.delete(db_item)
+        db.commit()
+    return db_item
+
+
+def get_recipe_list_item(db: Session, list_id: UUID, recipe_id: UUID):
+    """Check if a recipe is in a specific list."""
+    return (
+        db.query(models.RecipeListItem)
+        .filter(
+            models.RecipeListItem.recipe_list_id == list_id,
+            models.RecipeListItem.recipe_id == recipe_id,
+        )
+        .first()
+    )

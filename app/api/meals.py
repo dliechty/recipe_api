@@ -26,12 +26,14 @@ def compute_slot_signature(slot: Any) -> str:
 
     elif strategy == models.MealTemplateSlotStrategy.LIST:
         # Check if this is an ORM object (has recipes relationship) or Pydantic (has recipe_ids)
-        if hasattr(slot, 'recipes') and slot.recipes is not None:
+        if hasattr(slot, "recipes") and slot.recipes is not None:
             # ORM object - get recipe IDs from the relationship
             recipe_ids = sorted(str(r.id) for r in slot.recipes)
         else:
             # Pydantic schema - use recipe_ids directly
-            recipe_ids = sorted(str(rid) for rid in slot.recipe_ids) if slot.recipe_ids else []
+            recipe_ids = (
+                sorted(str(rid) for rid in slot.recipe_ids) if slot.recipe_ids else []
+            )
         return f"list:{','.join(recipe_ids)}"
 
     elif strategy == models.MealTemplateSlotStrategy.SEARCH:
@@ -61,9 +63,7 @@ def compute_slots_checksum(slots: List[Any]) -> str:
 
 
 def find_duplicate_template(
-    db: Session,
-    slots: List[Any],
-    exclude_template_id: Optional[UUID] = None
+    db: Session, slots: List[Any], exclude_template_id: Optional[UUID] = None
 ) -> Optional[models.MealTemplate]:
     """
     Find an existing template with identical slot configuration using checksum lookup.
@@ -80,13 +80,19 @@ def find_duplicate_template(
 
     return query.first()
 
+
 # --- Meal Templates ---
 
-@router.post("/templates", response_model=schemas.MealTemplate, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/templates",
+    response_model=schemas.MealTemplate,
+    status_code=status.HTTP_201_CREATED,
+)
 def create_meal_template(
     template_in: schemas.MealTemplateCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     # Compute checksum for duplicate detection
     slots_checksum = compute_slots_checksum(template_in.slots)
@@ -101,7 +107,7 @@ def create_meal_template(
                 owner_name = f"{duplicate.user.first_name} {duplicate.user.last_name}"
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"A template with identical slots already exists: '{duplicate.name}' (created by {owner_name})"
+            detail=f"A template with identical slots already exists: '{duplicate.name}' (created by {owner_name})",
         )
 
     # Create Template with checksum
@@ -109,12 +115,12 @@ def create_meal_template(
         user_id=current_user.id,
         name=template_in.name,
         classification=template_in.classification,
-        slots_checksum=slots_checksum
+        slots_checksum=slots_checksum,
     )
     db.add(db_template)
     db.commit()
     db.refresh(db_template)
-    
+
     # Create Slots
     for slot_in in template_in.slots:
         # Debug removed
@@ -128,41 +134,44 @@ def create_meal_template(
             template_id=db_template.id,
             strategy=slot_in.strategy,
             recipe_id=slot_in.recipe_id,
-            search_criteria=criteria_json
+            search_criteria=criteria_json,
         )
-        
+
         if slot_in.recipe_ids:
-            recipes_list = db.query(models.Recipe).filter(models.Recipe.id.in_(slot_in.recipe_ids)).all()
+            recipes_list = (
+                db.query(models.Recipe)
+                .filter(models.Recipe.id.in_(slot_in.recipe_ids))
+                .all()
+            )
             db_slot.recipes = recipes_list
-            
+
         db.add(db_slot)
-    
+
     db.commit()
     db.refresh(db_template)
     return db_template
+
 
 @router.get("/templates", response_model=List[schemas.MealTemplate])
 def get_meal_templates(
     request: Request,
     response: Response,
     skip: int = Query(
-        default=0,
-        ge=0,
-        description="Number of records to skip for pagination"
+        default=0, ge=0, description="Number of records to skip for pagination"
     ),
     limit: int = Query(
         default=100,
         ge=1,
         le=1000,
-        description="Maximum number of records to return (1-1000)"
+        description="Maximum number of records to return (1-1000)",
     ),
     sort: str = Query(
         default=None,
         description="Comma-separated sort fields. Prefix with '-' for descending order. "
-                    "Valid fields: name, classification, created_at, updated_at. Example: 'name,-created_at'"
+        "Valid fields: name, classification, created_at, updated_at. Example: 'name,-created_at'",
     ),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """
     Retrieve a list of meal templates with optional filtering and sorting.
@@ -195,110 +204,150 @@ def get_meal_templates(
     total_count = query.distinct().count()
     response.headers["X-Total-Count"] = str(total_count)
 
-    query = filters.apply_sorting(query, sort, filters.MEAL_TEMPLATE_SORT_FIELDS, default_sort_col=models.MealTemplate.name)
+    query = filters.apply_sorting(
+        query,
+        sort,
+        filters.MEAL_TEMPLATE_SORT_FIELDS,
+        default_sort_col=models.MealTemplate.name,
+    )
     templates = query.distinct().offset(skip).limit(limit).all()
     return templates
+
 
 @router.get("/templates/{template_id}", response_model=schemas.MealTemplate)
 def get_meal_template(
     template_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
-    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id).first()
+    template = (
+        db.query(models.MealTemplate)
+        .filter(models.MealTemplate.id == template_id)
+        .first()
+    )
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
     return template
+
 
 @router.put("/templates/{template_id}", response_model=schemas.MealTemplate)
 def update_meal_template(
     template_id: UUID,
     template_in: schemas.MealTemplateUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
-    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id).first()
+    template = (
+        db.query(models.MealTemplate)
+        .filter(models.MealTemplate.id == template_id)
+        .first()
+    )
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
     if template.user_id != current_user.id and not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Not authorized to update this template")
-    
+        raise HTTPException(
+            status_code=403, detail="Not authorized to update this template"
+        )
+
     if template_in.name is not None:
         template.name = template_in.name
     if template_in.classification is not None:
         template.classification = template_in.classification
-        
+
     db.commit()
     db.refresh(template)
     return template
+
 
 @router.delete("/templates/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_meal_template(
     template_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
-    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id).first()
+    template = (
+        db.query(models.MealTemplate)
+        .filter(models.MealTemplate.id == template_id)
+        .first()
+    )
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
     if template.user_id != current_user.id and not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this template")
-    
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this template"
+        )
+
     db.delete(template)
     db.commit()
     return None
 
+
 # --- Logic for Generation ---
 
-def resolve_recipe_for_slot(db: Session, slot: models.MealTemplateSlot, user_id: UUID) -> Optional[models.Recipe]:
+
+def resolve_recipe_for_slot(
+    db: Session, slot: models.MealTemplateSlot, user_id: UUID
+) -> Optional[models.Recipe]:
     if slot.strategy == models.MealTemplateSlotStrategy.DIRECT:
-        return db.query(models.Recipe).filter(models.Recipe.id == slot.recipe_id).first()
-        
+        return (
+            db.query(models.Recipe).filter(models.Recipe.id == slot.recipe_id).first()
+        )
+
     elif slot.strategy == models.MealTemplateSlotStrategy.LIST:
         # Pick random from the list
         # Pick random
         if not slot.recipes:
             return None
         return random.choice(slot.recipes)
-        
+
     elif slot.strategy == models.MealTemplateSlotStrategy.SEARCH:
         # Build query based on criteria
         criteria = slot.search_criteria or []
         query = db.query(models.Recipe)
-        
+
         # Criteria is expected to be a list of dicts that can be parsed into Filters
         filters_list = []
         if isinstance(criteria, list):
             for c in criteria:
                 # Assuming c is a dict like {'field': 'x', 'operator': 'eq', 'value': 'y'}
                 if isinstance(c, dict):
-                     filters_list.append(filters.Filter(
-                         field=c.get('field'),
-                         operator=c.get('operator'),
-                         value=c.get('value')
-                     ))
-        
+                    filters_list.append(
+                        filters.Filter(
+                            field=c.get("field"),
+                            operator=c.get("operator"),
+                            value=c.get("value"),
+                        )
+                    )
+
         if filters_list:
             query = filters.apply_filters(query, filters_list)
-            
+
         # Optimization: Don't fetch all, just fetch one random
-        # But we need to know count to pick random offset? 
+        # But we need to know count to pick random offset?
         # Or order by random() which is db specific but usually works.
         match = query.order_by(func.random()).first()
         return match
-        
+
     return None
+
 
 # --- Meals ---
 
-@router.post("/generate", response_model=schemas.Meal, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/generate", response_model=schemas.Meal, status_code=status.HTTP_201_CREATED
+)
 def generate_meal(
     template_id: UUID,
     schedule_request: Optional[schemas.MealScheduleRequest] = None,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
-    template = db.query(models.MealTemplate).filter(models.MealTemplate.id == template_id).first()
+    template = (
+        db.query(models.MealTemplate)
+        .filter(models.MealTemplate.id == template_id)
+        .first()
+    )
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
 
@@ -316,7 +365,7 @@ def generate_meal(
         name=f"Generated {template.name}",
         status=meal_status,
         classification=template.classification,
-        date=meal_date
+        date=meal_date,
     )
     db.add(db_meal)
     db.commit()
@@ -327,9 +376,7 @@ def generate_meal(
         recipe = resolve_recipe_for_slot(db, slot, current_user.id)
         if recipe:
             meal_item = models.MealItem(
-                meal_id=db_meal.id,
-                slot_id=slot.id,
-                recipe_id=recipe.id
+                meal_id=db_meal.id, slot_id=slot.id, recipe_id=recipe.id
             )
             db.add(meal_item)
 
@@ -337,11 +384,12 @@ def generate_meal(
     db.refresh(db_meal)
     return db_meal
 
+
 @router.post("/", response_model=schemas.Meal, status_code=status.HTTP_201_CREATED)
 def create_meal(
     meal_in: schemas.MealCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     db_meal = models.Meal(
         user_id=current_user.id,
@@ -349,46 +397,42 @@ def create_meal(
         name=meal_in.name or "New Meal",
         status=meal_in.status,
         classification=meal_in.classification,
-        date=meal_in.date
+        date=meal_in.date,
     )
     db.add(db_meal)
     db.commit()
     db.refresh(db_meal)
-    
+
     for item_in in meal_in.items:
-        db_item = models.MealItem(
-            meal_id=db_meal.id,
-            recipe_id=item_in.recipe_id
-        )
+        db_item = models.MealItem(meal_id=db_meal.id, recipe_id=item_in.recipe_id)
         db.add(db_item)
-        
+
     db.commit()
     db.refresh(db_meal)
     return db_meal
+
 
 @router.get("/", response_model=List[schemas.Meal])
 def get_meals(
     request: Request,
     response: Response,
     skip: int = Query(
-        default=0,
-        ge=0,
-        description="Number of records to skip for pagination"
+        default=0, ge=0, description="Number of records to skip for pagination"
     ),
     limit: int = Query(
         default=100,
         ge=1,
         le=1000,
-        description="Maximum number of records to return (1-1000)"
+        description="Maximum number of records to return (1-1000)",
     ),
     sort: str = Query(
         default=None,
         description="Comma-separated sort fields. Prefix with '-' for descending order. "
-                    "Valid fields: date, classification, status, created_at, updated_at, name. "
-                    "Default: date descending with unscheduled (null) dates first. Example: '-date,name'"
+        "Valid fields: date, classification, status, created_at, updated_at, name. "
+        "Default: date descending with unscheduled (null) dates first. Example: '-date,name'",
     ),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """
     Retrieve a list of meals with optional filtering and sorting.
@@ -427,30 +471,34 @@ def get_meals(
     meals = query.distinct().offset(skip).limit(limit).all()
     return meals
 
+
 @router.get("/{meal_id}", response_model=schemas.Meal)
 def get_meal(
     meal_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     meal = db.query(models.Meal).filter(models.Meal.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
     return meal
 
+
 @router.put("/{meal_id}", response_model=schemas.Meal)
 def update_meal(
     meal_id: UUID,
     meal_in: schemas.MealUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     meal = db.query(models.Meal).filter(models.Meal.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
     if meal.user_id != current_user.id and not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Not authorized to update this meal")
-        
+        raise HTTPException(
+            status_code=403, detail="Not authorized to update this meal"
+        )
+
     if meal_in.name is not None:
         meal.name = meal_in.name
     if meal_in.status is not None:
@@ -459,39 +507,42 @@ def update_meal(
         meal.classification = meal_in.classification
     if meal_in.date is not None:
         meal.date = meal_in.date
-        
+
     if meal_in.items is not None:
         # Clear existing items
-        # We need to manually remove them or use cascade. Cascade is set on relationship, so removing from list might work if we were using purely ORM list manipulation, 
+        # We need to manually remove them or use cascade. Cascade is set on relationship, so removing from list might work if we were using purely ORM list manipulation,
         # but explicit delete is safer for clarity or if we just want to replace the collection.
         # Actually, with SQLAlchemy relationship cascade="all, delete-orphan", clearing the list usually works.
         # Let's try clearing the list first.
         meal.items.clear()
-        
+
         # Add new items
         for item_in in meal_in.items:
             db_item = models.MealItem(
                 meal_id=meal.id,
-                recipe_id=item_in.recipe_id
+                recipe_id=item_in.recipe_id,
                 # Note: slot_id is lost/reset to None for these manual updates as per plan
             )
             meal.items.append(db_item)
-    
+
     db.commit()
     db.refresh(meal)
     return meal
+
 
 @router.delete("/{meal_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_meal(
     meal_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     meal = db.query(models.Meal).filter(models.Meal.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
     if meal.user_id != current_user.id and not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this meal")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this meal"
+        )
 
     db.delete(meal)
     db.commit()

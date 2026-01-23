@@ -14,6 +14,7 @@ from app.unit_conversion import (
 
 # --- Unit Conversion Module Tests ---
 
+
 class TestGetUnitInfo:
     """Tests for the get_unit_info function."""
 
@@ -35,7 +36,11 @@ class TestGetUnitInfo:
     def test_metric_volume_units(self):
         """Test recognition of metric volume units."""
         assert get_unit_info("ml") == ("milliliter", UnitSystem.METRIC, "volume")
-        assert get_unit_info("milliliter") == ("milliliter", UnitSystem.METRIC, "volume")
+        assert get_unit_info("milliliter") == (
+            "milliliter",
+            UnitSystem.METRIC,
+            "volume",
+        )
         assert get_unit_info("l") == ("liter", UnitSystem.METRIC, "volume")
         assert get_unit_info("liter") == ("liter", UnitSystem.METRIC, "volume")
 
@@ -183,7 +188,7 @@ class TestConvertRecipeUnits:
                     "ingredients": [
                         {"quantity": 2, "unit": "cups", "item": "Flour"},
                         {"quantity": 1, "unit": "oz", "item": "Butter"},
-                    ]
+                    ],
                 }
             ]
         }
@@ -206,7 +211,7 @@ class TestConvertRecipeUnits:
                     "ingredients": [
                         {"quantity": 500, "unit": "ml", "item": "Water"},
                         {"quantity": 100, "unit": "g", "item": "Sugar"},
-                    ]
+                    ],
                 }
             ]
         }
@@ -229,7 +234,7 @@ class TestConvertRecipeUnits:
                     "ingredients": [
                         {"quantity": 2, "unit": "slice", "item": "Bread"},
                         {"quantity": 1, "unit": "cups", "item": "Milk"},
-                    ]
+                    ],
                 }
             ]
         }
@@ -245,7 +250,10 @@ class TestConvertRecipeUnits:
 
 # --- API Endpoint Tests ---
 
-def get_auth_headers(client: TestClient, db, email="unitconvert@example.com", password="password"):
+
+def get_auth_headers(
+    client: TestClient, db, email="unitconvert@example.com", password="password"
+):
     """Helper to get authentication headers."""
     try:
         user_in = schemas.UserCreate(email=email, password=password)
@@ -278,10 +286,10 @@ class TestRecipeUnitConversionAPI:
                     "ingredients": [
                         {"ingredient_name": "Flour", "quantity": 2, "unit": "cups"},
                         {"ingredient_name": "Butter", "quantity": 4, "unit": "oz"},
-                    ]
+                    ],
                 }
             ],
-            "instructions": []
+            "instructions": [],
         }
         create_res = client.post("/recipes/", json=recipe_data, headers=headers)
         recipe_id = create_res.json()["core"]["id"]
@@ -317,10 +325,10 @@ class TestRecipeUnitConversionAPI:
                     "ingredients": [
                         {"ingredient_name": "Water", "quantity": 500, "unit": "ml"},
                         {"ingredient_name": "Sugar", "quantity": 100, "unit": "g"},
-                    ]
+                    ],
                 }
             ],
-            "instructions": []
+            "instructions": [],
         }
         create_res = client.post("/recipes/", json=recipe_data, headers=headers)
         recipe_id = create_res.json()["core"]["id"]
@@ -355,10 +363,10 @@ class TestRecipeUnitConversionAPI:
                     "name": "Main",
                     "ingredients": [
                         {"ingredient_name": "Milk", "quantity": 1.5, "unit": "cups"},
-                    ]
+                    ],
                 }
             ],
-            "instructions": []
+            "instructions": [],
         }
         create_res = client.post("/recipes/", json=recipe_data, headers=headers)
         recipe_id = create_res.json()["core"]["id"]
@@ -388,10 +396,10 @@ class TestRecipeUnitConversionAPI:
                     "ingredients": [
                         {"ingredient_name": "Water", "quantity": 500, "unit": "ml"},
                         {"ingredient_name": "Sugar", "quantity": 100, "unit": "g"},
-                    ]
+                    ],
                 }
             ],
-            "instructions": []
+            "instructions": [],
         }
         create_res = client.post("/recipes/", json=recipe_data, headers=headers)
         recipe_id = create_res.json()["core"]["id"]
@@ -417,10 +425,10 @@ class TestRecipeUnitConversionAPI:
                     "ingredients": [
                         {"ingredient_name": "Flour", "quantity": 2, "unit": "cups"},
                         {"ingredient_name": "Butter", "quantity": 4, "unit": "oz"},
-                    ]
+                    ],
                 }
             ],
-            "instructions": []
+            "instructions": [],
         }
         create_res = client.post("/recipes/", json=recipe_data, headers=headers)
         recipe_id = create_res.json()["core"]["id"]
@@ -445,16 +453,18 @@ class TestRecipeUnitConversionAPI:
                     "name": "Main",
                     "ingredients": [
                         {"ingredient_name": "Flour", "quantity": 1, "unit": "cup"},
-                    ]
+                    ],
                 }
             ],
-            "instructions": []
+            "instructions": [],
         }
         create_res = client.post("/recipes/", json=recipe_data, headers=headers)
         recipe_id = create_res.json()["core"]["id"]
 
         # Scale by 2 and convert to metric
-        response = client.get(f"/recipes/{recipe_id}?scale=2&units=metric", headers=headers)
+        response = client.get(
+            f"/recipes/{recipe_id}?scale=2&units=metric", headers=headers
+        )
         assert response.status_code == 200
         data = response.json()
 
@@ -475,7 +485,7 @@ class TestRecipeUnitConversionAPI:
             "times": {},
             "nutrition": {},
             "components": [],
-            "instructions": []
+            "instructions": [],
         }
         create_res = client.post("/recipes/", json=recipe_data, headers=headers)
         recipe_id = create_res.json()["core"]["id"]
@@ -497,10 +507,10 @@ class TestRecipeUnitConversionAPI:
                     "ingredients": [
                         {"ingredient_name": "Bread", "quantity": 2, "unit": "slice"},
                         {"ingredient_name": "Butter", "quantity": 1, "unit": "tbsp"},
-                    ]
+                    ],
                 }
             ],
-            "instructions": []
+            "instructions": [],
         }
         create_res = client.post("/recipes/", json=recipe_data, headers=headers)
         recipe_id = create_res.json()["core"]["id"]
@@ -532,16 +542,16 @@ class TestRecipeUnitConversionAPI:
                     "name": "Dough",
                     "ingredients": [
                         {"ingredient_name": "Flour", "quantity": 3, "unit": "cups"},
-                    ]
+                    ],
                 },
                 {
                     "name": "Filling",
                     "ingredients": [
                         {"ingredient_name": "Cheese", "quantity": 8, "unit": "oz"},
-                    ]
-                }
+                    ],
+                },
             ],
-            "instructions": []
+            "instructions": [],
         }
         create_res = client.post("/recipes/", json=recipe_data, headers=headers)
         recipe_id = create_res.json()["core"]["id"]
@@ -573,10 +583,10 @@ class TestRecipeUnitConversionAPI:
                     "name": "Main",
                     "ingredients": [
                         {"ingredient_name": "Water", "quantity": 8, "unit": "cups"},
-                    ]
+                    ],
                 }
             ],
-            "instructions": []
+            "instructions": [],
         }
         create_res = client.post("/recipes/", json=recipe_data, headers=headers)
         recipe_id = create_res.json()["core"]["id"]

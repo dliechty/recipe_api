@@ -1,4 +1,3 @@
-
 import pytest
 from typing import Generator
 from fastapi.testclient import TestClient
@@ -7,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 # It is important to set environment variables before importing app modules
 import os
+
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 
 from app.db.session import Base, get_db
@@ -19,6 +19,7 @@ engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 @pytest.fixture(scope="session", autouse=True)
 def db_engine():
     # Create tables
@@ -27,6 +28,7 @@ def db_engine():
     # Drop tables
     Base.metadata.drop_all(bind=engine)
     os.remove("./test.db")
+
 
 @pytest.fixture(scope="function")
 def db(db_engine) -> Generator:
@@ -38,10 +40,12 @@ def db(db_engine) -> Generator:
     transaction.rollback()
     connection.close()
 
+
 @pytest.fixture(scope="function")
 def client(db) -> Generator:
     def override_get_db():
         yield db
+
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as c:
         yield c

@@ -605,9 +605,18 @@ def get_recipe_lists(
     limit: int = 100,
     filters_list: list = None,
     sort_by: str = None,
+    user_id: UUID = None,
 ):
-    """Retrieve recipe lists with optional filtering and sorting."""
+    """Retrieve recipe lists with optional filtering and sorting.
+
+    Args:
+        user_id: If provided, only return lists owned by this user.
+    """
     query = db.query(models.RecipeList)
+
+    # Filter by user if specified (non-admin users)
+    if user_id:
+        query = query.filter(models.RecipeList.user_id == user_id)
 
     if filters_list:
         query = filters.apply_recipe_list_filters(query, filters_list)

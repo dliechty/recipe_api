@@ -1775,7 +1775,7 @@
           "Recipe Lists"
         ],
         "summary": "Get Recipe Lists",
-        "description": "Retrieve recipe lists with optional filtering and sorting.\n\n**Filtering:** Use bracket notation `field[operator]=value` for filters.\n\nOperators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`.\n\nFilter fields: `id`, `name`, `created_at`, `updated_at`, `owner`, `recipe_id`.\n\nExamples:\n- `?name[like]=favorites` - Lists with 'favorites' in name\n- `?owner[eq]=<user_uuid>` - Lists owned by specific user\n- `?recipe_id[eq]=<recipe_uuid>` - Lists containing a specific recipe\n\n**Sorting:** Use the `sort` parameter with comma-separated fields. Prefix with `-` for descending.\n\nReturns total count in `X-Total-Count` response header.",
+        "description": "Retrieve recipe lists with optional filtering and sorting.\n\nRegular users can only see their own lists. Admins can see all lists.\n\n**Filtering:** Use bracket notation `field[operator]=value` for filters.\n\nOperators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`.\n\nFilter fields: `id`, `name`, `created_at`, `updated_at`, `recipe_id`.\n\nExamples:\n- `?name[like]=favorites` - Lists with 'favorites' in name\n- `?recipe_id[eq]=<recipe_uuid>` - Lists containing a specific recipe\n\n**Sorting:** Use the `sort` parameter with comma-separated fields. Prefix with `-` for descending.\n\nReturns total count in `X-Total-Count` response header.",
         "operationId": "get_recipe_lists_lists__get",
         "security": [
           {
@@ -1856,7 +1856,7 @@
           "Recipe Lists"
         ],
         "summary": "Get Recipe List",
-        "description": "Retrieve a specific recipe list by ID.",
+        "description": "Retrieve a specific recipe list by ID.\nOnly the owner or an admin can view the list.",
         "operationId": "get_recipe_list_lists__list_id__get",
         "security": [
           {

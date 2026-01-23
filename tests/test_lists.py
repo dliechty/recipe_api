@@ -352,6 +352,146 @@ class TestRecipeListItems:
 class TestRecipeListAuthorization:
     """Tests for recipe list authorization."""
 
+    def test_view_other_users_list_forbidden(
+        self, client: TestClient, db: Session, list_user_token_headers, list_user
+    ):
+        """Test that users cannot view other users' lists by ID."""
+        # Create list as list_user
+        list_res = client.post(
+            "/lists/", headers=list_user_token_headers, json={"name": "My List"}
+        )
+        list_id = list_res.json()["id"]
+
+        # Create another user
+        other_user_data = schemas.UserCreate(
+            email="viewother@example.com",
+            password="testpassword",
+            first_name="Other",
+            last_name="User",
+        )
+        crud.create_user(db, other_user_data)
+        login_res = client.post(
+            "/auth/token",
+            data={"username": "viewother@example.com", "password": "testpassword"},
+        )
+        other_headers = {"Authorization": f"Bearer {login_res.json()['access_token']}"}
+
+        # Try to view list as other user
+        response = client.get(f"/lists/{list_id}", headers=other_headers)
+
+        assert response.status_code == 403
+
+    def test_list_only_shows_own_lists(
+        self, client: TestClient, db: Session, list_user_token_headers, list_user
+    ):
+        """Test that users only see their own lists in the list view."""
+        # Create list as list_user
+        client.post(
+            "/lists/", headers=list_user_token_headers, json={"name": "User1 List"}
+        )
+
+        # Create another user with their own list
+        other_user_data = schemas.UserCreate(
+            email="listother@example.com",
+            password="testpassword",
+            first_name="Other",
+            last_name="User",
+        )
+        crud.create_user(db, other_user_data)
+        login_res = client.post(
+            "/auth/token",
+            data={"username": "listother@example.com", "password": "testpassword"},
+        )
+        other_headers = {"Authorization": f"Bearer {login_res.json()['access_token']}"}
+
+        # Create list as other user
+        client.post("/lists/", headers=other_headers, json={"name": "User2 List"})
+
+        # Get lists as list_user - should only see their own
+        response = client.get("/lists/", headers=list_user_token_headers)
+        assert response.status_code == 200
+        data = response.json()
+        list_names = [item["name"] for item in data]
+        assert "User1 List" in list_names
+        assert "User2 List" not in list_names
+
+        # Get lists as other user - should only see their own
+        response = client.get("/lists/", headers=other_headers)
+        assert response.status_code == 200
+        data = response.json()
+        list_names = [item["name"] for item in data]
+        assert "User2 List" in list_names
+        assert "User1 List" not in list_names
+
+    def test_admin_can_view_any_list(
+        self, client: TestClient, db: Session, list_user_token_headers, list_user
+    ):
+        """Test that admin can view any user's list."""
+        # Create list as list_user
+        list_res = client.post(
+            "/lists/",
+            headers=list_user_token_headers,
+            json={"name": "Regular User List"},
+        )
+        list_id = list_res.json()["id"]
+
+        # Create admin user
+        admin_user_data = schemas.UserCreate(
+            email="adminview@example.com",
+            password="testpassword",
+            first_name="Admin",
+            last_name="User",
+        )
+        admin_user = crud.create_user(db, admin_user_data)
+        admin_user.is_admin = True
+        db.commit()
+
+        login_res = client.post(
+            "/auth/token",
+            data={"username": "adminview@example.com", "password": "testpassword"},
+        )
+        admin_headers = {"Authorization": f"Bearer {login_res.json()['access_token']}"}
+
+        # Admin can view the list by ID
+        response = client.get(f"/lists/{list_id}", headers=admin_headers)
+        assert response.status_code == 200
+        assert response.json()["name"] == "Regular User List"
+
+    def test_admin_can_see_all_lists(
+        self, client: TestClient, db: Session, list_user_token_headers, list_user
+    ):
+        """Test that admin can see all users' lists in the list view."""
+        # Create list as list_user
+        client.post(
+            "/lists/",
+            headers=list_user_token_headers,
+            json={"name": "AdminTest User1 List"},
+        )
+
+        # Create admin user
+        admin_user_data = schemas.UserCreate(
+            email="adminlist@example.com",
+            password="testpassword",
+            first_name="Admin",
+            last_name="User",
+        )
+        admin_user = crud.create_user(db, admin_user_data)
+        admin_user.is_admin = True
+        db.commit()
+
+        login_res = client.post(
+            "/auth/token",
+            data={"username": "adminlist@example.com", "password": "testpassword"},
+        )
+        admin_headers = {"Authorization": f"Bearer {login_res.json()['access_token']}"}
+
+        # Admin can see all lists
+        response = client.get("/lists/", headers=admin_headers)
+        assert response.status_code == 200
+        data = response.json()
+        list_names = [item["name"] for item in data]
+        assert "AdminTest User1 List" in list_names
+
     def test_update_other_users_list_forbidden(
         self, client: TestClient, db: Session, list_user_token_headers, list_user
     ):

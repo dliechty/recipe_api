@@ -54,15 +54,16 @@ def get_recipe_lists(
     """
     Retrieve recipe lists with optional filtering and sorting.
 
+    Regular users can only see their own lists. Admins can see all lists.
+
     **Filtering:** Use bracket notation `field[operator]=value` for filters.
 
     Operators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`.
 
-    Filter fields: `id`, `name`, `created_at`, `updated_at`, `owner`, `recipe_id`.
+    Filter fields: `id`, `name`, `created_at`, `updated_at`, `recipe_id`.
 
     Examples:
     - `?name[like]=favorites` - Lists with 'favorites' in name
-    - `?owner[eq]=<user_uuid>` - Lists owned by specific user
     - `?recipe_id[eq]=<recipe_uuid>` - Lists containing a specific recipe
 
     **Sorting:** Use the `sort` parameter with comma-separated fields. Prefix with `-` for descending.
@@ -70,8 +71,17 @@ def get_recipe_lists(
     Returns total count in `X-Total-Count` response header.
     """
     filters_list = parse_filters(request.query_params)
+
+    # Non-admin users can only see their own lists
+    user_id = None if current_user.is_admin else current_user.id
+
     lists, total_count = crud.get_recipe_lists(
-        db, skip=skip, limit=limit, filters_list=filters_list, sort_by=sort
+        db,
+        skip=skip,
+        limit=limit,
+        filters_list=filters_list,
+        sort_by=sort,
+        user_id=user_id,
     )
     response.headers["X-Total-Count"] = str(total_count)
     return lists
@@ -85,10 +95,13 @@ def get_recipe_list(
 ):
     """
     Retrieve a specific recipe list by ID.
+    Only the owner or an admin can view the list.
     """
     db_list = crud.get_recipe_list(db, list_id)
     if not db_list:
         raise HTTPException(status_code=404, detail="Recipe list not found")
+    if db_list.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized to view this list")
     return db_list
 
 

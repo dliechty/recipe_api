@@ -19,7 +19,7 @@ from slowapi.errors import RateLimitExceeded
 # Import local modules
 from app.db.session import engine
 from app import models
-from app.api import auth, recipes, meals
+from app.api import auth, recipes, meals, lists
 from app.core.config import settings
 from app.core.logging_middleware import StructuredLoggingMiddleware
 
@@ -29,7 +29,7 @@ _is_testing = "test" in os.environ.get("DATABASE_URL", "").lower()
 limiter = Limiter(key_func=get_remote_address, enabled=not _is_testing)
 
 # Load logging configuration
-logging.config.fileConfig('logging.ini', disable_existing_loggers=False)
+logging.config.fileConfig("logging.ini", disable_existing_loggers=False)
 
 # Get the logger instance
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ app = FastAPI(
     description="API for managing recipes, users, and meal plans.",
     version="1.0.0",
     root_path=settings.ROOT_PATH,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
 
 # Add rate limiter to app state and register exception handler
@@ -72,8 +72,10 @@ app.add_middleware(
 
 # --- Security Headers Middleware ---
 
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all responses."""
+
     async def dispatch(self, request: Request, call_next):
         response: Response = await call_next(request)
         # Prevent clickjacking
@@ -97,6 +99,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["Content-Security-Policy"] = "default-src 'self'"
         return response
 
+
 app.add_middleware(SecurityHeadersMiddleware)
 
 # --- End of Security Headers Middleware ---
@@ -106,6 +109,8 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(recipes.router, prefix="/recipes", tags=["Recipes"])
 app.include_router(meals.router, prefix="/meals", tags=["Meals"])
+app.include_router(lists.router, prefix="/lists", tags=["Recipe Lists"])
+
 
 @app.get("/", tags=["Root"])
 async def read_root():
@@ -114,6 +119,7 @@ async def read_root():
     """
     logger.debug("Root endpoint accessed")
     return {"message": "Welcome to the Recipe Management API!"}
+
 
 if __name__ == "__main__":
     # This block allows running the app directly with uvicorn for development.

@@ -13,6 +13,7 @@
       "run_shell_command(git add)",
       "run_shell_command(git status)",
       "run_shell_command(git diff)",
+      "run_shell_command(git log)",
       "run_shell_command(mkdir)",
       "run_shell_command(grep)",
       "run_shell_command(touch)"

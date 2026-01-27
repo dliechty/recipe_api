@@ -594,7 +594,9 @@ def get_recipe_list(db: Session, list_id: UUID):
     return (
         db.query(models.RecipeList)
         .options(joinedload(models.RecipeList.items))
-        .filter(models.RecipeList.id == list_id))
+        .filter(models.RecipeList.id == list_id)
+        .first()
+    )
 
 # --- Meal Plan CRUD Functions ---
 

@@ -15,6 +15,9 @@
       "Bash(grep:*)",
       "Bash(mdb-export:*)",
       "Bash(uv run python generate_openapi.py)",
+      "Bash(bd:*)",
+      "Bash(git push)",
+      "Edit",
       "Bash(uv run ruff format:*)"
     ]
   }

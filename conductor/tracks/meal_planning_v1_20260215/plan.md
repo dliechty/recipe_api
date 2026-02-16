@@ -1,6 +1,6 @@
 # Implementation Plan: Meal Planning Enhancements
 
-## Phase 1: Schema & Model Updates
+## Phase 1: Schema & Model Updates [checkpoint: fbd268b]
 Update data models, enums, and create the database migration for all new/changed fields.
 
 - [x] Task: Update MealStatus Enum and Meal Model `33a49b8`
@@ -21,9 +21,9 @@ Update data models, enums, and create the database migration for all new/changed
     - [x] Add `last_cooked_at` to recipe response schemas.
     - [x] Add `last_used_at` to meal template response schemas.
     - [x] Update `MealScheduleRequest` schema if needed.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Schema & Model Updates' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Schema & Model Updates' (Protocol in workflow.md)
 
-## Phase 2: Status Transitions & Recency Tracking
+## Phase 2: Status Transitions & Recency Tracking [checkpoint: fbd268b]
 Implement the business logic for meal lifecycle transitions and automatic recency updates.
 
 - [x] Task: Implement Meal Status Transitions `ea93110`
@@ -36,9 +36,9 @@ Implement the business logic for meal lifecycle transitions and automatic recenc
 - [x] Task: Auto-Update MealTemplate `last_used_at` `ea93110`
     - [x] Write tests verifying `last_used_at` updates when a meal is generated from a template.
     - [x] Implement the trigger logic in the meal generation flow.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Status Transitions & Recency Tracking' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Status Transitions & Recency Tracking' (Protocol in workflow.md)
 
-## Phase 3: Queue Management & Meal Generation
+## Phase 3: Queue Management & Meal Generation [checkpoint: fbd268b]
 Implement the queue ordering system and update the generation endpoint.
 
 - [x] Task: Implement Queue Positioning `5889d87`
@@ -62,9 +62,9 @@ Implement the queue ordering system and update the generation endpoint.
     - [x] Write tests for filtering by `is_shopped`, `status`, and `scheduled_date` range.
     - [x] Write tests for sorting by `queue_position`.
     - [x] Update query filtering logic to support new fields.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Queue Management & Meal Generation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Queue Management & Meal Generation' (Protocol in workflow.md)
 
-## Phase 4: API Endpoint Updates
+## Phase 4: API Endpoint Updates [checkpoint: fbd268b]
 Ensure all existing endpoints handle the new fields correctly and update responses.
 
 - [x] Task: Update Meal CRUD Endpoints `33a49b8`
@@ -74,4 +74,4 @@ Ensure all existing endpoints handle the new fields correctly and update respons
 - [x] Task: Update Existing Meal Tests for Enum Changes `33a49b8`
     - [x] Update all existing test references from `DRAFT`/`SCHEDULED` to `QUEUED`/`CANCELLED`.
     - [x] Ensure full test suite passes with the new enum values.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: API Endpoint Updates' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 4: API Endpoint Updates' (Protocol in workflow.md)

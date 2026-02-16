@@ -152,7 +152,7 @@ def test_generate_meal(
 
     assert gen_res.status_code == 201
     data = gen_res.json()
-    assert data["status"] == "Draft"
+    assert data["status"] == "Queued"
     assert "Generated" in data["name"]
     assert (
         data["template_id"] == template_id
@@ -178,7 +178,7 @@ def test_meal_crud(
 
     meal_data = {
         "name": "My Manual Meal",
-        "status": "Scheduled",
+        "status": "Queued",
         "classification": "Lunch",
         "items": [{"recipe_id": str(r.id)}],
     }
@@ -590,7 +590,7 @@ def test_duplicate_template_cross_user(
 def test_generate_meal_with_scheduled_date(
     client: TestClient, db: Session, normal_user_token_headers, normal_user
 ):
-    """Test generating a meal with a scheduled date sets status to Scheduled."""
+    """Test generating a meal with a scheduled date."""
     recipe = create_recipe(db, normal_user.id, "Scheduled Recipe")
 
     # Create template
@@ -614,16 +614,16 @@ def test_generate_meal_with_scheduled_date(
 
     assert gen_res.status_code == 201
     data = gen_res.json()
-    assert data["status"] == "Scheduled"
-    assert data["date"] is not None
-    assert "2025-01-20" in data["date"]
+    assert data["status"] == "Queued"
+    assert data["scheduled_date"] is not None
+    assert "2025-01-20" in data["scheduled_date"]
     assert data["template_id"] == template_id
 
 
 def test_generate_meal_without_scheduled_date(
     client: TestClient, db: Session, normal_user_token_headers, normal_user
 ):
-    """Test generating a meal without scheduled_date keeps status as Draft."""
+    """Test generating a meal without scheduled_date keeps status as Queued."""
     recipe = create_recipe(db, normal_user.id, "Unscheduled Recipe")
 
     # Create template
@@ -644,5 +644,5 @@ def test_generate_meal_without_scheduled_date(
 
     assert gen_res.status_code == 201
     data = gen_res.json()
-    assert data["status"] == "Draft"
-    assert data["date"] is None
+    assert data["status"] == "Queued"
+    assert data["scheduled_date"] is None

@@ -351,11 +351,9 @@ def generate_meal(
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
 
-    # Determine status and date based on schedule request
-    meal_status = models.MealStatus.DRAFT
+    # Determine scheduled_date from schedule request
     meal_date = None
     if schedule_request and schedule_request.scheduled_date:
-        meal_status = models.MealStatus.SCHEDULED
         meal_date = schedule_request.scheduled_date
 
     # Create Meal
@@ -363,9 +361,9 @@ def generate_meal(
         user_id=current_user.id,
         template_id=template.id,
         name=f"Generated {template.name}",
-        status=meal_status,
+        status=models.MealStatus.QUEUED,
         classification=template.classification,
-        date=meal_date,
+        scheduled_date=meal_date,
     )
     db.add(db_meal)
     db.commit()
@@ -397,7 +395,9 @@ def create_meal(
         name=meal_in.name or "New Meal",
         status=meal_in.status,
         classification=meal_in.classification,
-        date=meal_in.date,
+        scheduled_date=meal_in.scheduled_date,
+        is_shopped=meal_in.is_shopped,
+        queue_position=meal_in.queue_position,
     )
     db.add(db_meal)
     db.commit()
@@ -428,8 +428,8 @@ def get_meals(
     sort: str = Query(
         default=None,
         description="Comma-separated sort fields. Prefix with '-' for descending order. "
-        "Valid fields: date, classification, status, created_at, updated_at, name. "
-        "Default: date descending with unscheduled (null) dates first. Example: '-date,name'",
+        "Valid fields: scheduled_date, classification, status, created_at, updated_at, name, queue_position. "
+        "Default: scheduled_date descending with unscheduled (null) dates first. Example: '-scheduled_date,name'",
     ),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
@@ -441,12 +441,12 @@ def get_meals(
 
     Operators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`.
 
-    Filter fields: `id`, `name`, `status`, `classification`, `date`, `created_at`, `updated_at`, `recipe_id`, `owner` (or `created_by`).
+    Filter fields: `id`, `name`, `status`, `classification`, `scheduled_date`, `is_shopped`, `created_at`, `updated_at`, `recipe_id`, `owner` (or `created_by`).
 
     Examples:
     - `?name[like]=weekly` - Meals with 'weekly' in name
-    - `?status[eq]=scheduled` - Scheduled meals only
-    - `?date[gte]=2024-01-01&date[lte]=2024-01-31` - Meals in January 2024
+    - `?status[eq]=Queued` - Queued meals only
+    - `?scheduled_date[gte]=2024-01-01&scheduled_date[lte]=2024-01-31` - Meals in January 2024
     - `?recipe_id[eq]=<uuid>` - Meals containing specific recipe
     - `?recipe_id[in]=<uuid1>,<uuid2>` - Meals containing any of the specified recipes
     - `?classification[in]=breakfast,lunch` - Breakfast or lunch meals
@@ -505,8 +505,12 @@ def update_meal(
         meal.status = meal_in.status
     if meal_in.classification is not None:
         meal.classification = meal_in.classification
-    if meal_in.date is not None:
-        meal.date = meal_in.date
+    if meal_in.scheduled_date is not None:
+        meal.scheduled_date = meal_in.scheduled_date
+    if meal_in.is_shopped is not None:
+        meal.is_shopped = meal_in.is_shopped
+    if meal_in.queue_position is not None:
+        meal.queue_position = meal_in.queue_position
 
     if meal_in.items is not None:
         # Clear existing items

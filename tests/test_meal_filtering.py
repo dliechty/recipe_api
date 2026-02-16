@@ -60,13 +60,13 @@ def create_recipe(db: Session, user_id, name: str, category: str = "Dinner"):
 
 def test_parse_filters_meal_fields():
     """Test parsing filters for meal-specific fields."""
-    params = {"status[eq]": "Draft", "classification[eq]": "Dinner"}
+    params = {"status[eq]": "Queued", "classification[eq]": "Dinner"}
     filters = parse_filters(params)
     assert len(filters) == 2
 
     status_filter = next(f for f in filters if f.field == "status")
     assert status_filter.operator == "eq"
-    assert status_filter.value == "Draft"
+    assert status_filter.value == "Queued"
 
     class_filter = next(f for f in filters if f.field == "classification")
     assert class_filter.operator == "eq"
@@ -75,12 +75,12 @@ def test_parse_filters_meal_fields():
 
 def test_parse_filters_date_comparison():
     """Test parsing date comparison filters."""
-    params = {"date[gte]": "2025-01-01", "date[lt]": "2025-02-01"}
+    params = {"scheduled_date[gte]": "2025-01-01", "scheduled_date[lt]": "2025-02-01"}
     filters = parse_filters(params)
     assert len(filters) == 2
 
     gte_filter = next(f for f in filters if f.operator == "gte")
-    assert gte_filter.field == "date"
+    assert gte_filter.field == "scheduled_date"
     assert gte_filter.value == "2025-01-01"
 
 
@@ -108,12 +108,12 @@ def test_apply_meal_filters_by_status(db: Session, filter_user):
     """Test filtering meals by status."""
     # Create meals with different statuses
     meal1 = models.Meal(
-        user_id=filter_user.id, name="Draft Meal", status=models.MealStatus.DRAFT
+        user_id=filter_user.id, name="Queued Meal", status=models.MealStatus.QUEUED
     )
     meal2 = models.Meal(
         user_id=filter_user.id,
-        name="Scheduled Meal",
-        status=models.MealStatus.SCHEDULED,
+        name="Cancelled Meal",
+        status=models.MealStatus.CANCELLED,
     )
     meal3 = models.Meal(
         user_id=filter_user.id, name="Cooked Meal", status=models.MealStatus.COOKED
@@ -121,14 +121,14 @@ def test_apply_meal_filters_by_status(db: Session, filter_user):
     db.add_all([meal1, meal2, meal3])
     db.commit()
 
-    # Filter for Draft status
+    # Filter for Queued status
     query = db.query(models.Meal).filter(models.Meal.user_id == filter_user.id)
-    filters_list = [Filter("status", "eq", "Draft")]
+    filters_list = [Filter("status", "eq", "Queued")]
     query = apply_meal_filters(query, filters_list)
     results = query.all()
 
     assert len(results) == 1
-    assert results[0].name == "Draft Meal"
+    assert results[0].name == "Queued Meal"
 
 
 def test_apply_meal_filters_by_classification(db: Session, filter_user):
@@ -178,11 +178,11 @@ def test_apply_meal_filters_by_date_range(db: Session, filter_user):
     """Test filtering meals by date range."""
     base_date = datetime(2025, 1, 15)
     meal1 = models.Meal(
-        user_id=filter_user.id, name="Early Meal", date=base_date - timedelta(days=10)
+        user_id=filter_user.id, name="Early Meal", scheduled_date=base_date - timedelta(days=10)
     )
-    meal2 = models.Meal(user_id=filter_user.id, name="Mid Meal", date=base_date)
+    meal2 = models.Meal(user_id=filter_user.id, name="Mid Meal", scheduled_date=base_date)
     meal3 = models.Meal(
-        user_id=filter_user.id, name="Late Meal", date=base_date + timedelta(days=10)
+        user_id=filter_user.id, name="Late Meal", scheduled_date=base_date + timedelta(days=10)
     )
     db.add_all([meal1, meal2, meal3])
     db.commit()
@@ -190,8 +190,8 @@ def test_apply_meal_filters_by_date_range(db: Session, filter_user):
     query = db.query(models.Meal).filter(models.Meal.user_id == filter_user.id)
     # Filter for meals on or after Jan 10
     filters_list = [
-        Filter("date", "gte", "2025-01-10"),
-        Filter("date", "lte", "2025-01-20"),
+        Filter("scheduled_date", "gte", "2025-01-10"),
+        Filter("scheduled_date", "lte", "2025-01-20"),
     ]
     query = apply_meal_filters(query, filters_list)
     results = query.all()
@@ -204,20 +204,20 @@ def test_apply_meal_filters_compound(db: Session, filter_user):
     """Test applying multiple filters (AND logic)."""
     meal1 = models.Meal(
         user_id=filter_user.id,
-        name="Draft Dinner",
-        status=models.MealStatus.DRAFT,
+        name="Queued Dinner",
+        status=models.MealStatus.QUEUED,
         classification=models.MealClassification.DINNER,
     )
     meal2 = models.Meal(
         user_id=filter_user.id,
-        name="Scheduled Dinner",
-        status=models.MealStatus.SCHEDULED,
+        name="Cancelled Dinner",
+        status=models.MealStatus.CANCELLED,
         classification=models.MealClassification.DINNER,
     )
     meal3 = models.Meal(
         user_id=filter_user.id,
-        name="Draft Breakfast",
-        status=models.MealStatus.DRAFT,
+        name="Queued Breakfast",
+        status=models.MealStatus.QUEUED,
         classification=models.MealClassification.BREAKFAST,
     )
     db.add_all([meal1, meal2, meal3])
@@ -225,14 +225,14 @@ def test_apply_meal_filters_compound(db: Session, filter_user):
 
     query = db.query(models.Meal).filter(models.Meal.user_id == filter_user.id)
     filters_list = [
-        Filter("status", "eq", "Draft"),
+        Filter("status", "eq", "Queued"),
         Filter("classification", "eq", "Dinner"),
     ]
     query = apply_meal_filters(query, filters_list)
     results = query.all()
 
     assert len(results) == 1
-    assert results[0].name == "Draft Dinner"
+    assert results[0].name == "Queued Dinner"
 
 
 def test_apply_meal_filters_by_recipe_id(db: Session, filter_user):
@@ -267,10 +267,10 @@ def test_apply_meal_filters_by_recipe_id(db: Session, filter_user):
 def test_apply_meal_sorting_default_nulls_first(db: Session, filter_user):
     """Test that default sorting puts NULL dates first."""
     base_date = datetime(2025, 1, 15)
-    meal1 = models.Meal(user_id=filter_user.id, name="With Date 1", date=base_date)
+    meal1 = models.Meal(user_id=filter_user.id, name="With Date 1", scheduled_date=base_date)
     meal2 = models.Meal(user_id=filter_user.id, name="No Date")  # NULL date
     meal3 = models.Meal(
-        user_id=filter_user.id, name="With Date 2", date=base_date + timedelta(days=5)
+        user_id=filter_user.id, name="With Date 2", scheduled_date=base_date + timedelta(days=5)
     )
     db.add_all([meal1, meal2, meal3])
     db.commit()
@@ -288,15 +288,15 @@ def test_apply_meal_sorting_default_nulls_first(db: Session, filter_user):
 def test_apply_meal_sorting_explicit_date(db: Session, filter_user):
     """Test explicit date sorting uses normal null handling."""
     base_date = datetime(2025, 1, 15)
-    meal1 = models.Meal(user_id=filter_user.id, name="Early", date=base_date)
+    meal1 = models.Meal(user_id=filter_user.id, name="Early", scheduled_date=base_date)
     meal2 = models.Meal(
-        user_id=filter_user.id, name="Late", date=base_date + timedelta(days=5)
+        user_id=filter_user.id, name="Late", scheduled_date=base_date + timedelta(days=5)
     )
     db.add_all([meal1, meal2])
     db.commit()
 
     query = db.query(models.Meal).filter(models.Meal.user_id == filter_user.id)
-    query = apply_meal_sorting(query, "-date")  # Explicit descending
+    query = apply_meal_sorting(query, "-scheduled_date")  # Explicit descending
     results = query.all()
 
     assert results[0].name == "Late"
@@ -428,17 +428,17 @@ def test_api_filter_meals_by_status(
 ):
     """Test filtering meals by status via API."""
     # Create meals
-    for status in ["Draft", "Scheduled", "Cooked"]:
-        payload = {"name": f"{status} Meal", "status": status, "items": []}
+    for meal_status in ["Queued", "Cancelled", "Cooked"]:
+        payload = {"name": f"{meal_status} Meal", "status": meal_status, "items": []}
         client.post("/meals/", json=payload, headers=filter_user_headers)
 
-    # Filter for Draft
-    response = client.get("/meals/?status[eq]=Draft", headers=filter_user_headers)
+    # Filter for Queued
+    response = client.get("/meals/?status[eq]=Queued", headers=filter_user_headers)
     assert response.status_code == 200
     data = response.json()
 
     assert len(data) == 1
-    assert data[0]["name"] == "Draft Meal"
+    assert data[0]["name"] == "Queued Meal"
 
 
 def test_api_filter_meals_by_classification(
@@ -486,16 +486,16 @@ def test_api_filter_meals_by_date(
 ):
     """Test filtering meals by date range via API."""
     payloads = [
-        {"name": "Jan 10 Meal", "date": "2025-01-10T12:00:00", "items": []},
-        {"name": "Jan 15 Meal", "date": "2025-01-15T12:00:00", "items": []},
-        {"name": "Jan 20 Meal", "date": "2025-01-20T12:00:00", "items": []},
+        {"name": "Jan 10 Meal", "scheduled_date": "2025-01-10T12:00:00", "items": []},
+        {"name": "Jan 15 Meal", "scheduled_date": "2025-01-15T12:00:00", "items": []},
+        {"name": "Jan 20 Meal", "scheduled_date": "2025-01-20T12:00:00", "items": []},
     ]
     for p in payloads:
         client.post("/meals/", json=p, headers=filter_user_headers)
 
     # Filter for meals between Jan 12 and Jan 18
     response = client.get(
-        "/meals/?date[gte]=2025-01-12&date[lte]=2025-01-18", headers=filter_user_headers
+        "/meals/?scheduled_date[gte]=2025-01-12&scheduled_date[lte]=2025-01-18", headers=filter_user_headers
     )
     assert response.status_code == 200
     data = response.json()
@@ -535,20 +535,20 @@ def test_api_filter_meals_compound(
     """Test compound filtering via API."""
     payloads = [
         {
-            "name": "Draft Dinner",
-            "status": "Draft",
+            "name": "Queued Dinner",
+            "status": "Queued",
             "classification": "Dinner",
             "items": [],
         },
         {
-            "name": "Scheduled Dinner",
-            "status": "Scheduled",
+            "name": "Cancelled Dinner",
+            "status": "Cancelled",
             "classification": "Dinner",
             "items": [],
         },
         {
-            "name": "Draft Breakfast",
-            "status": "Draft",
+            "name": "Queued Breakfast",
+            "status": "Queued",
             "classification": "Breakfast",
             "items": [],
         },
@@ -557,14 +557,14 @@ def test_api_filter_meals_compound(
         client.post("/meals/", json=p, headers=filter_user_headers)
 
     response = client.get(
-        "/meals/?status[eq]=Draft&classification[eq]=Dinner",
+        "/meals/?status[eq]=Queued&classification[eq]=Dinner",
         headers=filter_user_headers,
     )
     assert response.status_code == 200
     data = response.json()
 
     assert len(data) == 1
-    assert data[0]["name"] == "Draft Dinner"
+    assert data[0]["name"] == "Queued Dinner"
 
 
 def test_api_filter_meals_id_collection(
@@ -596,9 +596,9 @@ def test_api_meals_default_sort_nulls_first(
 ):
     """Test that default meal sorting puts NULL dates first."""
     payloads = [
-        {"name": "With Date 1", "date": "2025-01-10T12:00:00", "items": []},
+        {"name": "With Date 1", "scheduled_date": "2025-01-10T12:00:00", "items": []},
         {"name": "No Date", "items": []},  # NULL date
-        {"name": "With Date 2", "date": "2025-01-20T12:00:00", "items": []},
+        {"name": "With Date 2", "scheduled_date": "2025-01-20T12:00:00", "items": []},
     ]
     for p in payloads:
         client.post("/meals/", json=p, headers=filter_user_headers)
@@ -619,14 +619,14 @@ def test_api_meals_explicit_sort_normal_behavior(
 ):
     """Test that explicit sort uses normal null handling."""
     payloads = [
-        {"name": "Early", "date": "2025-01-10T12:00:00", "items": []},
-        {"name": "Late", "date": "2025-01-20T12:00:00", "items": []},
+        {"name": "Early", "scheduled_date": "2025-01-10T12:00:00", "items": []},
+        {"name": "Late", "scheduled_date": "2025-01-20T12:00:00", "items": []},
     ]
     for p in payloads:
         client.post("/meals/", json=p, headers=filter_user_headers)
 
     # Explicit ascending sort
-    response = client.get("/meals/?sort=date", headers=filter_user_headers)
+    response = client.get("/meals/?sort=scheduled_date", headers=filter_user_headers)
     data = response.json()
 
     names = [m["name"] for m in data]
@@ -908,17 +908,17 @@ def test_api_meals_total_count_header_with_filter(
     client: TestClient, db: Session, filter_user_headers, filter_user
 ):
     """Test that X-Total-Count header reflects filtered count."""
-    # Create 5 meals, 3 Draft, 2 Scheduled
+    # Create 5 meals, 3 Queued, 2 Cancelled
     for i in range(3):
         client.post(
             "/meals/",
-            json={"name": f"Draft {i}", "status": "Draft", "items": []},
+            json={"name": f"Queued {i}", "status": "Queued", "items": []},
             headers=filter_user_headers,
         )
     for i in range(2):
         client.post(
             "/meals/",
-            json={"name": f"Scheduled {i}", "status": "Scheduled", "items": []},
+            json={"name": f"Cancelled {i}", "status": "Cancelled", "items": []},
             headers=filter_user_headers,
         )
 
@@ -926,8 +926,8 @@ def test_api_meals_total_count_header_with_filter(
     response = client.get("/meals/", headers=filter_user_headers)
     assert response.headers.get("X-Total-Count") == "5"
 
-    # Get only Draft meals
-    response = client.get("/meals/?status[eq]=Draft", headers=filter_user_headers)
+    # Get only Queued meals
+    response = client.get("/meals/?status[eq]=Queued", headers=filter_user_headers)
     assert response.headers.get("X-Total-Count") == "3"
 
 
@@ -977,24 +977,24 @@ def test_api_meals_pagination_with_filter(
     client: TestClient, db: Session, filter_user_headers, filter_user
 ):
     """Test pagination works correctly with filters."""
-    # Create 10 Draft meals
+    # Create 10 Queued meals
     for i in range(10):
         client.post(
             "/meals/",
-            json={"name": f"Draft {i}", "status": "Draft", "items": []},
+            json={"name": f"Queued {i}", "status": "Queued", "items": []},
             headers=filter_user_headers,
         )
-    # Create 2 Scheduled meals
+    # Create 2 Cancelled meals
     for i in range(2):
         client.post(
             "/meals/",
-            json={"name": f"Scheduled {i}", "status": "Scheduled", "items": []},
+            json={"name": f"Cancelled {i}", "status": "Cancelled", "items": []},
             headers=filter_user_headers,
         )
 
-    # Get first page of Draft meals (limit 5)
+    # Get first page of Queued meals (limit 5)
     response = client.get(
-        "/meals/?status[eq]=Draft&skip=0&limit=5", headers=filter_user_headers
+        "/meals/?status[eq]=Queued&skip=0&limit=5", headers=filter_user_headers
     )
     assert response.status_code == 200
     data = response.json()
@@ -1003,7 +1003,7 @@ def test_api_meals_pagination_with_filter(
 
     # Get second page
     response = client.get(
-        "/meals/?status[eq]=Draft&skip=5&limit=5", headers=filter_user_headers
+        "/meals/?status[eq]=Queued&skip=5&limit=5", headers=filter_user_headers
     )
     data = response.json()
     assert len(data) == 5

@@ -54,12 +54,13 @@ SORT_FIELDS = {
 }
 
 MEAL_SORT_FIELDS = {
-    "date": models.Meal.date,
+    "scheduled_date": models.Meal.scheduled_date,
     "classification": models.Meal.classification,
     "status": models.Meal.status,
     "created_at": models.Meal.created_at,
     "updated_at": models.Meal.updated_at,
     "name": models.Meal.name,
+    "queue_position": models.Meal.queue_position,
 }
 
 MEAL_TEMPLATE_SORT_FIELDS = {
@@ -88,7 +89,8 @@ ALLOWED_FIELDS_MEAL = {
     "name": models.Meal.name,
     "status": models.Meal.status,
     "classification": models.Meal.classification,
-    "date": models.Meal.date,
+    "scheduled_date": models.Meal.scheduled_date,
+    "is_shopped": models.Meal.is_shopped,
     "created_at": models.Meal.created_at,
     "updated_at": models.Meal.updated_at,
 }
@@ -368,14 +370,13 @@ def apply_meal_sorting(
     When an explicit sort param is provided, normal sorting behavior is used.
     """
     if not sort_param:
-        # Default sort: date descending, but with NULL dates at the top
+        # Default sort: scheduled_date descending, but with NULL dates at the top
         if nulls_first_on_default:
-            # Use CASE to put NULLs first: CASE WHEN date IS NULL THEN 0 ELSE 1 END, then date DESC
             query = query.order_by(
-                case((models.Meal.date.is_(None), 0), else_=1), desc(models.Meal.date)
+                case((models.Meal.scheduled_date.is_(None), 0), else_=1), desc(models.Meal.scheduled_date)
             )
         else:
-            query = query.order_by(desc(models.Meal.date))
+            query = query.order_by(desc(models.Meal.scheduled_date))
         return query
 
     # Explicit sort parameter provided - use normal sorting behavior

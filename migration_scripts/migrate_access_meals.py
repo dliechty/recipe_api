@@ -176,11 +176,11 @@ def migrate_meals():
             cls = map_classification(row.get("Meal_Type_ID"))
 
             if meal_date is None:
-                status = MealStatus.DRAFT
+                status = MealStatus.QUEUED
             elif meal_date < datetime.now():
                 status = MealStatus.COOKED
             else:
-                status = MealStatus.SCHEDULED
+                status = MealStatus.QUEUED
 
             # Name: e.g. "Dinner on 2023-04-24"
             name = f"{cls.value if cls else 'Meal'} on {meal_date.strftime('%Y-%m-%d') if meal_date else 'Unknown Date'}"
@@ -190,7 +190,7 @@ def migrate_meals():
                 name=name,
                 status=status,
                 classification=cls,
-                date=meal_date,
+                scheduled_date=meal_date,
             )
             session.add(meal)
             session.flush()

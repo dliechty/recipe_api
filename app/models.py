@@ -118,6 +118,7 @@ class Recipe(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     version = Column(Integer, default=1)
     checksum = Column(String, nullable=True)
+    last_cooked_at = Column(DateTime, nullable=True)
 
     parent_recipe_id = Column(
         Uuid(as_uuid=True), ForeignKey("recipes.id"), nullable=True, index=True
@@ -264,9 +265,9 @@ class MealClassification(str, enum.Enum):
 
 
 class MealStatus(str, enum.Enum):
-    DRAFT = "Draft"
-    SCHEDULED = "Scheduled"
+    QUEUED = "Queued"
     COOKED = "Cooked"
+    CANCELLED = "Cancelled"
 
 
 class MealTemplateSlotStrategy(str, enum.Enum):
@@ -289,6 +290,7 @@ class MealTemplate(Base):
     name = Column(String, nullable=False)
     classification = Column(Enum(MealClassification), nullable=True)
     slots_checksum = Column(String(64), nullable=True, index=True)
+    last_used_at = Column(DateTime, nullable=True)
 
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -363,9 +365,11 @@ class Meal(Base):
     )
 
     name = Column(String, nullable=True)
-    status = Column(Enum(MealStatus), default=MealStatus.DRAFT, nullable=False)
+    status = Column(Enum(MealStatus), default=MealStatus.QUEUED, nullable=False)
     classification = Column(Enum(MealClassification), nullable=True)
-    date = Column(DateTime, nullable=True)
+    scheduled_date = Column(DateTime, nullable=True)
+    is_shopped = Column(Boolean, default=False, nullable=False)
+    queue_position = Column(Integer, nullable=True)
 
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

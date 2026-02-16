@@ -95,7 +95,7 @@ def test_meal_pagination_header(
         meal_data = {
             "name": f"Meal {i}",
             "template_id": template_id,
-            "status": "Scheduled",
+            "status": "Queued",
             "items": [],
         }
         res = client.post("/meals/", headers=normal_user_token_headers, json=meal_data)

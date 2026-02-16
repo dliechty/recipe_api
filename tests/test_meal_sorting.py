@@ -43,21 +43,21 @@ def test_meals_sorting(client: TestClient, db):
     meals_data = [
         {
             "name": "Meal A",
-            "status": "Draft",
+            "status": "Queued",
             "classification": "Dinner",
-            "date": (base_date + timedelta(days=2)).isoformat(),
+            "scheduled_date": (base_date + timedelta(days=2)).isoformat(),
         },
         {
             "name": "Meal B",
             "status": "Cooked",
             "classification": "Breakfast",
-            "date": (base_date + timedelta(days=1)).isoformat(),
+            "scheduled_date": (base_date + timedelta(days=1)).isoformat(),
         },
         {
             "name": "Meal C",
-            "status": "Scheduled",
+            "status": "Cancelled",
             "classification": "Lunch",
-            "date": (base_date + timedelta(days=3)).isoformat(),
+            "scheduled_date": (base_date + timedelta(days=3)).isoformat(),
         },
     ]
 
@@ -67,14 +67,14 @@ def test_meals_sorting(client: TestClient, db):
             "name": m["name"],
             "status": m["status"],
             "classification": m["classification"],
-            "date": m["date"],
+            "scheduled_date": m["scheduled_date"],
             "items": [{"recipe_id": str(recipe.id)}],
         }
         res = client.post("/meals/", json=payload, headers=headers)
         assert res.status_code == 201
 
     # 1. Sort by Date Asc
-    res = client.get("/meals/?sort=date", headers=headers)
+    res = client.get("/meals/?sort=scheduled_date", headers=headers)
     assert res.status_code == 200
     data = res.json()
     names = [m["name"] for m in data]
@@ -83,7 +83,7 @@ def test_meals_sorting(client: TestClient, db):
     )
 
     # 2. Sort by Date Desc
-    res = client.get("/meals/?sort=-date", headers=headers)
+    res = client.get("/meals/?sort=-scheduled_date", headers=headers)
     data = res.json()
     names = [m["name"] for m in data]
     assert names == ["Meal C", "Meal A", "Meal B"], (
@@ -100,12 +100,12 @@ def test_meals_sorting(client: TestClient, db):
     )
 
     # 4. Sort by Status (Asc)
-    # Cooked (B), Draft (A), Scheduled (C)
+    # Cancelled (C), Cooked (B), Queued (A)
     res = client.get("/meals/?sort=status", headers=headers)
     data = res.json()
     names = [m["name"] for m in data]
-    assert names == ["Meal B", "Meal A", "Meal C"], (
-        f"Expected B, A, C (Status Asc), got {names}"
+    assert names == ["Meal C", "Meal B", "Meal A"], (
+        f"Expected C, B, A (Status Asc), got {names}"
     )
 
     # 5. Default Sort (Date Desc with NULL dates first)

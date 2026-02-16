@@ -286,6 +286,7 @@ class RecipeAudit(BaseModel):
     updated_at: Optional[datetime] = None
     version: Optional[int] = None
     checksum: Optional[str] = None
+    last_cooked_at: Optional[datetime] = None
 
 
 # --- Main Recipe Schemas ---
@@ -350,6 +351,7 @@ class Recipe(BaseModel):
                     "updated_at": data.updated_at,
                     "version": data.version,
                     "checksum": data.checksum,
+                    "last_cooked_at": data.last_cooked_at,
                 },
                 "components": data.components,
                 "instructions": data.instructions,
@@ -465,6 +467,7 @@ class MealTemplateUpdate(BaseModel):
 class MealTemplate(MealTemplateBase):
     id: UUID
     user_id: UUID
+    last_used_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     slots: List[MealTemplateSlot]
@@ -490,9 +493,11 @@ class MealItem(MealItemBase):
 
 class MealBase(BaseModel):
     name: Optional[str] = None
-    status: MealStatus = MealStatus.DRAFT
+    status: MealStatus = MealStatus.QUEUED
     classification: Optional[MealClassification] = None
-    date: Optional[datetime] = None
+    scheduled_date: Optional[datetime] = None
+    is_shopped: bool = False
+    queue_position: Optional[int] = None
 
 
 class MealCreate(MealBase):
@@ -504,7 +509,9 @@ class MealUpdate(BaseModel):
     name: Optional[str] = None
     status: Optional[MealStatus] = None
     classification: Optional[MealClassification] = None
-    date: Optional[datetime] = None
+    scheduled_date: Optional[datetime] = None
+    is_shopped: Optional[bool] = None
+    queue_position: Optional[int] = None
     items: Optional[List[MealItemBase]] = None
 
 

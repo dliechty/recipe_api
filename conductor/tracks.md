@@ -1,0 +1,8 @@
+# Project Tracks
+
+This file tracks all major tracks for the project. Each track has its own detailed plan in its respective folder.
+
+---
+
+- [ ] **Track: Meal Planning Enhancements**
+  *Link: [./tracks/meal_planning_v1_20260215/](./tracks/meal_planning_v1_20260215/)*

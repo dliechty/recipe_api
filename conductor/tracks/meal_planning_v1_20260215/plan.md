@@ -26,16 +26,16 @@ Update data models, enums, and create the database migration for all new/changed
 ## Phase 2: Status Transitions & Recency Tracking
 Implement the business logic for meal lifecycle transitions and automatic recency updates.
 
-- [ ] Task: Implement Meal Status Transitions
-    - [ ] Write tests for valid transitions: `queued` → `cooked`, `queued` → `cancelled`.
-    - [ ] Write tests for invalid transitions (e.g., `cooked` → `queued`, `cancelled` → `cooked`).
-    - [ ] Implement transition validation in CRUD/service layer.
-- [ ] Task: Auto-Update Recipe `last_cooked_at`
-    - [ ] Write tests verifying `last_cooked_at` updates on all recipes in a meal when status transitions to `cooked`.
-    - [ ] Implement the trigger logic in the meal update CRUD operation.
-- [ ] Task: Auto-Update MealTemplate `last_used_at`
-    - [ ] Write tests verifying `last_used_at` updates when a meal is generated from a template.
-    - [ ] Implement the trigger logic in the meal generation flow.
+- [x] Task: Implement Meal Status Transitions `ea93110`
+    - [x] Write tests for valid transitions: `queued` → `cooked`, `queued` → `cancelled`.
+    - [x] Write tests for invalid transitions (e.g., `cooked` → `queued`, `cancelled` → `cooked`).
+    - [x] Implement transition validation in CRUD/service layer.
+- [x] Task: Auto-Update Recipe `last_cooked_at` `ea93110`
+    - [x] Write tests verifying `last_cooked_at` updates on all recipes in a meal when status transitions to `cooked`.
+    - [x] Implement the trigger logic in the meal update CRUD operation.
+- [x] Task: Auto-Update MealTemplate `last_used_at` `ea93110`
+    - [x] Write tests verifying `last_used_at` updates when a meal is generated from a template.
+    - [x] Implement the trigger logic in the meal generation flow.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Status Transitions & Recency Tracking' (Protocol in workflow.md)
 
 ## Phase 3: Queue Management & Meal Generation

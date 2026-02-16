@@ -535,6 +535,13 @@ class MealScheduleRequest(BaseModel):
     scheduled_date: Optional[datetime] = None
 
 
+class MealGenerateRequest(BaseModel):
+    """Request to generate multiple meals from user's templates."""
+
+    count: int
+    scheduled_dates: Optional[List[datetime]] = None
+
+
 # --- Recipe List Schemas ---
 
 

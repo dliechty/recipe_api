@@ -291,8 +291,9 @@ class TestLastUsedAt:
 
         # Generate meal
         resp = client.post(
-            f"/meals/generate?template_id={template_id}",
+            "/meals/generate",
             headers=normal_user_token_headers,
+            json={"count": 1},
         )
         assert resp.status_code == 201
 
@@ -317,8 +318,9 @@ class TestLastUsedAt:
 
         # First generation
         client.post(
-            f"/meals/generate?template_id={template_id}",
+            "/meals/generate",
             headers=normal_user_token_headers,
+            json={"count": 1},
         )
         db_template = (
             db.query(models.MealTemplate)
@@ -330,8 +332,9 @@ class TestLastUsedAt:
 
         # Second generation
         client.post(
-            f"/meals/generate?template_id={template_id}",
+            "/meals/generate",
             headers=normal_user_token_headers,
+            json={"count": 1},
         )
         db.expire_all()
         db.refresh(db_template)

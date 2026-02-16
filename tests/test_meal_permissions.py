@@ -82,10 +82,13 @@ def create_meal(
 ):
     """Generate a meal from a template and return its data."""
     response = client.post(
-        f"/meals/generate?template_id={template_id}", headers=headers
+        "/meals/generate", headers=headers, json={"count": 1}
     )
     assert response.status_code == 201
-    return response.json()
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 1
+    return data[0]
 
 
 # =============================================================================
@@ -122,19 +125,19 @@ def test_any_user_can_read_single_template(client: TestClient, db: Session):
     assert response.json()["name"] == "Readable Template"
 
 
-def test_any_user_can_generate_meal_from_any_template(client: TestClient, db: Session):
-    """Any authenticated user can generate a meal from any template."""
-    owner_headers = get_auth_headers(client, db, email="tmpl_owner3@example.com")
-    template = create_template(client, owner_headers, name="Shared Template")
-    template_id = template["id"]
-
-    other_headers = get_auth_headers(client, db, email="tmpl_other3@example.com")
+def test_user_generates_meal_from_own_templates(client: TestClient, db: Session):
+    """A user generates meals from their own templates."""
+    user_headers = get_auth_headers(client, db, email="tmpl_owner3@example.com")
+    create_template(client, user_headers, name="My Template")
 
     response = client.post(
-        f"/meals/generate?template_id={template_id}", headers=other_headers
+        "/meals/generate", headers=user_headers, json={"count": 1}
     )
     assert response.status_code == 201
-    assert "Shared Template" in response.json()["name"]
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert "My Template" in data[0]["name"]
 
 
 # =============================================================================

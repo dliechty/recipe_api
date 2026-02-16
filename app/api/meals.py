@@ -20,6 +20,59 @@ VALID_STATUS_TRANSITIONS = {
 }
 
 
+def get_next_queue_position(db: Session, user_id: UUID) -> int:
+    """Get the next available queue position for a user's meals."""
+    max_pos = (
+        db.query(func.max(models.Meal.queue_position))
+        .filter(models.Meal.user_id == user_id)
+        .scalar()
+    )
+    return (max_pos or 0) + 1
+
+
+def select_templates_weighted(
+    templates: list, count: int
+) -> list:
+    """Select N templates using weighted random selection (without replacement).
+
+    Templates with older or null last_used_at get higher weight.
+    The pipeline is designed to be extensible with additional weight factors.
+    """
+    if not templates:
+        return []
+
+    count = min(count, len(templates))
+
+    # Compute recency-based weights
+    now = datetime.now(timezone.utc)
+    weights = []
+    for t in templates:
+        if t.last_used_at is None:
+            # Never used — maximum weight
+            days_since = 365.0
+        else:
+            last_used = t.last_used_at
+            # Handle timezone-naive datetimes from SQLite
+            if last_used.tzinfo is None:
+                last_used = last_used.replace(tzinfo=timezone.utc)
+            delta = now - last_used
+            days_since = max(delta.total_seconds() / 86400.0, 0.01)
+        weights.append(days_since)
+
+    # Weighted random selection without replacement
+    selected = []
+    remaining = list(zip(templates, weights))
+    for _ in range(count):
+        if not remaining:
+            break
+        items, w = zip(*remaining)
+        chosen = random.choices(list(items), weights=list(w), k=1)[0]
+        selected.append(chosen)
+        remaining = [(t, wt) for t, wt in remaining if t.id != chosen.id]
+
+    return selected
+
+
 def compute_slot_signature(slot: Any) -> str:
     """
     Compute a canonical string representation of a slot for hashing.
@@ -341,56 +394,78 @@ def resolve_recipe_for_slot(
 
 
 @router.post(
-    "/generate", response_model=schemas.Meal, status_code=status.HTTP_201_CREATED
+    "/generate", response_model=List[schemas.Meal], status_code=status.HTTP_201_CREATED
 )
-def generate_meal(
-    template_id: UUID,
-    schedule_request: Optional[schemas.MealScheduleRequest] = None,
+def generate_meals(
+    request_body: schemas.MealGenerateRequest,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
-    template = (
+    """Generate N meals by selecting N templates via weighted random selection.
+
+    Each template is used at most once per generation. Templates that haven't
+    been used recently are more likely to be selected.
+    """
+    # Filter phase: get all eligible templates for this user
+    all_templates = (
         db.query(models.MealTemplate)
-        .filter(models.MealTemplate.id == template_id)
-        .first()
+        .filter(models.MealTemplate.user_id == current_user.id)
+        .all()
     )
-    if not template:
-        raise HTTPException(status_code=404, detail="Meal template not found")
 
-    # Determine scheduled_date from schedule request
-    meal_date = None
-    if schedule_request and schedule_request.scheduled_date:
-        meal_date = schedule_request.scheduled_date
+    if not all_templates:
+        return []
 
-    # Create Meal
-    db_meal = models.Meal(
-        user_id=current_user.id,
-        template_id=template.id,
-        name=f"Generated {template.name}",
-        status=models.MealStatus.QUEUED,
-        classification=template.classification,
-        scheduled_date=meal_date,
+    # Weight & Select phase
+    selected_templates = select_templates_weighted(
+        all_templates, request_body.count
     )
-    db.add(db_meal)
 
-    # Update template last_used_at
-    template.last_used_at = datetime.now(timezone.utc)
+    # Get starting queue position
+    next_pos = get_next_queue_position(db, current_user.id)
 
-    db.commit()
-    db.refresh(db_meal)
+    generated_meals = []
+    for i, template in enumerate(selected_templates):
+        # Determine scheduled_date if provided
+        scheduled_date = None
+        if (
+            request_body.scheduled_dates
+            and i < len(request_body.scheduled_dates)
+        ):
+            scheduled_date = request_body.scheduled_dates[i]
 
-    # Process Slots
-    for slot in template.slots:
-        recipe = resolve_recipe_for_slot(db, slot, current_user.id)
-        if recipe:
-            meal_item = models.MealItem(
-                meal_id=db_meal.id, slot_id=slot.id, recipe_id=recipe.id
-            )
-            db.add(meal_item)
+        # Create Meal
+        db_meal = models.Meal(
+            user_id=current_user.id,
+            template_id=template.id,
+            name=f"Generated {template.name}",
+            status=models.MealStatus.QUEUED,
+            classification=template.classification,
+            scheduled_date=scheduled_date,
+            queue_position=next_pos + i,
+        )
+        db.add(db_meal)
 
-    db.commit()
-    db.refresh(db_meal)
-    return db_meal
+        # Update template last_used_at
+        template.last_used_at = datetime.now(timezone.utc)
+
+        db.commit()
+        db.refresh(db_meal)
+
+        # Process Slots
+        for slot in template.slots:
+            recipe = resolve_recipe_for_slot(db, slot, current_user.id)
+            if recipe:
+                meal_item = models.MealItem(
+                    meal_id=db_meal.id, slot_id=slot.id, recipe_id=recipe.id
+                )
+                db.add(meal_item)
+
+        db.commit()
+        db.refresh(db_meal)
+        generated_meals.append(db_meal)
+
+    return generated_meals
 
 
 @router.post("/", response_model=schemas.Meal, status_code=status.HTTP_201_CREATED)
@@ -399,6 +474,10 @@ def create_meal(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
+    queue_pos = meal_in.queue_position
+    if queue_pos is None:
+        queue_pos = get_next_queue_position(db, current_user.id)
+
     db_meal = models.Meal(
         user_id=current_user.id,
         template_id=meal_in.template_id,
@@ -407,7 +486,7 @@ def create_meal(
         classification=meal_in.classification,
         scheduled_date=meal_in.scheduled_date,
         is_shopped=meal_in.is_shopped,
-        queue_position=meal_in.queue_position,
+        queue_position=queue_pos,
     )
     db.add(db_meal)
     db.commit()

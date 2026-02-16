@@ -147,24 +147,27 @@ def test_generate_meal(
 
     # Generate Meal
     gen_res = client.post(
-        f"/meals/generate?template_id={template_id}", headers=normal_user_token_headers
+        "/meals/generate", headers=normal_user_token_headers, json={"count": 1}
     )
 
     assert gen_res.status_code == 201
     data = gen_res.json()
-    assert data["status"] == "Queued"
-    assert "Generated" in data["name"]
+    assert isinstance(data, list)
+    assert len(data) == 1
+    meal = data[0]
+    assert meal["status"] == "Queued"
+    assert "Generated" in meal["name"]
     assert (
-        data["template_id"] == template_id
+        meal["template_id"] == template_id
     )  # Verify link back to originating template
 
     # Should have 3 items
-    assert len(data["items"]) == 3
+    assert len(meal["items"]) == 3
 
     # Verify items match expected structure
     # We can't easily verify which item came from which slot in the flat list without more logic,
     # but we can check if the recipe IDs are present.
-    item_recipe_ids = [item["recipe_id"] for item in data["items"]]
+    item_recipe_ids = [item["recipe_id"] for item in meal["items"]]
     assert str(r_direct.id) in item_recipe_ids
     assert str(r_list1.id) in item_recipe_ids
     assert str(r_search.id) in item_recipe_ids
@@ -253,18 +256,19 @@ def test_generate_meal_complex_filters(
         "/meals/templates", headers=normal_user_token_headers, json=template_data
     )
     assert create_res.status_code == 201
-    template_id = create_res.json()["id"]
-
     # Generate Meal
     gen_res = client.post(
-        f"/meals/generate?template_id={template_id}", headers=normal_user_token_headers
+        "/meals/generate", headers=normal_user_token_headers, json={"count": 1}
     )
 
     assert gen_res.status_code == 201
     data = gen_res.json()
+    assert isinstance(data, list)
+    assert len(data) == 1
+    meal = data[0]
 
     # Should find exactly the target recipe
-    generated_item = data["items"][0]
+    generated_item = meal["items"][0]
     assert generated_item["recipe_id"] == str(target_recipe.id)
 
 
@@ -605,19 +609,22 @@ def test_generate_meal_with_scheduled_date(
     template_id = create_res.json()["id"]
 
     # Generate meal with scheduled_date
-    scheduled_date = "2025-01-20T18:00:00"
+    scheduled_date = "2026-03-01T00:00:00"
     gen_res = client.post(
-        f"/meals/generate?template_id={template_id}",
+        "/meals/generate",
         headers=normal_user_token_headers,
-        json={"scheduled_date": scheduled_date},
+        json={"count": 1, "scheduled_dates": [scheduled_date]},
     )
 
     assert gen_res.status_code == 201
     data = gen_res.json()
-    assert data["status"] == "Queued"
-    assert data["scheduled_date"] is not None
-    assert "2025-01-20" in data["scheduled_date"]
-    assert data["template_id"] == template_id
+    assert isinstance(data, list)
+    assert len(data) == 1
+    meal = data[0]
+    assert meal["status"] == "Queued"
+    assert meal["scheduled_date"] is not None
+    assert "2026-03-01" in meal["scheduled_date"]
+    assert meal["template_id"] == template_id
 
 
 def test_generate_meal_without_scheduled_date(
@@ -635,14 +642,16 @@ def test_generate_meal_without_scheduled_date(
         "/meals/templates", headers=normal_user_token_headers, json=template_data
     )
     assert create_res.status_code == 201
-    template_id = create_res.json()["id"]
 
-    # Generate meal without body
+    # Generate meal without scheduled_dates
     gen_res = client.post(
-        f"/meals/generate?template_id={template_id}", headers=normal_user_token_headers
+        "/meals/generate", headers=normal_user_token_headers, json={"count": 1}
     )
 
     assert gen_res.status_code == 201
     data = gen_res.json()
-    assert data["status"] == "Queued"
-    assert data["scheduled_date"] is None
+    assert isinstance(data, list)
+    assert len(data) == 1
+    meal = data[0]
+    assert meal["status"] == "Queued"
+    assert meal["scheduled_date"] is None

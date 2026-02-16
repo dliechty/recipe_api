@@ -1,4 +1,5 @@
 from typing import List, Optional, Any
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Response, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -12,6 +13,11 @@ from app import filters
 from app.filters import parse_filters
 
 router = APIRouter()
+
+# Valid status transitions: only queued can transition to cooked or cancelled
+VALID_STATUS_TRANSITIONS = {
+    models.MealStatus.QUEUED: {models.MealStatus.COOKED, models.MealStatus.CANCELLED},
+}
 
 
 def compute_slot_signature(slot: Any) -> str:
@@ -366,6 +372,10 @@ def generate_meal(
         scheduled_date=meal_date,
     )
     db.add(db_meal)
+
+    # Update template last_used_at
+    template.last_used_at = datetime.now(timezone.utc)
+
     db.commit()
     db.refresh(db_meal)
 
@@ -502,6 +512,23 @@ def update_meal(
     if meal_in.name is not None:
         meal.name = meal_in.name
     if meal_in.status is not None:
+        # Validate status transition
+        if meal_in.status != meal.status:
+            allowed = VALID_STATUS_TRANSITIONS.get(meal.status, set())
+            if meal_in.status not in allowed:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid status transition from '{meal.status.value}' to '{meal_in.status.value}'",
+                )
+
+            # Side effect: update last_cooked_at on recipes when transitioning to cooked
+            if meal_in.status == models.MealStatus.COOKED:
+                now = datetime.now(timezone.utc)
+                for item in meal.items:
+                    recipe = db.query(models.Recipe).filter(models.Recipe.id == item.recipe_id).first()
+                    if recipe:
+                        recipe.last_cooked_at = now
+
         meal.status = meal_in.status
     if meal_in.classification is not None:
         meal.classification = meal_in.classification

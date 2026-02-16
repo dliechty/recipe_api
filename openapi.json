@@ -1396,41 +1396,18 @@
         "tags": [
           "Meals"
         ],
-        "summary": "Generate Meal",
-        "operationId": "generate_meal_meals_generate_post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "template_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Template Id"
-            }
-          }
-        ],
+        "summary": "Generate Meals",
+        "description": "Generate N meals by selecting N templates via weighted random selection.\n\nEach template is used at most once per generation. Templates that haven't\nbeen used recently are more likely to be selected.",
+        "operationId": "generate_meals_meals_generate_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/MealScheduleRequest"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Schedule Request"
+                "$ref": "#/components/schemas/MealGenerateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -1438,7 +1415,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Meal"
+                  "items": {
+                    "$ref": "#/components/schemas/Meal"
+                  },
+                  "type": "array",
+                  "title": "Response Generate Meals Meals Generate Post"
                 }
               }
             }
@@ -1453,7 +1434,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/meals/": {
@@ -1506,7 +1492,7 @@
           "Meals"
         ],
         "summary": "Get Meals",
-        "description": "Retrieve a list of meals with optional filtering and sorting.\n\n**Filtering:** Use bracket notation `field[operator]=value` for filters.\n\nOperators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`.\n\nFilter fields: `id`, `name`, `status`, `classification`, `date`, `created_at`, `updated_at`, `recipe_id`, `owner` (or `created_by`).\n\nExamples:\n- `?name[like]=weekly` - Meals with 'weekly' in name\n- `?status[eq]=scheduled` - Scheduled meals only\n- `?date[gte]=2024-01-01&date[lte]=2024-01-31` - Meals in January 2024\n- `?recipe_id[eq]=<uuid>` - Meals containing specific recipe\n- `?recipe_id[in]=<uuid1>,<uuid2>` - Meals containing any of the specified recipes\n- `?classification[in]=breakfast,lunch` - Breakfast or lunch meals\n\n**Sorting:** Use the `sort` parameter with comma-separated fields. Prefix with `-` for descending.\n\nReturns total count in `X-Total-Count` response header.",
+        "description": "Retrieve a list of meals with optional filtering and sorting.\n\n**Filtering:** Use bracket notation `field[operator]=value` for filters.\n\nOperators: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `like`.\n\nFilter fields: `id`, `name`, `status`, `classification`, `scheduled_date`, `is_shopped`, `created_at`, `updated_at`, `recipe_id`, `owner` (or `created_by`).\n\nExamples:\n- `?name[like]=weekly` - Meals with 'weekly' in name\n- `?status[eq]=Queued` - Queued meals only\n- `?scheduled_date[gte]=2024-01-01&scheduled_date[lte]=2024-01-31` - Meals in January 2024\n- `?recipe_id[eq]=<uuid>` - Meals containing specific recipe\n- `?recipe_id[in]=<uuid1>,<uuid2>` - Meals containing any of the specified recipes\n- `?classification[in]=breakfast,lunch` - Breakfast or lunch meals\n\n**Sorting:** Use the `sort` parameter with comma-separated fields. Prefix with `-` for descending.\n\nReturns total count in `X-Total-Count` response header.",
         "operationId": "get_meals_meals__get",
         "security": [
           {
@@ -1547,10 +1533,10 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "Comma-separated sort fields. Prefix with '-' for descending order. Valid fields: date, classification, status, created_at, updated_at, name. Default: date descending with unscheduled (null) dates first. Example: '-date,name'",
+              "description": "Comma-separated sort fields. Prefix with '-' for descending order. Valid fields: scheduled_date, classification, status, created_at, updated_at, name, queue_position. Default: scheduled_date descending with unscheduled (null) dates first. Example: '-scheduled_date,name'",
               "title": "Sort"
             },
-            "description": "Comma-separated sort fields. Prefix with '-' for descending order. Valid fields: date, classification, status, created_at, updated_at, name. Default: date descending with unscheduled (null) dates first. Example: '-date,name'"
+            "description": "Comma-separated sort fields. Prefix with '-' for descending order. Valid fields: scheduled_date, classification, status, created_at, updated_at, name, queue_position. Default: scheduled_date descending with unscheduled (null) dates first. Example: '-scheduled_date,name'"
           }
         ],
         "responses": {
@@ -2407,7 +2393,7 @@
           },
           "status": {
             "$ref": "#/components/schemas/MealStatus",
-            "default": "Draft"
+            "default": "Queued"
           },
           "classification": {
             "anyOf": [
@@ -2419,7 +2405,7 @@
               }
             ]
           },
-          "date": {
+          "scheduled_date": {
             "anyOf": [
               {
                 "type": "string",
@@ -2429,7 +2415,23 @@
                 "type": "null"
               }
             ],
-            "title": "Date"
+            "title": "Scheduled Date"
+          },
+          "is_shopped": {
+            "type": "boolean",
+            "title": "Is Shopped",
+            "default": false
+          },
+          "queue_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Position"
           },
           "id": {
             "type": "string",
@@ -2507,7 +2509,7 @@
           },
           "status": {
             "$ref": "#/components/schemas/MealStatus",
-            "default": "Draft"
+            "default": "Queued"
           },
           "classification": {
             "anyOf": [
@@ -2519,7 +2521,7 @@
               }
             ]
           },
-          "date": {
+          "scheduled_date": {
             "anyOf": [
               {
                 "type": "string",
@@ -2529,7 +2531,23 @@
                 "type": "null"
               }
             ],
-            "title": "Date"
+            "title": "Scheduled Date"
+          },
+          "is_shopped": {
+            "type": "boolean",
+            "title": "Is Shopped",
+            "default": false
+          },
+          "queue_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Position"
           },
           "template_id": {
             "anyOf": [
@@ -2554,6 +2572,35 @@
         },
         "type": "object",
         "title": "MealCreate"
+      },
+      "MealGenerateRequest": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "scheduled_dates": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled Dates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count"
+        ],
+        "title": "MealGenerateRequest",
+        "description": "Request to generate multiple meals from user's templates."
       },
       "MealItem": {
         "properties": {
@@ -2607,31 +2654,12 @@
         ],
         "title": "MealItemBase"
       },
-      "MealScheduleRequest": {
-        "properties": {
-          "scheduled_date": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scheduled Date"
-          }
-        },
-        "type": "object",
-        "title": "MealScheduleRequest",
-        "description": "Optional scheduling parameters for meal generation or duplication."
-      },
       "MealStatus": {
         "type": "string",
         "enum": [
-          "Draft",
-          "Scheduled",
-          "Cooked"
+          "Queued",
+          "Cooked",
+          "Cancelled"
         ],
         "title": "MealStatus"
       },
@@ -2660,6 +2688,18 @@
             "type": "string",
             "format": "uuid",
             "title": "User Id"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
           },
           "created_at": {
             "type": "string",
@@ -2916,7 +2956,7 @@
               }
             ]
           },
-          "date": {
+          "scheduled_date": {
             "anyOf": [
               {
                 "type": "string",
@@ -2926,7 +2966,29 @@
                 "type": "null"
               }
             ],
-            "title": "Date"
+            "title": "Scheduled Date"
+          },
+          "is_shopped": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Shopped"
+          },
+          "queue_position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Position"
           },
           "items": {
             "anyOf": [
@@ -3090,6 +3152,18 @@
               }
             ],
             "title": "Checksum"
+          },
+          "last_cooked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Cooked At"
           }
         },
         "type": "object",

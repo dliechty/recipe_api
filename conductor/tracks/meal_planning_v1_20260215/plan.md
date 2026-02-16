@@ -41,27 +41,27 @@ Implement the business logic for meal lifecycle transitions and automatic recenc
 ## Phase 3: Queue Management & Meal Generation
 Implement the queue ordering system and update the generation endpoint.
 
-- [ ] Task: Implement Queue Positioning
-    - [ ] Write tests for `queue_position` assignment on meal creation (manual and generated).
-    - [ ] Write tests for queue reordering (updating positions).
-    - [ ] Implement queue position logic: new meals get position after last queued meal.
-- [ ] Task: Update Meal Generation Endpoint
-    - [ ] Write tests for generating N meals (selects N templates via weighted random, one meal per template).
-    - [ ] Write tests for weighted selection (templates with older/null `last_used_at` are more likely to be selected, but not deterministic).
-    - [ ] Write tests for generation with and without scheduled dates.
-    - [ ] Write tests for edge cases (e.g., user has fewer templates than requested count).
-    - [ ] Update `POST /generate` to accept `count` and optional `scheduled_dates` list (remove single `template_id` requirement).
-    - [ ] Implement template selection pipeline:
-        - [ ] **Filter phase:** Retrieve eligible templates for the user (extensible for future exclusion filters).
-        - [ ] **Weighting phase:** Compute per-template weights based on recency (older/null `last_used_at` = higher weight). Design as a composable system so additional weight factors can be added later.
-        - [ ] **Selection phase:** Weighted random selection of N templates (without replacement).
-    - [ ] Generate one meal per selected template, resolving recipes per slot strategy.
-    - [ ] Assign sequential `queue_position` values to generated meals.
-    - [ ] Update `last_used_at` on each selected template.
-- [ ] Task: Update Meal Filtering & Sorting
-    - [ ] Write tests for filtering by `is_shopped`, `status`, and `scheduled_date` range.
-    - [ ] Write tests for sorting by `queue_position`.
-    - [ ] Update query filtering logic to support new fields.
+- [x] Task: Implement Queue Positioning `5889d87`
+    - [x] Write tests for `queue_position` assignment on meal creation (manual and generated).
+    - [x] Write tests for queue reordering (updating positions).
+    - [x] Implement queue position logic: new meals get position after last queued meal.
+- [x] Task: Update Meal Generation Endpoint `5889d87`
+    - [x] Write tests for generating N meals (selects N templates via weighted random, one meal per template).
+    - [x] Write tests for weighted selection (templates with older/null `last_used_at` are more likely to be selected, but not deterministic).
+    - [x] Write tests for generation with and without scheduled dates.
+    - [x] Write tests for edge cases (e.g., user has fewer templates than requested count).
+    - [x] Update `POST /generate` to accept `count` and optional `scheduled_dates` list (remove single `template_id` requirement).
+    - [x] Implement template selection pipeline:
+        - [x] **Filter phase:** Retrieve eligible templates for the user (extensible for future exclusion filters).
+        - [x] **Weighting phase:** Compute per-template weights based on recency (older/null `last_used_at` = higher weight). Design as a composable system so additional weight factors can be added later.
+        - [x] **Selection phase:** Weighted random selection of N templates (without replacement).
+    - [x] Generate one meal per selected template, resolving recipes per slot strategy.
+    - [x] Assign sequential `queue_position` values to generated meals.
+    - [x] Update `last_used_at` on each selected template.
+- [x] Task: Update Meal Filtering & Sorting `5889d87`
+    - [x] Write tests for filtering by `is_shopped`, `status`, and `scheduled_date` range.
+    - [x] Write tests for sorting by `queue_position`.
+    - [x] Update query filtering logic to support new fields.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Queue Management & Meal Generation' (Protocol in workflow.md)
 
 ## Phase 4: API Endpoint Updates

@@ -3,24 +3,24 @@
 ## Phase 1: Schema & Model Updates
 Update data models, enums, and create the database migration for all new/changed fields.
 
-- [ ] Task: Update MealStatus Enum and Meal Model
-    - [ ] Replace `MealStatus` enum values: `DRAFT`/`SCHEDULED`/`COOKED` → `QUEUED`/`COOKED`/`CANCELLED`.
-    - [ ] Rename `date` column to `scheduled_date` on `Meal` model.
-    - [ ] Add `is_shopped` (Boolean, default `false`) to `Meal` model.
-    - [ ] Add `queue_position` (Integer, nullable) to `Meal` model.
-- [ ] Task: Add Recency Fields
-    - [ ] Add `last_cooked_at` (DateTime, nullable) to `Recipe` model.
-    - [ ] Add `last_used_at` (DateTime, nullable) to `MealTemplate` model.
-- [ ] Task: Create and Run Alembic Migration
-    - [ ] Generate migration for all schema changes.
-    - [ ] Verify migration applies cleanly (upgrade and downgrade).
-- [ ] Task: Update Pydantic Schemas
-    - [ ] Update `MealStatus` references in schemas.
-    - [ ] Rename `date` to `scheduled_date` in `MealBase`, `MealCreate`, `MealUpdate`, `Meal` schemas.
-    - [ ] Add `is_shopped` and `queue_position` to meal schemas.
-    - [ ] Add `last_cooked_at` to recipe response schemas.
-    - [ ] Add `last_used_at` to meal template response schemas.
-    - [ ] Update `MealScheduleRequest` schema if needed.
+- [x] Task: Update MealStatus Enum and Meal Model `33a49b8`
+    - [x] Replace `MealStatus` enum values: `DRAFT`/`SCHEDULED`/`COOKED` → `QUEUED`/`COOKED`/`CANCELLED`.
+    - [x] Rename `date` column to `scheduled_date` on `Meal` model.
+    - [x] Add `is_shopped` (Boolean, default `false`) to `Meal` model.
+    - [x] Add `queue_position` (Integer, nullable) to `Meal` model.
+- [x] Task: Add Recency Fields `33a49b8`
+    - [x] Add `last_cooked_at` (DateTime, nullable) to `Recipe` model.
+    - [x] Add `last_used_at` (DateTime, nullable) to `MealTemplate` model.
+- [x] Task: Create and Run Alembic Migration `33a49b8`
+    - [x] Generate migration for all schema changes.
+    - [x] Verify migration applies cleanly (upgrade and downgrade).
+- [x] Task: Update Pydantic Schemas `33a49b8`
+    - [x] Update `MealStatus` references in schemas.
+    - [x] Rename `date` to `scheduled_date` in `MealBase`, `MealCreate`, `MealUpdate`, `Meal` schemas.
+    - [x] Add `is_shopped` and `queue_position` to meal schemas.
+    - [x] Add `last_cooked_at` to recipe response schemas.
+    - [x] Add `last_used_at` to meal template response schemas.
+    - [x] Update `MealScheduleRequest` schema if needed.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Schema & Model Updates' (Protocol in workflow.md)
 
 ## Phase 2: Status Transitions & Recency Tracking
@@ -67,11 +67,11 @@ Implement the queue ordering system and update the generation endpoint.
 ## Phase 4: API Endpoint Updates
 Ensure all existing endpoints handle the new fields correctly and update responses.
 
-- [ ] Task: Update Meal CRUD Endpoints
-    - [ ] Write tests for creating meals with `is_shopped`, `scheduled_date`, `queue_position`.
-    - [ ] Write tests for updating `is_shopped` and `scheduled_date` independently.
-    - [ ] Update `POST /meals`, `PUT /meals/{id}` to handle new fields.
-- [ ] Task: Update Existing Meal Tests for Enum Changes
-    - [ ] Update all existing test references from `DRAFT`/`SCHEDULED` to `QUEUED`/`CANCELLED`.
-    - [ ] Ensure full test suite passes with the new enum values.
+- [x] Task: Update Meal CRUD Endpoints `33a49b8`
+    - [x] Write tests for creating meals with `is_shopped`, `scheduled_date`, `queue_position`.
+    - [x] Write tests for updating `is_shopped` and `scheduled_date` independently.
+    - [x] Update `POST /meals`, `PUT /meals/{id}` to handle new fields.
+- [x] Task: Update Existing Meal Tests for Enum Changes `33a49b8`
+    - [x] Update all existing test references from `DRAFT`/`SCHEDULED` to `QUEUED`/`CANCELLED`.
+    - [x] Ensure full test suite passes with the new enum values.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: API Endpoint Updates' (Protocol in workflow.md)

@@ -608,7 +608,7 @@ def test_generate_meal_with_scheduled_date(
     template_id = create_res.json()["id"]
 
     # Generate meal with scheduled_date
-    scheduled_date = "2026-03-01T00:00:00"
+    scheduled_date = "2026-03-01"
     gen_res = client.post(
         "/meals/generate",
         headers=normal_user_token_headers,

@@ -373,7 +373,8 @@ def apply_meal_sorting(
         # Default sort: scheduled_date descending, but with NULL dates at the top
         if nulls_first_on_default:
             query = query.order_by(
-                case((models.Meal.scheduled_date.is_(None), 0), else_=1), desc(models.Meal.scheduled_date)
+                case((models.Meal.scheduled_date.is_(None), 0), else_=1),
+                desc(models.Meal.scheduled_date),
             )
         else:
             query = query.order_by(desc(models.Meal.scheduled_date))

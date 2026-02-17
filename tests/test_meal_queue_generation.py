@@ -69,18 +69,14 @@ class TestQueuePositioning:
             "name": "Meal 1",
             "items": [{"recipe_id": str(recipe.id)}],
         }
-        resp = client.post(
-            "/meals/", headers=normal_user_token_headers, json=meal_data
-        )
+        resp = client.post("/meals/", headers=normal_user_token_headers, json=meal_data)
         assert resp.status_code == 201
         meal1 = resp.json()
         assert meal1["queue_position"] is not None
 
         # Second meal should get a higher position
         meal_data["name"] = "Meal 2"
-        resp = client.post(
-            "/meals/", headers=normal_user_token_headers, json=meal_data
-        )
+        resp = client.post("/meals/", headers=normal_user_token_headers, json=meal_data)
         meal2 = resp.json()
         assert meal2["queue_position"] > meal1["queue_position"]
 
@@ -94,9 +90,7 @@ class TestQueuePositioning:
             "queue_position": 42,
             "items": [{"recipe_id": str(recipe.id)}],
         }
-        resp = client.post(
-            "/meals/", headers=normal_user_token_headers, json=meal_data
-        )
+        resp = client.post("/meals/", headers=normal_user_token_headers, json=meal_data)
         assert resp.status_code == 201
         assert resp.json()["queue_position"] == 42
 
@@ -109,9 +103,7 @@ class TestQueuePositioning:
             "name": "Reorder Me",
             "items": [{"recipe_id": str(recipe.id)}],
         }
-        resp = client.post(
-            "/meals/", headers=normal_user_token_headers, json=meal_data
-        )
+        resp = client.post("/meals/", headers=normal_user_token_headers, json=meal_data)
         meal_id = resp.json()["id"]
 
         resp = client.put(
@@ -127,9 +119,7 @@ class TestQueuePositioning:
 
 
 class TestMealGeneration:
-    def test_generate_n_meals(
-        self, client, db, normal_user_token_headers, normal_user
-    ):
+    def test_generate_n_meals(self, client, db, normal_user_token_headers, normal_user):
         """Generate N meals from N different templates."""
         # Create 3 templates
         for i in range(3):
@@ -173,7 +163,7 @@ class TestMealGeneration:
             headers=normal_user_token_headers,
             json={
                 "count": 2,
-                "scheduled_dates": ["2026-03-01T00:00:00", "2026-03-02T00:00:00"],
+                "scheduled_dates": ["2026-03-01", "2026-03-02"],
             },
         )
         assert resp.status_code == 201
@@ -397,5 +387,7 @@ class TestFilteringAndSorting:
         )
         assert resp.status_code == 200
         data = resp.json()
-        positions = [m["queue_position"] for m in data if m["queue_position"] is not None]
+        positions = [
+            m["queue_position"] for m in data if m["queue_position"] is not None
+        ]
         assert positions == sorted(positions)

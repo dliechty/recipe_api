@@ -45,19 +45,19 @@ def test_meals_sorting(client: TestClient, db):
             "name": "Meal A",
             "status": "Queued",
             "classification": "Dinner",
-            "scheduled_date": (base_date + timedelta(days=2)).isoformat(),
+            "scheduled_date": (base_date + timedelta(days=2)).date().isoformat(),
         },
         {
             "name": "Meal B",
             "status": "Cooked",
             "classification": "Breakfast",
-            "scheduled_date": (base_date + timedelta(days=1)).isoformat(),
+            "scheduled_date": (base_date + timedelta(days=1)).date().isoformat(),
         },
         {
             "name": "Meal C",
             "status": "Cancelled",
             "classification": "Lunch",
-            "scheduled_date": (base_date + timedelta(days=3)).isoformat(),
+            "scheduled_date": (base_date + timedelta(days=3)).date().isoformat(),
         },
     ]
 

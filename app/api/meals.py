@@ -30,9 +30,7 @@ def get_next_queue_position(db: Session, user_id: UUID) -> int:
     return (max_pos or 0) + 1
 
 
-def select_templates_weighted(
-    templates: list, count: int
-) -> list:
+def select_templates_weighted(templates: list, count: int) -> list:
     """Select N templates using weighted random selection (without replacement).
 
     Templates with older or null last_used_at get higher weight.
@@ -417,9 +415,7 @@ def generate_meals(
         return []
 
     # Weight & Select phase
-    selected_templates = select_templates_weighted(
-        all_templates, request_body.count
-    )
+    selected_templates = select_templates_weighted(all_templates, request_body.count)
 
     # Get starting queue position
     next_pos = get_next_queue_position(db, current_user.id)
@@ -428,10 +424,7 @@ def generate_meals(
     for i, template in enumerate(selected_templates):
         # Determine scheduled_date if provided
         scheduled_date = None
-        if (
-            request_body.scheduled_dates
-            and i < len(request_body.scheduled_dates)
-        ):
+        if request_body.scheduled_dates and i < len(request_body.scheduled_dates):
             scheduled_date = request_body.scheduled_dates[i]
 
         # Create Meal
@@ -604,7 +597,11 @@ def update_meal(
             if meal_in.status == models.MealStatus.COOKED:
                 now = datetime.now(timezone.utc)
                 for item in meal.items:
-                    recipe = db.query(models.Recipe).filter(models.Recipe.id == item.recipe_id).first()
+                    recipe = (
+                        db.query(models.Recipe)
+                        .filter(models.Recipe.id == item.recipe_id)
+                        .first()
+                    )
                     if recipe:
                         recipe.last_cooked_at = now
 

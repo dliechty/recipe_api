@@ -178,11 +178,17 @@ def test_apply_meal_filters_by_date_range(db: Session, filter_user):
     """Test filtering meals by date range."""
     base_date = datetime(2025, 1, 15)
     meal1 = models.Meal(
-        user_id=filter_user.id, name="Early Meal", scheduled_date=base_date - timedelta(days=10)
+        user_id=filter_user.id,
+        name="Early Meal",
+        scheduled_date=base_date - timedelta(days=10),
     )
-    meal2 = models.Meal(user_id=filter_user.id, name="Mid Meal", scheduled_date=base_date)
+    meal2 = models.Meal(
+        user_id=filter_user.id, name="Mid Meal", scheduled_date=base_date
+    )
     meal3 = models.Meal(
-        user_id=filter_user.id, name="Late Meal", scheduled_date=base_date + timedelta(days=10)
+        user_id=filter_user.id,
+        name="Late Meal",
+        scheduled_date=base_date + timedelta(days=10),
     )
     db.add_all([meal1, meal2, meal3])
     db.commit()
@@ -267,10 +273,14 @@ def test_apply_meal_filters_by_recipe_id(db: Session, filter_user):
 def test_apply_meal_sorting_default_nulls_first(db: Session, filter_user):
     """Test that default sorting puts NULL dates first."""
     base_date = datetime(2025, 1, 15)
-    meal1 = models.Meal(user_id=filter_user.id, name="With Date 1", scheduled_date=base_date)
+    meal1 = models.Meal(
+        user_id=filter_user.id, name="With Date 1", scheduled_date=base_date
+    )
     meal2 = models.Meal(user_id=filter_user.id, name="No Date")  # NULL date
     meal3 = models.Meal(
-        user_id=filter_user.id, name="With Date 2", scheduled_date=base_date + timedelta(days=5)
+        user_id=filter_user.id,
+        name="With Date 2",
+        scheduled_date=base_date + timedelta(days=5),
     )
     db.add_all([meal1, meal2, meal3])
     db.commit()
@@ -290,7 +300,9 @@ def test_apply_meal_sorting_explicit_date(db: Session, filter_user):
     base_date = datetime(2025, 1, 15)
     meal1 = models.Meal(user_id=filter_user.id, name="Early", scheduled_date=base_date)
     meal2 = models.Meal(
-        user_id=filter_user.id, name="Late", scheduled_date=base_date + timedelta(days=5)
+        user_id=filter_user.id,
+        name="Late",
+        scheduled_date=base_date + timedelta(days=5),
     )
     db.add_all([meal1, meal2])
     db.commit()
@@ -486,16 +498,18 @@ def test_api_filter_meals_by_date(
 ):
     """Test filtering meals by date range via API."""
     payloads = [
-        {"name": "Jan 10 Meal", "scheduled_date": "2025-01-10T12:00:00", "items": []},
-        {"name": "Jan 15 Meal", "scheduled_date": "2025-01-15T12:00:00", "items": []},
-        {"name": "Jan 20 Meal", "scheduled_date": "2025-01-20T12:00:00", "items": []},
+        {"name": "Jan 10 Meal", "scheduled_date": "2025-01-10", "items": []},
+        {"name": "Jan 15 Meal", "scheduled_date": "2025-01-15", "items": []},
+        {"name": "Jan 20 Meal", "scheduled_date": "2025-01-20", "items": []},
     ]
+
     for p in payloads:
         client.post("/meals/", json=p, headers=filter_user_headers)
 
     # Filter for meals between Jan 12 and Jan 18
     response = client.get(
-        "/meals/?scheduled_date[gte]=2025-01-12&scheduled_date[lte]=2025-01-18", headers=filter_user_headers
+        "/meals/?scheduled_date[gte]=2025-01-12&scheduled_date[lte]=2025-01-18",
+        headers=filter_user_headers,
     )
     assert response.status_code == 200
     data = response.json()
@@ -596,10 +610,11 @@ def test_api_meals_default_sort_nulls_first(
 ):
     """Test that default meal sorting puts NULL dates first."""
     payloads = [
-        {"name": "With Date 1", "scheduled_date": "2025-01-10T12:00:00", "items": []},
+        {"name": "With Date 1", "scheduled_date": "2025-01-10", "items": []},
         {"name": "No Date", "items": []},  # NULL date
-        {"name": "With Date 2", "scheduled_date": "2025-01-20T12:00:00", "items": []},
+        {"name": "With Date 2", "scheduled_date": "2025-01-20", "items": []},
     ]
+
     for p in payloads:
         client.post("/meals/", json=p, headers=filter_user_headers)
 
@@ -619,9 +634,10 @@ def test_api_meals_explicit_sort_normal_behavior(
 ):
     """Test that explicit sort uses normal null handling."""
     payloads = [
-        {"name": "Early", "scheduled_date": "2025-01-10T12:00:00", "items": []},
-        {"name": "Late", "scheduled_date": "2025-01-20T12:00:00", "items": []},
+        {"name": "Early", "scheduled_date": "2025-01-10", "items": []},
+        {"name": "Late", "scheduled_date": "2025-01-20", "items": []},
     ]
+
     for p in payloads:
         client.post("/meals/", json=p, headers=filter_user_headers)
 

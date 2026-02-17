@@ -169,7 +169,7 @@ def migrate_meals():
             meal_date = None
             try:
                 # Format appears to be "MM/DD/YY HH:MM:SS" or similar
-                meal_date = pd.to_datetime(date_str).to_pydatetime()
+                meal_date = pd.to_datetime(date_str).to_pydatetime().date()
             except Exception:
                 pass
 
@@ -177,7 +177,7 @@ def migrate_meals():
 
             if meal_date is None:
                 status = MealStatus.QUEUED
-            elif meal_date < datetime.now():
+            elif meal_date < datetime.now().date():
                 status = MealStatus.COOKED
             else:
                 status = MealStatus.QUEUED

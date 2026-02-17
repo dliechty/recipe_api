@@ -11,7 +11,7 @@ from pydantic import (
 )
 from typing import List, Optional, Any
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, date
 from app.models import (
     DifficultyLevel,
     DietType,
@@ -495,7 +495,7 @@ class MealBase(BaseModel):
     name: Optional[str] = None
     status: MealStatus = MealStatus.QUEUED
     classification: Optional[MealClassification] = None
-    scheduled_date: Optional[datetime] = None
+    scheduled_date: Optional[date] = None
     is_shopped: bool = False
     queue_position: Optional[int] = None
 
@@ -509,7 +509,7 @@ class MealUpdate(BaseModel):
     name: Optional[str] = None
     status: Optional[MealStatus] = None
     classification: Optional[MealClassification] = None
-    scheduled_date: Optional[datetime] = None
+    scheduled_date: Optional[date] = None
     is_shopped: Optional[bool] = None
     queue_position: Optional[int] = None
     items: Optional[List[MealItemBase]] = None
@@ -532,14 +532,14 @@ class Meal(MealBase):
 class MealScheduleRequest(BaseModel):
     """Optional scheduling parameters for meal generation or duplication."""
 
-    scheduled_date: Optional[datetime] = None
+    scheduled_date: Optional[date] = None
 
 
 class MealGenerateRequest(BaseModel):
     """Request to generate multiple meals from user's templates."""
 
     count: int
-    scheduled_dates: Optional[List[datetime]] = None
+    scheduled_dates: Optional[List[date]] = None
 
 
 # --- Recipe List Schemas ---

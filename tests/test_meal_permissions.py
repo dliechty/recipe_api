@@ -81,9 +81,7 @@ def create_meal(
     client: TestClient, headers: dict, template_id: str, name: str = "Test Meal"
 ):
     """Generate a meal from a template and return its data."""
-    response = client.post(
-        "/meals/generate", headers=headers, json={"count": 1}
-    )
+    response = client.post("/meals/generate", headers=headers, json={"count": 1})
     assert response.status_code == 201
     data = response.json()
     assert isinstance(data, list)
@@ -130,9 +128,7 @@ def test_user_generates_meal_from_own_templates(client: TestClient, db: Session)
     user_headers = get_auth_headers(client, db, email="tmpl_owner3@example.com")
     create_template(client, user_headers, name="My Template")
 
-    response = client.post(
-        "/meals/generate", headers=user_headers, json={"count": 1}
-    )
+    response = client.post("/meals/generate", headers=user_headers, json={"count": 1})
     assert response.status_code == 201
     data = response.json()
     assert isinstance(data, list)

@@ -11,6 +11,7 @@ from sqlalchemy import (
     Text,
     Enum,
     DateTime,
+    Date,
     func,
     Float,
     JSON,
@@ -367,7 +368,7 @@ class Meal(Base):
     name = Column(String, nullable=True)
     status = Column(Enum(MealStatus), default=MealStatus.QUEUED, nullable=False)
     classification = Column(Enum(MealClassification), nullable=True)
-    scheduled_date = Column(DateTime, nullable=True)
+    scheduled_date = Column(Date, nullable=True)
     is_shopped = Column(Boolean, default=False, nullable=False)
     queue_position = Column(Integer, nullable=True)
 

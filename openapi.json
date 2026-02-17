@@ -2593,6 +2593,20 @@
               }
             ],
             "title": "Scheduled Dates"
+          },
+          "template_filter": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TemplateFilter"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Filter"
           }
         },
         "type": "object",
@@ -3829,6 +3843,30 @@
         ],
         "title": "SearchCriterion",
         "description": "A single search criterion for meal template SEARCH strategy."
+      },
+      "TemplateFilter": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "operator": {
+            "type": "string",
+            "title": "Operator"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "operator",
+          "value"
+        ],
+        "title": "TemplateFilter",
+        "description": "A single filter criterion for template selection during generation."
       },
       "Token": {
         "properties": {

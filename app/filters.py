@@ -581,3 +581,42 @@ def apply_template_filters(query: Query, filters: List[Filter]) -> Query:
                 query = query.having(slot_count <= int(f.value))
 
     return query
+
+
+# --- Meal Template Generate Filters ---
+
+ALLOWED_FIELDS_MEAL_TEMPLATE_GENERATE = {
+    "classification": models.MealTemplate.classification,
+    "name": models.MealTemplate.name,
+    "last_used_at": models.MealTemplate.last_used_at,
+}
+
+
+def apply_meal_template_generate_filters(
+    query: Query, filters: List[Filter]
+) -> Query:
+    """Apply filters to a MealTemplate query during meal generation."""
+    for f in filters:
+        model_attr = ALLOWED_FIELDS_MEAL_TEMPLATE_GENERATE.get(f.field)
+        if not model_attr:
+            continue
+
+        if f.operator == "eq":
+            query = query.filter(model_attr == f.value)
+        elif f.operator == "neq":
+            query = query.filter(model_attr != f.value)
+        elif f.operator == "gt":
+            query = query.filter(model_attr > f.value)
+        elif f.operator == "gte":
+            query = query.filter(model_attr >= f.value)
+        elif f.operator == "lt":
+            query = query.filter(model_attr < f.value)
+        elif f.operator == "lte":
+            query = query.filter(model_attr <= f.value)
+        elif f.operator == "in":
+            vals = f.value.split(",")
+            query = query.filter(model_attr.in_(vals))
+        elif f.operator == "like":
+            query = query.filter(model_attr.ilike(f"%{f.value}%"))
+
+    return query

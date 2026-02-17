@@ -405,11 +405,20 @@ def generate_meals(
     been used recently are more likely to be selected.
     """
     # Filter phase: get all eligible templates for this user
-    all_templates = (
-        db.query(models.MealTemplate)
-        .filter(models.MealTemplate.user_id == current_user.id)
-        .all()
+    template_query = db.query(models.MealTemplate).filter(
+        models.MealTemplate.user_id == current_user.id
     )
+
+    if request_body.template_filter:
+        filter_objs = [
+            filters.Filter(f.field, f.operator, f.value)
+            for f in request_body.template_filter
+        ]
+        template_query = filters.apply_meal_template_generate_filters(
+            template_query, filter_objs
+        )
+
+    all_templates = template_query.all()
 
     if not all_templates:
         return []

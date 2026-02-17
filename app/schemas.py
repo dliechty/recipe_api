@@ -535,11 +535,20 @@ class MealScheduleRequest(BaseModel):
     scheduled_date: Optional[date] = None
 
 
+class TemplateFilter(BaseModel):
+    """A single filter criterion for template selection during generation."""
+
+    field: str
+    operator: str
+    value: str
+
+
 class MealGenerateRequest(BaseModel):
     """Request to generate multiple meals from user's templates."""
 
     count: int
     scheduled_dates: Optional[List[date]] = None
+    template_filter: Optional[List[TemplateFilter]] = None
 
 
 # --- Recipe List Schemas ---

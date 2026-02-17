@@ -43,7 +43,9 @@ def create_recipe(db: Session, user_id, name: str, category: str = "Dinner"):
     return recipe
 
 
-def create_template_with_direct_slot(client, headers, db, user_id, name, recipe=None):
+def create_template_with_direct_slot(
+    client, headers, db, user_id, name, recipe=None, classification=None
+):
     """Helper to create a template with a single DIRECT slot."""
     if recipe is None:
         recipe = create_recipe(db, user_id, f"Recipe for {name}")
@@ -51,6 +53,8 @@ def create_template_with_direct_slot(client, headers, db, user_id, name, recipe=
         "name": name,
         "slots": [{"strategy": "Direct", "recipe_id": str(recipe.id)}],
     }
+    if classification is not None:
+        template_data["classification"] = classification
     resp = client.post("/meals/templates", headers=headers, json=template_data)
     assert resp.status_code == 201
     return resp.json()
@@ -325,6 +329,145 @@ class TestMealGeneration:
         )
         assert resp.status_code == 201
         assert resp.json() == []
+
+
+# --- Template Filter on Generate Tests ---
+
+
+class TestGenerateWithTemplateFilter:
+    def test_generate_with_classification_filter(
+        self, client, db, normal_user_token_headers, normal_user
+    ):
+        """Generate meals filtered by classification returns only matching templates."""
+        create_template_with_direct_slot(
+            client, normal_user_token_headers, db, normal_user.id,
+            "Dinner Template", classification="Dinner",
+        )
+        create_template_with_direct_slot(
+            client, normal_user_token_headers, db, normal_user.id,
+            "Lunch Template", classification="Lunch",
+        )
+        create_template_with_direct_slot(
+            client, normal_user_token_headers, db, normal_user.id,
+            "Breakfast Template", classification="Breakfast",
+        )
+
+        resp = client.post(
+            "/meals/generate",
+            headers=normal_user_token_headers,
+            json={
+                "count": 5,
+                "template_filter": [
+                    {"field": "classification", "operator": "eq", "value": "Dinner"}
+                ],
+            },
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert len(data) == 1
+        assert data[0]["classification"] == "Dinner"
+
+    def test_generate_with_filter_no_matching_templates(
+        self, client, db, normal_user_token_headers, normal_user
+    ):
+        """Filter that matches nothing returns empty list."""
+        create_template_with_direct_slot(
+            client, normal_user_token_headers, db, normal_user.id,
+            "Dinner Only", classification="Dinner",
+        )
+
+        resp = client.post(
+            "/meals/generate",
+            headers=normal_user_token_headers,
+            json={
+                "count": 3,
+                "template_filter": [
+                    {"field": "classification", "operator": "eq", "value": "Breakfast"}
+                ],
+            },
+        )
+        assert resp.status_code == 201
+        assert resp.json() == []
+
+    def test_generate_with_filter_fewer_matches_than_count(
+        self, client, db, normal_user_token_headers, normal_user
+    ):
+        """Request 5 but only 2 match filter, get 2."""
+        for i in range(2):
+            create_template_with_direct_slot(
+                client, normal_user_token_headers, db, normal_user.id,
+                f"Dinner {i}", classification="Dinner",
+            )
+        create_template_with_direct_slot(
+            client, normal_user_token_headers, db, normal_user.id,
+            "Lunch One", classification="Lunch",
+        )
+
+        resp = client.post(
+            "/meals/generate",
+            headers=normal_user_token_headers,
+            json={
+                "count": 5,
+                "template_filter": [
+                    {"field": "classification", "operator": "eq", "value": "Dinner"}
+                ],
+            },
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert len(data) == 2
+        assert all(m["classification"] == "Dinner" for m in data)
+
+    def test_generate_with_multiple_filters(
+        self, client, db, normal_user_token_headers, normal_user
+    ):
+        """Combine filters using 'in' operator for multiple classifications."""
+        create_template_with_direct_slot(
+            client, normal_user_token_headers, db, normal_user.id,
+            "Dinner T", classification="Dinner",
+        )
+        create_template_with_direct_slot(
+            client, normal_user_token_headers, db, normal_user.id,
+            "Lunch T", classification="Lunch",
+        )
+        create_template_with_direct_slot(
+            client, normal_user_token_headers, db, normal_user.id,
+            "Breakfast T", classification="Breakfast",
+        )
+
+        resp = client.post(
+            "/meals/generate",
+            headers=normal_user_token_headers,
+            json={
+                "count": 5,
+                "template_filter": [
+                    {"field": "classification", "operator": "in", "value": "Dinner,Lunch"}
+                ],
+            },
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert len(data) == 2
+        classifications = {m["classification"] for m in data}
+        assert classifications <= {"Dinner", "Lunch"}
+
+    def test_generate_without_filter_unchanged(
+        self, client, db, normal_user_token_headers, normal_user
+    ):
+        """No filter = existing behavior, all templates eligible."""
+        for i in range(3):
+            create_template_with_direct_slot(
+                client, normal_user_token_headers, db, normal_user.id,
+                f"Any Template {i}", classification="Dinner",
+            )
+
+        resp = client.post(
+            "/meals/generate",
+            headers=normal_user_token_headers,
+            json={"count": 3},
+        )
+        assert resp.status_code == 201
+        assert len(resp.json()) == 3
 
 
 # --- Filtering & Sorting Tests ---

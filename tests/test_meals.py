@@ -156,7 +156,6 @@ def test_generate_meal(
     assert len(data) == 1
     meal = data[0]
     assert meal["status"] == "Queued"
-    assert "Generated" in meal["name"]
     assert (
         meal["template_id"] == template_id
     )  # Verify link back to originating template

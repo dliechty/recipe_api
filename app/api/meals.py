@@ -438,7 +438,7 @@ def generate_meals(
         db_meal = models.Meal(
             user_id=current_user.id,
             template_id=template.id,
-            name=f"Generated {template.name}",
+            name=template.name,
             status=models.MealStatus.QUEUED,
             classification=template.classification,
             scheduled_date=scheduled_date,

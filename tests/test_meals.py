@@ -654,3 +654,116 @@ def test_generate_meal_without_scheduled_date(
     meal = data[0]
     assert meal["status"] == "Queued"
     assert meal["scheduled_date"] is None
+
+
+def test_uncook_meal(
+    client: TestClient, db: Session, normal_user_token_headers, normal_user
+):
+    """Test that a cooked meal can be transitioned back to queued."""
+    r = create_recipe(db, normal_user.id, "Uncook Test Recipe")
+    meal_data = {"name": "Uncook Test", "items": [{"recipe_id": str(r.id)}]}
+    create_res = client.post(
+        "/meals/", headers=normal_user_token_headers, json=meal_data
+    )
+    meal_id = create_res.json()["id"]
+
+    # Mark as cooked
+    res = client.put(
+        f"/meals/{meal_id}",
+        headers=normal_user_token_headers,
+        json={"status": "Cooked"},
+    )
+    assert res.status_code == 200
+    assert res.json()["status"] == "Cooked"
+
+    # Transition back to queued
+    res = client.put(
+        f"/meals/{meal_id}",
+        headers=normal_user_token_headers,
+        json={"status": "Queued"},
+    )
+    assert res.status_code == 200
+    assert res.json()["status"] == "Queued"
+
+
+def test_uncancel_meal(
+    client: TestClient, db: Session, normal_user_token_headers, normal_user
+):
+    """Test that a cancelled meal can be transitioned back to queued."""
+    r = create_recipe(db, normal_user.id, "Uncancel Test Recipe")
+    meal_data = {"name": "Uncancel Test", "items": [{"recipe_id": str(r.id)}]}
+    create_res = client.post(
+        "/meals/", headers=normal_user_token_headers, json=meal_data
+    )
+    meal_id = create_res.json()["id"]
+
+    # Cancel the meal
+    res = client.put(
+        f"/meals/{meal_id}",
+        headers=normal_user_token_headers,
+        json={"status": "Cancelled"},
+    )
+    assert res.status_code == 200
+    assert res.json()["status"] == "Cancelled"
+
+    # Transition back to queued
+    res = client.put(
+        f"/meals/{meal_id}",
+        headers=normal_user_token_headers,
+        json={"status": "Queued"},
+    )
+    assert res.status_code == 200
+    assert res.json()["status"] == "Queued"
+
+
+def test_clear_scheduled_date(
+    client: TestClient, db: Session, normal_user_token_headers, normal_user
+):
+    """Test that a meal's scheduled_date can be cleared by setting it to null."""
+    r = create_recipe(db, normal_user.id, "Schedule Test Recipe")
+    meal_data = {
+        "name": "Schedule Test",
+        "scheduled_date": "2026-03-01",
+        "items": [{"recipe_id": str(r.id)}],
+    }
+    create_res = client.post(
+        "/meals/", headers=normal_user_token_headers, json=meal_data
+    )
+    meal_id = create_res.json()["id"]
+    assert create_res.json()["scheduled_date"] == "2026-03-01"
+
+    # Clear the scheduled date
+    res = client.put(
+        f"/meals/{meal_id}",
+        headers=normal_user_token_headers,
+        json={"scheduled_date": None},
+    )
+    assert res.status_code == 200
+    assert res.json()["scheduled_date"] is None
+
+
+def test_cooked_to_cancelled_invalid(
+    client: TestClient, db: Session, normal_user_token_headers, normal_user
+):
+    """Test that a cooked meal cannot be directly transitioned to cancelled."""
+    r = create_recipe(db, normal_user.id, "Invalid Transition Recipe")
+    meal_data = {"name": "Invalid Transition", "items": [{"recipe_id": str(r.id)}]}
+    create_res = client.post(
+        "/meals/", headers=normal_user_token_headers, json=meal_data
+    )
+    meal_id = create_res.json()["id"]
+
+    # Mark as cooked
+    client.put(
+        f"/meals/{meal_id}",
+        headers=normal_user_token_headers,
+        json={"status": "Cooked"},
+    )
+
+    # Try to cancel a cooked meal (should fail)
+    res = client.put(
+        f"/meals/{meal_id}",
+        headers=normal_user_token_headers,
+        json={"status": "Cancelled"},
+    )
+    assert res.status_code == 400

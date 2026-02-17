@@ -14,9 +14,11 @@ from app.filters import parse_filters
 
 router = APIRouter()
 
-# Valid status transitions: only queued can transition to cooked or cancelled
+# Valid status transitions
 VALID_STATUS_TRANSITIONS = {
     models.MealStatus.QUEUED: {models.MealStatus.COOKED, models.MealStatus.CANCELLED},
+    models.MealStatus.COOKED: {models.MealStatus.QUEUED},
+    models.MealStatus.CANCELLED: {models.MealStatus.QUEUED},
 }
 
 
@@ -617,7 +619,7 @@ def update_meal(
         meal.status = meal_in.status
     if meal_in.classification is not None:
         meal.classification = meal_in.classification
-    if meal_in.scheduled_date is not None:
+    if "scheduled_date" in meal_in.model_fields_set:
         meal.scheduled_date = meal_in.scheduled_date
     if meal_in.is_shopped is not None:
         meal.is_shopped = meal_in.is_shopped

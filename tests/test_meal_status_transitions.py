@@ -87,8 +87,6 @@ class TestValidStatusTransitions:
         assert response.status_code == 200
         assert response.json()["status"] == "Cancelled"
 
-
-class TestInvalidStatusTransitions:
     def test_cooked_to_queued(self, client, db, normal_user_token_headers, normal_user):
         recipe = create_recipe(db, normal_user.id, "Soup")
         meal = create_meal_with_recipes(
@@ -102,15 +100,40 @@ class TestInvalidStatusTransitions:
             json={"status": "Cooked"},
         )
 
-        # Attempt to go back to queued
+        # Transition back to queued (valid)
         response = client.put(
             f"/meals/{meal['id']}",
             headers=normal_user_token_headers,
             json={"status": "Queued"},
         )
-        assert response.status_code == 400
-        assert "transition" in response.json()["detail"].lower()
+        assert response.status_code == 200
+        assert response.json()["status"] == "Queued"
 
+    def test_cancelled_to_queued(
+        self, client, db, normal_user_token_headers, normal_user
+    ):
+        recipe = create_recipe(db, normal_user.id, "Curry")
+        meal = create_meal_with_recipes(
+            db, client, normal_user_token_headers, normal_user.id, [recipe]
+        )
+
+        client.put(
+            f"/meals/{meal['id']}",
+            headers=normal_user_token_headers,
+            json={"status": "Cancelled"},
+        )
+
+        # Transition back to queued (valid)
+        response = client.put(
+            f"/meals/{meal['id']}",
+            headers=normal_user_token_headers,
+            json={"status": "Queued"},
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "Queued"
+
+
+class TestInvalidStatusTransitions:
     def test_cooked_to_cancelled(
         self, client, db, normal_user_token_headers, normal_user
     ):
@@ -152,27 +175,7 @@ class TestInvalidStatusTransitions:
             json={"status": "Cooked"},
         )
         assert response.status_code == 400
-
-    def test_cancelled_to_queued(
-        self, client, db, normal_user_token_headers, normal_user
-    ):
-        recipe = create_recipe(db, normal_user.id, "Curry")
-        meal = create_meal_with_recipes(
-            db, client, normal_user_token_headers, normal_user.id, [recipe]
-        )
-
-        client.put(
-            f"/meals/{meal['id']}",
-            headers=normal_user_token_headers,
-            json={"status": "Cancelled"},
-        )
-
-        response = client.put(
-            f"/meals/{meal['id']}",
-            headers=normal_user_token_headers,
-            json={"status": "Queued"},
-        )
-        assert response.status_code == 400
+        assert "transition" in response.json()["detail"].lower()
 
 
 # --- Recency Tracking: last_cooked_at ---

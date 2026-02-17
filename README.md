@@ -73,6 +73,68 @@ uv run python -m app.initial_data
 This will ensure a superuser exists. You can then log in and manage other users or requests.
 
 
+## Authorization Model
+
+### Resource Access Rules
+
+**Meals (strictly private)**
+
+Meals are private to their owner. Only the owner can view, update, or delete their meals.
+
+| Action | Who can perform it |
+|---|---|
+| Create | Any authenticated user (meal is assigned to themselves) |
+| View / Update / Delete | Owner only |
+
+**Meal Templates and Recipes (shared read)**
+
+Templates and recipes are readable by all authenticated users, but only the owner can modify them.
+
+| Action | Who can perform it |
+|---|---|
+| View | Any authenticated user |
+| Create | Any authenticated user (resource is assigned to themselves) |
+| Update / Delete | Owner only |
+
+Comment ownership on recipes follows the same pattern: only the comment author can update or delete their comment.
+
+### Admin Operating Modes
+
+Admins authenticate normally and receive a standard JWT. The operating mode is selected per-request via HTTP headers. Non-admin users sending these headers receive `403 Forbidden`.
+
+| Mode | Header | Behaviour |
+|---|---|---|
+| **User mode** (default) | _(none)_ | Admin is scoped to their own data, same as any regular user |
+| **Admin mode** | `X-Admin-Mode: true` | Full access to all resources across all users |
+| **Impersonation mode** | `X-Act-As-User: <user_uuid>` | Access scoped to the target user's data; resources created or updated are owned by the target user |
+
+Rules:
+- `X-Act-As-User` takes precedence over `X-Admin-Mode` if both headers are present.
+- The target user for impersonation must exist and be active.
+- Admins cannot impersonate other admins.
+
+**Examples:**
+
+```bash
+# Admin mode — view all meals across all users
+curl -H "Authorization: Bearer <token>" \
+     -H "X-Admin-Mode: true" \
+     http://localhost:8000/api/v1/meals
+
+# Impersonation mode — view meals belonging to a specific user
+curl -H "Authorization: Bearer <token>" \
+     -H "X-Act-As-User: 123e4567-e89b-12d3-a456-426614174000" \
+     http://localhost:8000/api/v1/meals
+
+# Impersonation mode — create a meal on behalf of a specific user
+curl -X POST \
+     -H "Authorization: Bearer <token>" \
+     -H "X-Act-As-User: 123e4567-e89b-12d3-a456-426614174000" \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Monday Dinner"}' \
+     http://localhost:8000/api/v1/meals
+```
+
 ## Generate OpenAPI Spec
 
 To generate an updated `openapi.json` file reflecting the current API schema:

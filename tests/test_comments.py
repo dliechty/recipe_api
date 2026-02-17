@@ -108,10 +108,11 @@ def test_update_comment_permissions(client, db):
     )
     assert res.status_code == 403
 
-    # 6. Admin updates -> OK
-    admin_headers = get_auth_headers(
+    # 6. Admin with X-Admin-Mode updates -> OK
+    admin_base_headers = get_auth_headers(
         client, db, email="admin_comment@example.com", is_admin=True
     )
+    admin_headers = {**admin_base_headers, "X-Admin-Mode": "true"}
     res = client.put(
         f"/recipes/{recipe_id}/comments/{comment_id}",
         json={"text": "Admin Override"},
@@ -151,9 +152,10 @@ def test_delete_comment_permissions(client, db):
     # 4. Commenter delete -> OK
     # Re-create comment to delete it
     # Actually wait, let's test admin delete first on this one
-    admin_headers = get_auth_headers(
+    admin_base_headers = get_auth_headers(
         client, db, email="admin_del@example.com", is_admin=True
     )
+    admin_headers = {**admin_base_headers, "X-Admin-Mode": "true"}
     res = client.delete(
         f"/recipes/{recipe_id}/comments/{comment_id}", headers=admin_headers
     )

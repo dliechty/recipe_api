@@ -10,9 +10,8 @@ from typing import List, Any, Optional
 # Import local modules
 from app import crud
 from app import schemas
-from app import models
 from app.db.session import get_db
-from app.api.auth import get_current_active_user
+from app.api import auth
 from app.filters import parse_filters
 from app.unit_conversion import (
     UnitSystem,
@@ -33,13 +32,13 @@ logger = logging.getLogger(__name__)
 def create_recipe(
     recipe: schemas.RecipeCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
     Create a new recipe for the currently authenticated user.
     """
-    logger.debug(f"User {current_user.email} is creating a new recipe.")
-    return crud.create_user_recipe(db=db, recipe=recipe, user_id=current_user.id)
+    logger.debug(f"User {ctx.effective_user.email} is creating a new recipe.")
+    return crud.create_user_recipe(db=db, recipe=recipe, user_id=ctx.effective_user.id)
 
 
 @router.get("/", response_model=List[schemas.Recipe])
@@ -63,7 +62,7 @@ def read_recipes(
         "yield_amount, protein, created_at, updated_at. Example: '-created_at,name'",
     ),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
     Retrieve a list of all recipes with optional filtering and sorting.
@@ -102,7 +101,7 @@ def read_recipes(
 def get_meta_values(
     field: str,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
     Retrieve unique values for a specific field for metadata usage.
@@ -136,7 +135,7 @@ def read_recipe(
         description="Convert ingredient units to 'metric' (ml, g, cm) or 'imperial' (cups, oz, inches)",
     ),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
     Retrieve a single recipe by its ID.
@@ -202,19 +201,21 @@ def update_recipe(
     recipe_id: UUID,
     recipe: schemas.RecipeCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
     Update a recipe. Only the owner of the recipe can perform this action.
     """
-    logger.debug(f"User {current_user.email} is updating recipe with ID: {recipe_id}")
+    logger.debug(
+        f"User {ctx.effective_user.email} is updating recipe with ID: {recipe_id}"
+    )
     db_recipe = crud.get_recipe(db, recipe_id=recipe_id)
     if db_recipe is None:
         logger.warning(f"Recipe with ID {recipe_id} not found for update.")
         raise HTTPException(status_code=404, detail="Recipe not found")
-    if db_recipe.owner_id != current_user.id and not current_user.is_admin:
+    if db_recipe.owner_id != ctx.effective_user.id and not ctx.is_admin_mode:
         logger.error(
-            f"User {current_user.email} is not authorized to update recipe with ID: {recipe_id}"
+            f"User {ctx.effective_user.email} is not authorized to update recipe with ID: {recipe_id}"
         )
         raise HTTPException(
             status_code=403, detail="Not authorized to update this recipe"
@@ -233,19 +234,21 @@ def update_recipe(
 def delete_recipe(
     recipe_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
     Delete a recipe. Only the owner of the recipe can perform this action.
     """
-    logger.debug(f"User {current_user.email} is deleting recipe with ID: {recipe_id}")
+    logger.debug(
+        f"User {ctx.effective_user.email} is deleting recipe with ID: {recipe_id}"
+    )
     db_recipe = crud.get_recipe(db, recipe_id=recipe_id)
     if db_recipe is None:
         logger.warning(f"Recipe with ID: {recipe_id} not found for deletion.")
         raise HTTPException(status_code=404, detail="Recipe not found")
-    if db_recipe.owner_id != current_user.id and not current_user.is_admin:
+    if db_recipe.owner_id != ctx.effective_user.id and not ctx.is_admin_mode:
         logger.error(
-            f"User {current_user.email} is not authorized to delete recipe with ID: {recipe_id}"
+            f"User {ctx.effective_user.email} is not authorized to delete recipe with ID: {recipe_id}"
         )
         raise HTTPException(
             status_code=403, detail="Not authorized to delete this recipe"
@@ -272,7 +275,7 @@ def create_comment(
     recipe_id: UUID,
     comment: schemas.CommentCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
     Add a comment to a recipe.
@@ -283,7 +286,7 @@ def create_comment(
         raise HTTPException(status_code=404, detail="Recipe not found")
 
     return crud.create_comment(
-        db=db, comment=comment, user_id=current_user.id, recipe_id=recipe_id
+        db=db, comment=comment, user_id=ctx.effective_user.id, recipe_id=recipe_id
     )
 
 
@@ -300,7 +303,7 @@ def read_comments(
         description="Maximum number of records to return (1-1000)",
     ),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
     Get comments for a recipe.
@@ -319,10 +322,10 @@ def update_comment(
     comment_id: UUID,
     comment_update: schemas.CommentUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
-    Update a comment. Only the author of the comment or an admin can update it.
+    Update a comment. Only the author of the comment or an admin in admin mode can update it.
     """
     db_comment = crud.get_comment(db, comment_id=comment_id)
     if not db_comment:
@@ -333,7 +336,7 @@ def update_comment(
             status_code=400, detail="Comment does not belong to this recipe"
         )
 
-    if db_comment.user_id != current_user.id and not current_user.is_admin:
+    if db_comment.user_id != ctx.effective_user.id and not ctx.is_admin_mode:
         raise HTTPException(
             status_code=403, detail="Not authorized to update this comment"
         )
@@ -350,10 +353,10 @@ def delete_comment(
     recipe_id: UUID,
     comment_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
-    Delete a comment. Only the author of the comment or an admin can delete it.
+    Delete a comment. Only the author of the comment or an admin in admin mode can delete it.
     """
     db_comment = crud.get_comment(db, comment_id=comment_id)
     if not db_comment:
@@ -364,7 +367,7 @@ def delete_comment(
             status_code=400, detail="Comment does not belong to this recipe"
         )
 
-    if db_comment.user_id != current_user.id and not current_user.is_admin:
+    if db_comment.user_id != ctx.effective_user.id and not ctx.is_admin_mode:
         raise HTTPException(
             status_code=403, detail="Not authorized to delete this comment"
         )

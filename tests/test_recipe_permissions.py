@@ -49,10 +49,11 @@ def test_admin_can_update_other_user_recipe(client, db):
     recipe = create_dummy_recipe(client, owner_headers)
     recipe_id = recipe["core"]["id"]
 
-    # 2. Create Admin User
-    admin_headers = get_auth_headers(
+    # 2. Create Admin User with X-Admin-Mode header
+    admin_base_headers = get_auth_headers(
         client, db, email="admin@example.com", is_admin=True
     )
+    admin_headers = {**admin_base_headers, "X-Admin-Mode": "true"}
 
     # 3. Admin tries to update
     update_data = {
@@ -77,10 +78,11 @@ def test_admin_can_delete_other_user_recipe(client, db):
     recipe = create_dummy_recipe(client, owner_headers)
     recipe_id = recipe["core"]["id"]
 
-    # 2. Create Admin User
-    admin_headers = get_auth_headers(
+    # 2. Create Admin User with X-Admin-Mode header
+    admin_base_headers = get_auth_headers(
         client, db, email="admin2@example.com", is_admin=True
     )
+    admin_headers = {**admin_base_headers, "X-Admin-Mode": "true"}
 
     # 3. Admin tries to delete
     response = client.delete(f"/recipes/{recipe_id}", headers=admin_headers)

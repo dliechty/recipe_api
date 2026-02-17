@@ -4,11 +4,13 @@
 import logging
 import os
 from collections import defaultdict
+from dataclasses import dataclass
 from threading import Lock
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, status, Request, Query
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
+from typing import Optional
 from uuid import UUID
 
 from jose import JWTError, jwt
@@ -147,7 +149,113 @@ async def get_current_active_user(
     return current_user
 
 
+# --- AuthContext ---
+
+
+@dataclass
+class AuthContext:
+    """
+    Encapsulates resolved permission state for a request.
+
+    Attributes:
+        real_user: The authenticated user (from JWT).
+        effective_user: The user whose ownership rules apply.
+                        May differ from real_user in impersonation mode.
+        is_admin_mode: Whether full admin access is active (bypasses ownership
+                       checks).  False in impersonation mode even if the caller
+                       is an admin.
+    """
+
+    real_user: models.User
+    effective_user: models.User
+    is_admin_mode: bool
+
+
+async def get_auth_context(
+    x_admin_mode: Optional[str] = Header(default=None, alias="X-Admin-Mode"),
+    x_act_as_user: Optional[str] = Header(default=None, alias="X-Act-As-User"),
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> AuthContext:
+    """
+    FastAPI dependency that resolves and returns an AuthContext.
+
+    Header rules (non-admins sending either header receive 403):
+      - X-Act-As-User takes precedence over X-Admin-Mode when both are sent.
+      - X-Act-As-User: <uuid>  →  impersonation mode (effective_user = target)
+      - X-Admin-Mode: true     →  admin mode (full access, effective_user = self)
+      - neither header         →  user mode (effective_user = self)
+    """
+    has_admin_mode = x_admin_mode is not None
+    has_act_as_user = x_act_as_user is not None
+
+    # If either header is present, the caller must be an admin.
+    if (has_admin_mode or has_act_as_user) and not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized: admin privileges required for this header",
+        )
+
+    if has_act_as_user:
+        # Impersonation mode: X-Act-As-User takes precedence over X-Admin-Mode.
+        try:
+            target_id = UUID(x_act_as_user)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Target user not found",
+            )
+
+        target_user = crud.get_user(db, user_id=target_id)
+        if target_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Target user not found",
+            )
+        if target_user.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot impersonate an admin user",
+            )
+
+        return AuthContext(
+            real_user=current_user,
+            effective_user=target_user,
+            is_admin_mode=False,
+        )
+
+    if has_admin_mode and x_admin_mode.lower() == "true":
+        # Admin mode: full access, scoped to the admin's own identity.
+        return AuthContext(
+            real_user=current_user,
+            effective_user=current_user,
+            is_admin_mode=True,
+        )
+
+    # Default user mode.
+    return AuthContext(
+        real_user=current_user,
+        effective_user=current_user,
+        is_admin_mode=False,
+    )
+
+
 # --- Authentication Endpoints ---
+
+
+@router.get("/context")
+async def get_context_debug(
+    auth: AuthContext = Depends(get_auth_context),
+):
+    """
+    Returns the resolved AuthContext for the current request.
+    Used for testing and debugging the authorization model.
+    """
+    return {
+        "real_user_id": str(auth.real_user.id),
+        "effective_user_id": str(auth.effective_user.id),
+        "is_admin_mode": auth.is_admin_mode,
+    }
 
 
 @router.get("/users/{user_id}", response_model=schemas.UserPublic)

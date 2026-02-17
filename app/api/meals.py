@@ -151,7 +151,7 @@ def find_duplicate_template(
 def create_meal_template(
     template_in: schemas.MealTemplateCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     # Compute checksum for duplicate detection
     slots_checksum = compute_slots_checksum(template_in.slots)
@@ -171,7 +171,7 @@ def create_meal_template(
 
     # Create Template with checksum
     db_template = models.MealTemplate(
-        user_id=current_user.id,
+        user_id=ctx.effective_user.id,
         name=template_in.name,
         classification=template_in.classification,
         slots_checksum=slots_checksum,
@@ -230,7 +230,7 @@ def get_meal_templates(
         "Valid fields: name, classification, created_at, updated_at. Example: 'name,-created_at'",
     ),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
     Retrieve a list of meal templates with optional filtering and sorting.
@@ -277,7 +277,7 @@ def get_meal_templates(
 def get_meal_template(
     template_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     template = (
         db.query(models.MealTemplate)
@@ -294,7 +294,7 @@ def update_meal_template(
     template_id: UUID,
     template_in: schemas.MealTemplateUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     template = (
         db.query(models.MealTemplate)
@@ -303,7 +303,7 @@ def update_meal_template(
     )
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
-    if template.user_id != current_user.id and not current_user.is_admin:
+    if template.user_id != ctx.effective_user.id and not ctx.is_admin_mode:
         raise HTTPException(
             status_code=403, detail="Not authorized to update this template"
         )
@@ -322,7 +322,7 @@ def update_meal_template(
 def delete_meal_template(
     template_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     template = (
         db.query(models.MealTemplate)
@@ -331,7 +331,7 @@ def delete_meal_template(
     )
     if not template:
         raise HTTPException(status_code=404, detail="Meal template not found")
-    if template.user_id != current_user.id and not current_user.is_admin:
+    if template.user_id != ctx.effective_user.id and not ctx.is_admin_mode:
         raise HTTPException(
             status_code=403, detail="Not authorized to delete this template"
         )
@@ -399,16 +399,16 @@ def resolve_recipe_for_slot(
 def generate_meals(
     request_body: schemas.MealGenerateRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """Generate N meals by selecting N templates via weighted random selection.
 
     Each template is used at most once per generation. Templates that haven't
     been used recently are more likely to be selected.
     """
-    # Filter phase: get all eligible templates for this user
+    # Filter phase: get all eligible templates for the effective user
     template_query = db.query(models.MealTemplate).filter(
-        models.MealTemplate.user_id == current_user.id
+        models.MealTemplate.user_id == ctx.effective_user.id
     )
 
     if request_body.template_filter:
@@ -429,7 +429,7 @@ def generate_meals(
     selected_templates = select_templates_weighted(all_templates, request_body.count)
 
     # Get starting queue position
-    next_pos = get_next_queue_position(db, current_user.id)
+    next_pos = get_next_queue_position(db, ctx.effective_user.id)
 
     generated_meals = []
     for i, template in enumerate(selected_templates):
@@ -438,9 +438,9 @@ def generate_meals(
         if request_body.scheduled_dates and i < len(request_body.scheduled_dates):
             scheduled_date = request_body.scheduled_dates[i]
 
-        # Create Meal
+        # Create Meal assigned to the effective user
         db_meal = models.Meal(
-            user_id=current_user.id,
+            user_id=ctx.effective_user.id,
             template_id=template.id,
             name=template.name,
             status=models.MealStatus.QUEUED,
@@ -458,7 +458,7 @@ def generate_meals(
 
         # Process Slots
         for slot in template.slots:
-            recipe = resolve_recipe_for_slot(db, slot, current_user.id)
+            recipe = resolve_recipe_for_slot(db, slot, ctx.effective_user.id)
             if recipe:
                 meal_item = models.MealItem(
                     meal_id=db_meal.id, slot_id=slot.id, recipe_id=recipe.id
@@ -476,14 +476,14 @@ def generate_meals(
 def create_meal(
     meal_in: schemas.MealCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     queue_pos = meal_in.queue_position
     if queue_pos is None:
-        queue_pos = get_next_queue_position(db, current_user.id)
+        queue_pos = get_next_queue_position(db, ctx.effective_user.id)
 
     db_meal = models.Meal(
-        user_id=current_user.id,
+        user_id=ctx.effective_user.id,
         template_id=meal_in.template_id,
         name=meal_in.name or "New Meal",
         status=meal_in.status,
@@ -525,7 +525,7 @@ def get_meals(
         "Default: scheduled_date descending with unscheduled (null) dates first. Example: '-scheduled_date,name'",
     ),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     """
     Retrieve a list of meals with optional filtering and sorting.
@@ -550,6 +550,10 @@ def get_meals(
     """
     query = db.query(models.Meal)
 
+    # Scope to effective user unless in admin mode (which sees all meals)
+    if not ctx.is_admin_mode:
+        query = query.filter(models.Meal.user_id == ctx.effective_user.id)
+
     # Parse and apply filters
     filters_list = parse_filters(request.query_params)
     if filters_list:
@@ -569,11 +573,13 @@ def get_meals(
 def get_meal(
     meal_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     meal = db.query(models.Meal).filter(models.Meal.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
+    if not ctx.is_admin_mode and meal.user_id != ctx.effective_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this meal")
     return meal
 
 
@@ -582,12 +588,12 @@ def update_meal(
     meal_id: UUID,
     meal_in: schemas.MealUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     meal = db.query(models.Meal).filter(models.Meal.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
-    if meal.user_id != current_user.id and not current_user.is_admin:
+    if not ctx.is_admin_mode and meal.user_id != ctx.effective_user.id:
         raise HTTPException(
             status_code=403, detail="Not authorized to update this meal"
         )
@@ -652,12 +658,12 @@ def update_meal(
 def delete_meal(
     meal_id: UUID,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
 ):
     meal = db.query(models.Meal).filter(models.Meal.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
-    if meal.user_id != current_user.id and not current_user.is_admin:
+    if not ctx.is_admin_mode and meal.user_id != ctx.effective_user.id:
         raise HTTPException(
             status_code=403, detail="Not authorized to delete this meal"
         )

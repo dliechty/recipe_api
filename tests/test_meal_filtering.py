@@ -1287,8 +1287,27 @@ def test_apply_template_filters_by_owner_in(db: Session, filter_user, other_user
 def test_api_filter_meals_by_owner_in(
     client: TestClient, db: Session, filter_user_headers, filter_user, other_user
 ):
-    """Test filtering meals by owner using in operator via API."""
-    # Create meals for the current user
+    """Test filtering meals by owner using in operator via API (requires admin mode to see other users' meals)."""
+    # Create an admin user for this test
+    admin_user_data = schemas.UserCreate(
+        email="filter_admin_owner_in@example.com",
+        password="testpassword",
+    )
+    admin_user = crud.create_user(db, admin_user_data)
+    admin_user.is_admin = True
+    db.add(admin_user)
+    db.commit()
+    login_res = client.post(
+        "/auth/token",
+        data={"username": admin_user.email, "password": "testpassword"},
+    )
+    admin_token = login_res.json()["access_token"]
+    admin_headers = {
+        "Authorization": f"Bearer {admin_token}",
+        "X-Admin-Mode": "true",
+    }
+
+    # Create meals for the filter_user
     client.post(
         "/meals/", json={"name": "My Meal 1", "items": []}, headers=filter_user_headers
     )
@@ -1301,10 +1320,10 @@ def test_api_filter_meals_by_owner_in(
     db.add(other_meal)
     db.commit()
 
-    # Filter by both user IDs
+    # Admin with X-Admin-Mode can filter by both user IDs
     response = client.get(
         f"/meals/?owner[in]={filter_user.id},{other_user.id}",
-        headers=filter_user_headers,
+        headers=admin_headers,
     )
     assert response.status_code == 200
     data = response.json()

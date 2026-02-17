@@ -6,6 +6,75 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/auth/context": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get Context Debug",
+        "description": "Returns the resolved AuthContext for the current request.\nUsed for testing and debugging the authorization model.",
+        "operationId": "get_context_debug_auth_context_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/users/{user_id}": {
       "get": {
         "tags": [
@@ -514,6 +583,40 @@
             "OAuth2PasswordBearer": []
           }
         ],
+        "parameters": [
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -597,6 +700,38 @@
               "title": "Sort"
             },
             "description": "Comma-separated sort fields. Prefix with '-' for descending order. Valid fields: name, calories, total_time_minutes, difficulty, category, cuisine, prep_time_minutes, cook_time_minutes, active_time_minutes, yield_amount, protein, created_at, updated_at. Example: '-created_at,name'"
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "responses": {
@@ -648,6 +783,38 @@
             "schema": {
               "type": "string",
               "title": "Field"
+            }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
             }
           }
         ],
@@ -737,6 +904,38 @@
               "title": "Units"
             },
             "description": "Convert ingredient units to 'metric' (ml, g, cm) or 'imperial' (cups, oz, inches)"
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "responses": {
@@ -783,6 +982,38 @@
               "type": "string",
               "format": "uuid",
               "title": "Recipe Id"
+            }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
             }
           }
         ],
@@ -841,6 +1072,38 @@
               "format": "uuid",
               "title": "Recipe Id"
             }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "responses": {
@@ -889,6 +1152,38 @@
               "type": "string",
               "format": "uuid",
               "title": "Recipe Id"
+            }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
             }
           }
         ],
@@ -974,6 +1269,38 @@
               "title": "Limit"
             },
             "description": "Maximum number of records to return (1-1000)"
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "responses": {
@@ -1010,7 +1337,7 @@
           "Recipes"
         ],
         "summary": "Update Comment",
-        "description": "Update a comment. Only the author of the comment or an admin can update it.",
+        "description": "Update a comment. Only the author of the comment or an admin in admin mode can update it.",
         "operationId": "update_comment_recipes__recipe_id__comments__comment_id__put",
         "security": [
           {
@@ -1036,6 +1363,38 @@
               "type": "string",
               "format": "uuid",
               "title": "Comment Id"
+            }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
             }
           }
         ],
@@ -1077,7 +1436,7 @@
           "Recipes"
         ],
         "summary": "Delete Comment",
-        "description": "Delete a comment. Only the author of the comment or an admin can delete it.",
+        "description": "Delete a comment. Only the author of the comment or an admin in admin mode can delete it.",
         "operationId": "delete_comment_recipes__recipe_id__comments__comment_id__delete",
         "security": [
           {
@@ -1103,6 +1462,38 @@
               "type": "string",
               "format": "uuid",
               "title": "Comment Id"
+            }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
             }
           }
         ],
@@ -1133,6 +1524,40 @@
         "security": [
           {
             "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "requestBody": {
@@ -1218,6 +1643,38 @@
               "title": "Sort"
             },
             "description": "Comma-separated sort fields. Prefix with '-' for descending order. Valid fields: name, classification, created_at, updated_at. Example: 'name,-created_at'"
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "responses": {
@@ -1270,6 +1727,38 @@
               "format": "uuid",
               "title": "Template Id"
             }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "responses": {
@@ -1315,6 +1804,38 @@
               "type": "string",
               "format": "uuid",
               "title": "Template Id"
+            }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
             }
           }
         ],
@@ -1372,6 +1893,38 @@
               "format": "uuid",
               "title": "Template Id"
             }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "responses": {
@@ -1399,15 +1952,54 @@
         "summary": "Generate Meals",
         "description": "Generate N meals by selecting N templates via weighted random selection.\n\nEach template is used at most once per generation. Templates that haven't\nbeen used recently are more likely to be selected.",
         "operationId": "generate_meals_meals_generate_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/MealGenerateRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -1415,10 +2007,10 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Meal"
                   },
-                  "type": "array",
                   "title": "Response Generate Meals Meals Generate Post"
                 }
               }
@@ -1434,12 +2026,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/meals/": {
@@ -1452,6 +2039,40 @@
         "security": [
           {
             "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "requestBody": {
@@ -1537,6 +2158,38 @@
               "title": "Sort"
             },
             "description": "Comma-separated sort fields. Prefix with '-' for descending order. Valid fields: scheduled_date, classification, status, created_at, updated_at, name, queue_position. Default: scheduled_date descending with unscheduled (null) dates first. Example: '-scheduled_date,name'"
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "responses": {
@@ -1589,6 +2242,38 @@
               "format": "uuid",
               "title": "Meal Id"
             }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
+            }
           }
         ],
         "responses": {
@@ -1634,6 +2319,38 @@
               "type": "string",
               "format": "uuid",
               "title": "Meal Id"
+            }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
             }
           }
         ],
@@ -1690,6 +2407,38 @@
               "type": "string",
               "format": "uuid",
               "title": "Meal Id"
+            }
+          },
+          {
+            "name": "X-Admin-Mode",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Mode"
+            }
+          },
+          {
+            "name": "X-Act-As-User",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Act-As-User"
             }
           }
         ],

@@ -64,7 +64,7 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGINS,  # Allows specified origins
     allow_credentials=True,  # Allows cookies to be included in requests
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicit HTTP methods
-    allow_headers=["Authorization", "Content-Type", "Accept"],  # Explicit headers
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Admin-Mode", "X-Act-As-User"],  # Explicit headers
     expose_headers=["X-Total-Count"],  # Expose custom headers
 )
 

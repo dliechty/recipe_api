@@ -1,0 +1,8 @@
+{
+  "track_id": "households_20260222",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-22T00:00:00Z",
+  "updated_at": "2026-02-22T00:00:00Z",
+  "description": "Add 'households' as a concept to enable collaborative meal planning within a shared group. Households scope meal visibility, meal generation, and template preferences."
+}

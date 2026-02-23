@@ -14,5 +14,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-## [ ] Track: Households
+## [x] Track: Households
 *Link: [./conductor/tracks/households_20260222/](./conductor/tracks/households_20260222/)*

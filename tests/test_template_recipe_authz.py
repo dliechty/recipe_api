@@ -56,7 +56,9 @@ def create_user_and_login(
     return user, {"Authorization": f"Bearer {token}"}
 
 
-def create_recipe_via_api(client: TestClient, headers: dict, name: str = "Test Recipe") -> dict:
+def create_recipe_via_api(
+    client: TestClient, headers: dict, name: str = "Test Recipe"
+) -> dict:
     """Create a recipe via the API and return the response JSON."""
     recipe_data = {
         "core": {"name": name},
@@ -98,7 +100,9 @@ def create_template_direct(db: Session, user_id, name: str) -> models.MealTempla
     return template
 
 
-def create_comment_direct(db: Session, user_id, recipe_id, text: str = "A comment") -> models.Comment:
+def create_comment_direct(
+    db: Session, user_id, recipe_id, text: str = "A comment"
+) -> models.Comment:
     """Create a comment directly in the DB."""
     comment = models.Comment(
         user_id=user_id,
@@ -221,9 +225,13 @@ def test_put_template_admin_mode_succeeds(client: TestClient, db: Session):
     assert response.json()["name"] == "Admin Updated Template"
 
 
-def test_put_template_admin_without_admin_mode_gets_403(client: TestClient, db: Session):
+def test_put_template_admin_without_admin_mode_gets_403(
+    client: TestClient, db: Session
+):
     """PUT /meals/templates/{id} — admin without X-Admin-Mode header is subject to ownership check."""
-    owner, _ = create_user_and_login(client, db, "tpl_putadmin_nomode_owner@example.com")
+    owner, _ = create_user_and_login(
+        client, db, "tpl_putadmin_nomode_owner@example.com"
+    )
     admin, admin_headers = create_user_and_login(
         client, db, "tpl_putadmin_nomode_admin@example.com", is_admin=True
     )
@@ -254,9 +262,7 @@ def test_delete_template_non_owner_gets_403(client: TestClient, db: Session):
 
     template = create_template_direct(db, owner.id, "Owner Template For Delete Reject")
 
-    response = client.delete(
-        f"/meals/templates/{template.id}", headers=other_headers
-    )
+    response = client.delete(f"/meals/templates/{template.id}", headers=other_headers)
     assert response.status_code == 403
 
 
@@ -268,9 +274,7 @@ def test_delete_template_owner_succeeds(client: TestClient, db: Session):
 
     template = create_template_direct(db, owner.id, "Owner Template To Delete")
 
-    response = client.delete(
-        f"/meals/templates/{template.id}", headers=owner_headers
-    )
+    response = client.delete(f"/meals/templates/{template.id}", headers=owner_headers)
     assert response.status_code == 204
 
 
@@ -284,19 +288,17 @@ def test_delete_template_admin_mode_succeeds(client: TestClient, db: Session):
 
     template = create_template_direct(db, owner.id, "Template For Admin Delete")
 
-    response = client.delete(
-        f"/meals/templates/{template.id}", headers=admin_headers
-    )
+    response = client.delete(f"/meals/templates/{template.id}", headers=admin_headers)
     assert response.status_code == 204
 
     # Confirm it's gone (admin can still check)
-    get_response = client.get(
-        f"/meals/templates/{template.id}", headers=admin_headers
-    )
+    get_response = client.get(f"/meals/templates/{template.id}", headers=admin_headers)
     assert get_response.status_code == 404
 
 
-def test_delete_template_admin_without_admin_mode_gets_403(client: TestClient, db: Session):
+def test_delete_template_admin_without_admin_mode_gets_403(
+    client: TestClient, db: Session
+):
     """DELETE /meals/templates/{id} — admin without X-Admin-Mode header is subject to ownership check."""
     owner, _ = create_user_and_login(
         client, db, "tpl_deladmin_nomode_owner@example.com"
@@ -307,9 +309,7 @@ def test_delete_template_admin_without_admin_mode_gets_403(client: TestClient, d
     # No X-Admin-Mode header — admin operates in user mode, subject to ownership checks
     template = create_template_direct(db, owner.id, "Template For Admin No-Mode Delete")
 
-    response = client.delete(
-        f"/meals/templates/{template.id}", headers=admin_headers
-    )
+    response = client.delete(f"/meals/templates/{template.id}", headers=admin_headers)
     assert response.status_code == 403
 
 
@@ -503,7 +503,9 @@ def test_delete_recipe_admin_mode_succeeds(client: TestClient, db: Session):
     assert get_response.status_code == 404
 
 
-def test_delete_recipe_admin_without_admin_mode_gets_403(client: TestClient, db: Session):
+def test_delete_recipe_admin_without_admin_mode_gets_403(
+    client: TestClient, db: Session
+):
     """DELETE /recipes/{id} — admin without X-Admin-Mode header is subject to ownership check."""
     owner, _ = create_user_and_login(
         client, db, "rcp_deladmin_nomode_owner@example.com"
@@ -595,7 +597,9 @@ def test_put_comment_admin_without_admin_mode_gets_403(client: TestClient, db: S
         client, db, "cmt_putadmin_nomode_admin@example.com", is_admin=True
     )
     # No X-Admin-Mode header — admin operates in user mode, subject to authorship checks
-    recipe = create_recipe_direct(db, author.id, "Recipe For Admin No-Mode Comment Update")
+    recipe = create_recipe_direct(
+        db, author.id, "Recipe For Admin No-Mode Comment Update"
+    )
     comment = create_comment_direct(
         db, author.id, recipe.id, "Comment for admin no-mode"
     )
@@ -621,7 +625,9 @@ def test_delete_comment_non_author_gets_403(client: TestClient, db: Session):
     )
 
     recipe = create_recipe_direct(db, author.id, "Recipe For Comment Delete Reject")
-    comment = create_comment_direct(db, author.id, recipe.id, "Author comment for delete")
+    comment = create_comment_direct(
+        db, author.id, recipe.id, "Author comment for delete"
+    )
 
     response = client.delete(
         f"/recipes/{recipe.id}/comments/{comment.id}", headers=other_headers
@@ -663,7 +669,9 @@ def test_delete_comment_admin_mode_succeeds(client: TestClient, db: Session):
     assert response.status_code == 204
 
 
-def test_delete_comment_admin_without_admin_mode_gets_403(client: TestClient, db: Session):
+def test_delete_comment_admin_without_admin_mode_gets_403(
+    client: TestClient, db: Session
+):
     """DELETE comment — admin without X-Admin-Mode header is subject to authorship check."""
     author, _ = create_user_and_login(
         client, db, "cmt_deladmin_nomode_author@example.com"
@@ -672,7 +680,9 @@ def test_delete_comment_admin_without_admin_mode_gets_403(client: TestClient, db
         client, db, "cmt_deladmin_nomode_admin@example.com", is_admin=True
     )
     # No X-Admin-Mode header — admin operates in user mode, subject to authorship checks
-    recipe = create_recipe_direct(db, author.id, "Recipe For Admin No-Mode Comment Delete")
+    recipe = create_recipe_direct(
+        db, author.id, "Recipe For Admin No-Mode Comment Delete"
+    )
     comment = create_comment_direct(
         db, author.id, recipe.id, "Comment for admin no-mode delete"
     )

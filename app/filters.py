@@ -592,9 +592,7 @@ ALLOWED_FIELDS_MEAL_TEMPLATE_GENERATE = {
 }
 
 
-def apply_meal_template_generate_filters(
-    query: Query, filters: List[Filter]
-) -> Query:
+def apply_meal_template_generate_filters(query: Query, filters: List[Filter]) -> Query:
     """Apply filters to a MealTemplate query during meal generation."""
     for f in filters:
         model_attr = ALLOWED_FIELDS_MEAL_TEMPLATE_GENERATE.get(f.field)

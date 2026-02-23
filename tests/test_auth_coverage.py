@@ -32,7 +32,9 @@ from app.core.config import settings
 # ---------------------------------------------------------------------------
 
 
-def make_user(db: Session, email: str, password: str = "testpass", is_admin: bool = False):
+def make_user(
+    db: Session, email: str, password: str = "testpass", is_admin: bool = False
+):
     """Create a user directly via CRUD."""
     user_in = schemas.UserCreate(email=email, password=password)
     user = crud.create_user(db, user_in)
@@ -112,7 +114,9 @@ def test_get_current_user_nonexistent_user(client: TestClient):
 # ---------------------------------------------------------------------------
 
 
-def test_inactive_user_cannot_access_protected_endpoint(client: TestClient, db: Session):
+def test_inactive_user_cannot_access_protected_endpoint(
+    client: TestClient, db: Session
+):
     """An inactive user gets 400 when accessing endpoints requiring an active user."""
     user = make_user(db, "inactive_access@example.com")
     headers = login(client, "inactive_access@example.com")
@@ -136,7 +140,10 @@ def test_inactive_user_cannot_access_protected_endpoint(client: TestClient, db: 
 def test_act_as_user_invalid_uuid_string(client: TestClient, db: Session):
     """Admin sending a non-UUID string in X-Act-As-User gets 404."""
     make_user(db, "actas_invaliduuid_admin@example.com", is_admin=True)
-    headers = {**login(client, "actas_invaliduuid_admin@example.com"), "X-Act-As-User": "not-a-uuid"}
+    headers = {
+        **login(client, "actas_invaliduuid_admin@example.com"),
+        "X-Act-As-User": "not-a-uuid",
+    }
     resp = client.get("/auth/context", headers=headers)
     assert resp.status_code == 404
 

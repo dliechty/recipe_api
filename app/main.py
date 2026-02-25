@@ -19,7 +19,7 @@ from slowapi.errors import RateLimitExceeded
 # Import local modules
 from app.db.session import engine
 from app import models
-from app.api import auth, recipes, meals, lists
+from app.api import auth, recipes, meals, lists, households
 from app.core.config import settings
 from app.core.logging_middleware import StructuredLoggingMiddleware
 
@@ -63,8 +63,22 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,  # Allows specified origins
     allow_credentials=True,  # Allows cookies to be included in requests
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicit HTTP methods
-    allow_headers=["Authorization", "Content-Type", "Accept", "X-Admin-Mode", "X-Act-As-User"],  # Explicit headers
+    allow_methods=[
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS",
+    ],  # Explicit HTTP methods
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "X-Admin-Mode",
+        "X-Act-As-User",
+        "X-Active-Household",
+    ],  # Explicit headers
     expose_headers=["X-Total-Count"],  # Expose custom headers
 )
 
@@ -110,6 +124,8 @@ app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(recipes.router, prefix="/recipes", tags=["Recipes"])
 app.include_router(meals.router, prefix="/meals", tags=["Meals"])
 app.include_router(lists.router, prefix="/lists", tags=["Recipe Lists"])
+app.include_router(households.router, prefix="/households", tags=["Households"])
+app.include_router(households.users_router, prefix="/users", tags=["Households"])
 
 
 @app.get("/", tags=["Root"])

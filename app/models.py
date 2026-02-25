@@ -16,6 +16,7 @@ from sqlalchemy import (
     Float,
     JSON,
 )
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import Uuid
 from app.db.session import Base
@@ -257,6 +258,84 @@ class RecipeDiet(Base):
     recipe = relationship("Recipe", back_populates="diets")
 
 
+class Household(Base):
+    """
+    A household grouping users for shared meal planning.
+    """
+
+    __tablename__ = "households"
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    name = Column(String, nullable=False)
+    created_by = Column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
+
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    creator = relationship("User")
+    memberships = relationship(
+        "HouseholdMembership",
+        back_populates="household",
+        cascade="all, delete-orphan",
+    )
+    template_exclusions = relationship(
+        "HouseholdTemplateExclusion",
+        back_populates="household",
+        cascade="all, delete-orphan",
+    )
+
+
+class HouseholdMembership(Base):
+    """
+    Association between a user and a household.
+    """
+
+    __tablename__ = "household_memberships"
+    __table_args__ = (
+        UniqueConstraint("household_id", "user_id", name="uq_household_user"),
+    )
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    household_id = Column(
+        Uuid(as_uuid=True), ForeignKey("households.id"), nullable=False, index=True
+    )
+    user_id = Column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
+    is_primary = Column(Boolean, default=False)
+    joined_at = Column(DateTime, default=func.now())
+
+    household = relationship("Household", back_populates="memberships")
+    user = relationship("User")
+
+
+class HouseholdTemplateExclusion(Base):
+    """
+    Excludes a meal template from a household's rotation.
+    """
+
+    __tablename__ = "household_template_exclusions"
+    __table_args__ = (
+        UniqueConstraint("household_id", "template_id", name="uq_household_template"),
+    )
+
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    household_id = Column(
+        Uuid(as_uuid=True), ForeignKey("households.id"), nullable=False, index=True
+    )
+    template_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("meal_templates.id"),
+        nullable=False,
+        index=True,
+    )
+
+    household = relationship("Household", back_populates="template_exclusions")
+    template = relationship("MealTemplate")
+
+
 class MealClassification(str, enum.Enum):
     BREAKFAST = "Breakfast"
     BRUNCH = "Brunch"
@@ -364,6 +443,9 @@ class Meal(Base):
     template_id = Column(
         Uuid(as_uuid=True), ForeignKey("meal_templates.id"), nullable=True, index=True
     )
+    household_id = Column(
+        Uuid(as_uuid=True), ForeignKey("households.id"), nullable=True, index=True
+    )
 
     name = Column(String, nullable=True)
     status = Column(Enum(MealStatus), default=MealStatus.QUEUED, nullable=False)
@@ -377,6 +459,7 @@ class Meal(Base):
 
     user = relationship("User")
     template = relationship("MealTemplate")
+    household = relationship("Household")
     items = relationship(
         "MealItem", back_populates="meal", cascade="all, delete-orphan"
     )

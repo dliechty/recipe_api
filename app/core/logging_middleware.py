@@ -94,6 +94,9 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                     "user_id": user_id,
                     "user_email": user_email,
                     "user_name": user_name,
+                    "active_household_id": getattr(
+                        request.state, "active_household_id", None
+                    ),
                 }
 
                 # Dump to JSON and log

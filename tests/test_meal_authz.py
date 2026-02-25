@@ -64,7 +64,9 @@ def create_recipe_direct(db: Session, user_id, name: str):
     return recipe
 
 
-def create_template_for_user(client: TestClient, headers: dict, name: str, recipe_id: str):
+def create_template_for_user(
+    client: TestClient, headers: dict, name: str, recipe_id: str
+):
     """Create a meal template via the API."""
     template_data = {
         "name": name,
@@ -112,7 +114,9 @@ def test_get_meals_user_mode_returns_only_own_meals(client: TestClient, db: Sess
 
 def test_get_meals_admin_mode_returns_all_meals(client: TestClient, db: Session):
     """GET /meals with X-Admin-Mode: true returns meals from all users."""
-    user_a, headers_a = create_user_and_login(client, db, "authz_admin_list_a@example.com")
+    user_a, headers_a = create_user_and_login(
+        client, db, "authz_admin_list_a@example.com"
+    )
     user_b, _ = create_user_and_login(client, db, "authz_admin_list_b@example.com")
     admin, admin_base_headers = create_user_and_login(
         client, db, "authz_admin_list_admin@example.com", is_admin=True
@@ -130,7 +134,9 @@ def test_get_meals_admin_mode_returns_all_meals(client: TestClient, db: Session)
     assert str(meal_b.id) in meal_ids, "Admin mode should see User B's meal"
 
 
-def test_get_meals_act_as_user_returns_target_user_meals(client: TestClient, db: Session):
+def test_get_meals_act_as_user_returns_target_user_meals(
+    client: TestClient, db: Session
+):
     """GET /meals with X-Act-As-User returns only the target user's meals."""
     user_a, _ = create_user_and_login(client, db, "authz_actaslist_a@example.com")
     user_b, _ = create_user_and_login(client, db, "authz_actaslist_b@example.com")
@@ -147,7 +153,9 @@ def test_get_meals_act_as_user_returns_target_user_meals(client: TestClient, db:
 
     meal_ids = [m["id"] for m in response.json()]
     assert str(meal_a.id) in meal_ids, "Impersonation should see target user's meal"
-    assert str(meal_b.id) not in meal_ids, "Impersonation should NOT see other user's meal"
+    assert str(meal_b.id) not in meal_ids, (
+        "Impersonation should NOT see other user's meal"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -158,7 +166,9 @@ def test_get_meals_act_as_user_returns_target_user_meals(client: TestClient, db:
 def test_get_meal_by_id_returns_403_for_non_owner(client: TestClient, db: Session):
     """GET /meals/{id} returns 403 when caller is not the owner in user mode."""
     owner, _ = create_user_and_login(client, db, "authz_get403_owner@example.com")
-    _, other_headers = create_user_and_login(client, db, "authz_get403_other@example.com")
+    _, other_headers = create_user_and_login(
+        client, db, "authz_get403_other@example.com"
+    )
 
     meal = create_meal_direct(db, owner.id, "Owner Only Meal")
 
@@ -181,9 +191,13 @@ def test_get_meal_by_id_admin_mode_returns_any_meal(client: TestClient, db: Sess
     assert response.json()["id"] == str(meal.id)
 
 
-def test_get_meal_by_id_act_as_user_returns_target_meal(client: TestClient, db: Session):
+def test_get_meal_by_id_act_as_user_returns_target_meal(
+    client: TestClient, db: Session
+):
     """GET /meals/{id} with X-Act-As-User can access target user's meal."""
-    target, _ = create_user_and_login(client, db, "authz_getimpersonate_target@example.com")
+    target, _ = create_user_and_login(
+        client, db, "authz_getimpersonate_target@example.com"
+    )
     admin, admin_base_headers = create_user_and_login(
         client, db, "authz_getimpersonate_admin@example.com", is_admin=True
     )
@@ -198,7 +212,9 @@ def test_get_meal_by_id_act_as_user_returns_target_meal(client: TestClient, db: 
 
 def test_get_meal_by_id_owner_can_access_own_meal(client: TestClient, db: Session):
     """GET /meals/{id} succeeds for the meal owner in user mode."""
-    owner, owner_headers = create_user_and_login(client, db, "authz_getowner@example.com")
+    owner, owner_headers = create_user_and_login(
+        client, db, "authz_getowner@example.com"
+    )
 
     meal = create_meal_direct(db, owner.id, "My Own Meal")
 
@@ -229,14 +245,17 @@ def test_post_meal_assigns_to_effective_user(client: TestClient, db: Session):
 
     # Verify in DB that the meal belongs to the user
     from uuid import UUID as _UUID
-    meal_in_db = db.query(models.Meal).filter(
-        models.Meal.id == _UUID(created["id"])
-    ).first()
+
+    meal_in_db = (
+        db.query(models.Meal).filter(models.Meal.id == _UUID(created["id"])).first()
+    )
     assert meal_in_db is not None
     assert meal_in_db.user_id == user.id
 
 
-def test_post_meal_impersonation_assigns_to_target_user(client: TestClient, db: Session):
+def test_post_meal_impersonation_assigns_to_target_user(
+    client: TestClient, db: Session
+):
     """POST /meals with X-Act-As-User assigns the meal to the target user, not the admin."""
     target, _ = create_user_and_login(client, db, "authz_create_target@example.com")
     admin, admin_base_headers = create_user_and_login(
@@ -255,11 +274,14 @@ def test_post_meal_impersonation_assigns_to_target_user(client: TestClient, db: 
     created = response.json()
 
     from uuid import UUID as _UUID
-    meal_in_db = db.query(models.Meal).filter(
-        models.Meal.id == _UUID(created["id"])
-    ).first()
+
+    meal_in_db = (
+        db.query(models.Meal).filter(models.Meal.id == _UUID(created["id"])).first()
+    )
     assert meal_in_db is not None
-    assert meal_in_db.user_id == target.id, "Meal should belong to target user, not admin"
+    assert meal_in_db.user_id == target.id, (
+        "Meal should belong to target user, not admin"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -267,7 +289,9 @@ def test_post_meal_impersonation_assigns_to_target_user(client: TestClient, db: 
 # ---------------------------------------------------------------------------
 
 
-def test_generate_meals_scopes_templates_to_effective_user(client: TestClient, db: Session):
+def test_generate_meals_scopes_templates_to_effective_user(
+    client: TestClient, db: Session
+):
     """POST /meals/generate only uses templates belonging to the effective user."""
     user_a, headers_a = create_user_and_login(client, db, "authz_gen_a@example.com")
     user_b, headers_b = create_user_and_login(client, db, "authz_gen_b@example.com")
@@ -294,20 +318,27 @@ def test_generate_meals_impersonation_scopes_to_target(client: TestClient, db: S
 
     # Create recipe and template for target user
     recipe_t = create_recipe_direct(db, target.id, "Gen Target Recipe")
-    create_template_for_user(client, target_headers, "Gen Target Template", str(recipe_t.id))
+    create_template_for_user(
+        client, target_headers, "Gen Target Template", str(recipe_t.id)
+    )
 
     # Admin impersonates target and generates: should use target's templates
-    response = client.post("/meals/generate", json={"count": 1}, headers=impersonate_headers)
+    response = client.post(
+        "/meals/generate", json={"count": 1}, headers=impersonate_headers
+    )
     assert response.status_code == 201
     meals = response.json()
     assert len(meals) == 1, "Should generate 1 meal from target's template"
 
     # Verify the generated meal belongs to target user
     from uuid import UUID as _UUID
-    meal_in_db = db.query(models.Meal).filter(
-        models.Meal.id == _UUID(meals[0]["id"])
-    ).first()
-    assert meal_in_db.user_id == target.id, "Generated meal should belong to target user"
+
+    meal_in_db = (
+        db.query(models.Meal).filter(models.Meal.id == _UUID(meals[0]["id"])).first()
+    )
+    assert meal_in_db.user_id == target.id, (
+        "Generated meal should belong to target user"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -318,7 +349,9 @@ def test_generate_meals_impersonation_scopes_to_target(client: TestClient, db: S
 def test_put_meal_rejects_non_owner(client: TestClient, db: Session):
     """PUT /meals/{id} returns 403 for non-owner in user mode."""
     owner, _ = create_user_and_login(client, db, "authz_put403_owner@example.com")
-    _, other_headers = create_user_and_login(client, db, "authz_put403_other@example.com")
+    _, other_headers = create_user_and_login(
+        client, db, "authz_put403_other@example.com"
+    )
 
     meal = create_meal_direct(db, owner.id, "Owner Update Meal")
 
@@ -374,7 +407,9 @@ def test_put_meal_owner_can_update_own_meal(client: TestClient, db: Session):
 def test_delete_meal_rejects_non_owner(client: TestClient, db: Session):
     """DELETE /meals/{id} returns 403 for non-owner in user mode."""
     owner, _ = create_user_and_login(client, db, "authz_del403_owner@example.com")
-    _, other_headers = create_user_and_login(client, db, "authz_del403_other@example.com")
+    _, other_headers = create_user_and_login(
+        client, db, "authz_del403_other@example.com"
+    )
 
     meal = create_meal_direct(db, owner.id, "Owner Delete Meal")
 

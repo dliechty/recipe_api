@@ -135,6 +135,83 @@ curl -X POST \
      http://localhost:8000/api/v1/meals
 ```
 
+## Households
+
+Households are collaborative meal planning groups. They allow multiple users to share a common pool of meals, so that everyone in a household can see and contribute to the same meal plan.
+
+### Creating, Joining, and Leaving
+
+Any authenticated user can create a household. The creator is automatically added as a member. Other users can join an existing household, and any member can leave at any time. The household creator (or an admin) can rename, delete, or remove members from the household.
+
+### The `X-Active-Household` Header
+
+To operate within a household context, include the `X-Active-Household` header with the household UUID on your request. The server validates that you are a member of the specified household before proceeding. When this header is absent, all meal operations are scoped to your personal (non-household) meals.
+
+```bash
+# List meals belonging to a specific household
+curl -H "Authorization: Bearer <token>" \
+     -H "X-Active-Household: <household_uuid>" \
+     http://localhost:8000/api/v1/meals
+```
+
+### Meal Visibility
+
+The `X-Active-Household` header controls which meals are returned by meal endpoints:
+
+- **With header**: You see all meals linked to that household (from all household members).
+- **Without header**: You see only your personal meals that are not linked to any household.
+
+### Meal Generation
+
+When you create or generate meals while the `X-Active-Household` header is set, those meals are automatically linked to the active household. This ensures that generated meal plans are shared with the rest of the household.
+
+The `PUT /meals/{id}` endpoint also accepts a `household_id` field, allowing you to reassign an existing meal to a different household (or remove it from a household by setting the field to `null`).
+
+### Primary Household Preference
+
+Each user can designate one household as their **primary household**. This preference is stored on the server and readable by clients (e.g., a frontend can auto-populate the `X-Active-Household` header on startup). The server does not automatically activate the primary household -- clients must read it and set the header themselves.
+
+- **Set**: `PATCH /users/me/primary-household` with `{"household_id": "<uuid>"}`
+- **Clear**: `PATCH /users/me/primary-household` with `{"household_id": null}`
+
+### Template Exclusions
+
+Households can disable specific meal templates so they are excluded during meal generation for that household. This is useful when certain templates are not relevant to a particular group.
+
+- **List disabled templates**: `GET /households/{id}/disabled-templates`
+- **Disable a template**: `POST /households/{id}/disabled-templates` with `{"template_id": "<uuid>"}`
+- **Re-enable a template**: `DELETE /households/{id}/disabled-templates/{template_id}`
+
+### API Endpoints
+
+**Household CRUD:**
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/households` | Create a new household |
+| `GET` | `/households` | List households (own memberships; admin mode: all) |
+| `GET` | `/households/{id}` | Get household detail |
+| `PATCH` | `/households/{id}` | Rename household (creator or admin) |
+| `DELETE` | `/households/{id}` | Delete household (creator or admin; soft-unlinks meals) |
+
+**Membership:**
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/households/{id}/join` | Join a household |
+| `DELETE` | `/households/{id}/leave` | Leave a household |
+| `GET` | `/households/{id}/members` | List household members |
+| `DELETE` | `/households/{id}/members/{user_id}` | Remove a member (creator or admin) |
+| `PATCH` | `/users/me/primary-household` | Set or clear primary household |
+
+**Template Exclusions:**
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/households/{id}/disabled-templates` | List disabled templates |
+| `POST` | `/households/{id}/disabled-templates` | Disable a template for this household |
+| `DELETE` | `/households/{id}/disabled-templates/{template_id}` | Re-enable a template |
+
 ## Generate OpenAPI Spec
 
 To generate an updated `openapi.json` file reflecting the current API schema:

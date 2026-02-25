@@ -513,12 +513,14 @@ class MealUpdate(BaseModel):
     is_shopped: Optional[bool] = None
     queue_position: Optional[int] = None
     items: Optional[List[MealItemBase]] = None
+    household_id: Optional[UUID] = None
 
 
 class Meal(MealBase):
     id: UUID
     user_id: UUID
     template_id: Optional[UUID] = None
+    household_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
     items: List[MealItem]
@@ -596,3 +598,47 @@ class RecipeListAddRecipe(BaseModel):
 
 class RecipeListRemoveRecipe(BaseModel):
     recipe_id: UUID
+
+
+# --- Household Schemas ---
+
+
+class HouseholdCreate(BaseModel):
+    name: str = Field(..., min_length=1)
+
+
+class HouseholdUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+
+
+class HouseholdMember(BaseModel):
+    id: UUID
+    user_id: UUID
+    user: UserPublic
+    is_primary: bool
+    joined_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HouseholdTemplateExclusion(BaseModel):
+    id: UUID
+    household_id: UUID
+    template_id: UUID
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HouseholdTemplateExclusionCreate(BaseModel):
+    template_id: UUID
+
+
+class Household(BaseModel):
+    id: UUID
+    name: str
+    created_by: UUID
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PrimaryHouseholdUpdate(BaseModel):
+    household_id: Optional[UUID] = None

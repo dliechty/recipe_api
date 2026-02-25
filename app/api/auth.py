@@ -169,11 +169,16 @@ class AuthContext:
     real_user: models.User
     effective_user: models.User
     is_admin_mode: bool
+    active_household: Optional[models.Household] = None
 
 
 async def get_auth_context(
+    request: Request,
     x_admin_mode: Optional[str] = Header(default=None, alias="X-Admin-Mode"),
     x_act_as_user: Optional[str] = Header(default=None, alias="X-Act-As-User"),
+    x_active_household: Optional[str] = Header(
+        default=None, alias="X-Active-Household"
+    ),
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> AuthContext:
@@ -218,26 +223,66 @@ async def get_auth_context(
                 detail="Cannot impersonate an admin user",
             )
 
-        return AuthContext(
+        ctx = AuthContext(
             real_user=current_user,
             effective_user=target_user,
             is_admin_mode=False,
         )
 
-    if has_admin_mode and x_admin_mode.lower() == "true":
+    elif has_admin_mode and x_admin_mode.lower() == "true":
         # Admin mode: full access, scoped to the admin's own identity.
-        return AuthContext(
+        ctx = AuthContext(
             real_user=current_user,
             effective_user=current_user,
             is_admin_mode=True,
         )
 
-    # Default user mode.
-    return AuthContext(
-        real_user=current_user,
-        effective_user=current_user,
-        is_admin_mode=False,
-    )
+    else:
+        # Default user mode.
+        ctx = AuthContext(
+            real_user=current_user,
+            effective_user=current_user,
+            is_admin_mode=False,
+        )
+
+    # --- Resolve active household from header ---
+    if x_active_household:
+        try:
+            household_id = UUID(x_active_household)
+        except ValueError:
+            # Invalid UUID: silently ignore
+            return ctx
+
+        household = (
+            db.query(models.Household)
+            .filter(models.Household.id == household_id)
+            .first()
+        )
+        if household is None:
+            # Unknown household: silently ignore
+            return ctx
+
+        # Check membership (unless admin mode bypasses it)
+        is_member = (
+            db.query(models.HouseholdMembership)
+            .filter(
+                models.HouseholdMembership.household_id == household_id,
+                models.HouseholdMembership.user_id == ctx.effective_user.id,
+            )
+            .first()
+            is not None
+        )
+
+        if not is_member and not ctx.is_admin_mode:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not a member of this household",
+            )
+
+        ctx.active_household = household
+        request.state.active_household_id = str(household.id)
+
+    return ctx
 
 
 # --- Authentication Endpoints ---
@@ -255,6 +300,9 @@ async def get_context_debug(
         "real_user_id": str(auth.real_user.id),
         "effective_user_id": str(auth.effective_user.id),
         "is_admin_mode": auth.is_admin_mode,
+        "active_household_id": str(auth.active_household.id)
+        if auth.active_household
+        else None,
     }
 
 

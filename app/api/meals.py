@@ -422,6 +422,19 @@ def generate_meals(
 
     all_templates = template_query.all()
 
+    # Filter out excluded templates when household is active
+    if ctx.active_household:
+        excluded_ids = {
+            exc.template_id
+            for exc in db.query(models.HouseholdTemplateExclusion)
+            .filter(
+                models.HouseholdTemplateExclusion.household_id
+                == ctx.active_household.id
+            )
+            .all()
+        }
+        all_templates = [t for t in all_templates if t.id not in excluded_ids]
+
     if not all_templates:
         return []
 
@@ -447,6 +460,7 @@ def generate_meals(
             classification=template.classification,
             scheduled_date=scheduled_date,
             queue_position=next_pos + i,
+            household_id=ctx.active_household.id if ctx.active_household else None,
         )
         db.add(db_meal)
 
@@ -491,6 +505,7 @@ def create_meal(
         scheduled_date=meal_in.scheduled_date,
         is_shopped=meal_in.is_shopped,
         queue_position=queue_pos,
+        household_id=ctx.active_household.id if ctx.active_household else None,
     )
     db.add(db_meal)
     db.commit()
@@ -550,9 +565,16 @@ def get_meals(
     """
     query = db.query(models.Meal)
 
-    # Scope to effective user unless in admin mode (which sees all meals)
-    if not ctx.is_admin_mode:
-        query = query.filter(models.Meal.user_id == ctx.effective_user.id)
+    # Scope meals by household or user context
+    if ctx.active_household:
+        # With active household: see all meals linked to that household
+        query = query.filter(models.Meal.household_id == ctx.active_household.id)
+    elif not ctx.is_admin_mode:
+        # Without active household: user sees only their own meals with no household
+        query = query.filter(
+            models.Meal.user_id == ctx.effective_user.id,
+            models.Meal.household_id.is_(None),
+        )
 
     # Parse and apply filters
     filters_list = parse_filters(request.query_params)
@@ -578,7 +600,12 @@ def get_meal(
     meal = db.query(models.Meal).filter(models.Meal.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
-    if not ctx.is_admin_mode and meal.user_id != ctx.effective_user.id:
+    if ctx.active_household:
+        if meal.household_id != ctx.active_household.id:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to view this meal"
+            )
+    elif not ctx.is_admin_mode and meal.user_id != ctx.effective_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this meal")
     return meal
 
@@ -631,6 +658,31 @@ def update_meal(
         meal.is_shopped = meal_in.is_shopped
     if meal_in.queue_position is not None:
         meal.queue_position = meal_in.queue_position
+
+    if "household_id" in meal_in.model_fields_set:
+        # Only the meal's creator or admin can reassign household
+        if not ctx.is_admin_mode and meal.user_id != ctx.effective_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Not authorized to reassign this meal's household",
+            )
+        if meal_in.household_id is not None:
+            # Validate membership in target household (admin bypasses)
+            if not ctx.is_admin_mode:
+                membership = (
+                    db.query(models.HouseholdMembership)
+                    .filter(
+                        models.HouseholdMembership.household_id == meal_in.household_id,
+                        models.HouseholdMembership.user_id == ctx.effective_user.id,
+                    )
+                    .first()
+                )
+                if not membership:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Not a member of the target household",
+                    )
+        meal.household_id = meal_in.household_id
 
     if meal_in.items is not None:
         # Clear existing items

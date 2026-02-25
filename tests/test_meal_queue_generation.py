@@ -340,16 +340,28 @@ class TestGenerateWithTemplateFilter:
     ):
         """Generate meals filtered by classification returns only matching templates."""
         create_template_with_direct_slot(
-            client, normal_user_token_headers, db, normal_user.id,
-            "Dinner Template", classification="Dinner",
+            client,
+            normal_user_token_headers,
+            db,
+            normal_user.id,
+            "Dinner Template",
+            classification="Dinner",
         )
         create_template_with_direct_slot(
-            client, normal_user_token_headers, db, normal_user.id,
-            "Lunch Template", classification="Lunch",
+            client,
+            normal_user_token_headers,
+            db,
+            normal_user.id,
+            "Lunch Template",
+            classification="Lunch",
         )
         create_template_with_direct_slot(
-            client, normal_user_token_headers, db, normal_user.id,
-            "Breakfast Template", classification="Breakfast",
+            client,
+            normal_user_token_headers,
+            db,
+            normal_user.id,
+            "Breakfast Template",
+            classification="Breakfast",
         )
 
         resp = client.post(
@@ -372,8 +384,12 @@ class TestGenerateWithTemplateFilter:
     ):
         """Filter that matches nothing returns empty list."""
         create_template_with_direct_slot(
-            client, normal_user_token_headers, db, normal_user.id,
-            "Dinner Only", classification="Dinner",
+            client,
+            normal_user_token_headers,
+            db,
+            normal_user.id,
+            "Dinner Only",
+            classification="Dinner",
         )
 
         resp = client.post(
@@ -395,12 +411,20 @@ class TestGenerateWithTemplateFilter:
         """Request 5 but only 2 match filter, get 2."""
         for i in range(2):
             create_template_with_direct_slot(
-                client, normal_user_token_headers, db, normal_user.id,
-                f"Dinner {i}", classification="Dinner",
+                client,
+                normal_user_token_headers,
+                db,
+                normal_user.id,
+                f"Dinner {i}",
+                classification="Dinner",
             )
         create_template_with_direct_slot(
-            client, normal_user_token_headers, db, normal_user.id,
-            "Lunch One", classification="Lunch",
+            client,
+            normal_user_token_headers,
+            db,
+            normal_user.id,
+            "Lunch One",
+            classification="Lunch",
         )
 
         resp = client.post(
@@ -423,16 +447,28 @@ class TestGenerateWithTemplateFilter:
     ):
         """Combine filters using 'in' operator for multiple classifications."""
         create_template_with_direct_slot(
-            client, normal_user_token_headers, db, normal_user.id,
-            "Dinner T", classification="Dinner",
+            client,
+            normal_user_token_headers,
+            db,
+            normal_user.id,
+            "Dinner T",
+            classification="Dinner",
         )
         create_template_with_direct_slot(
-            client, normal_user_token_headers, db, normal_user.id,
-            "Lunch T", classification="Lunch",
+            client,
+            normal_user_token_headers,
+            db,
+            normal_user.id,
+            "Lunch T",
+            classification="Lunch",
         )
         create_template_with_direct_slot(
-            client, normal_user_token_headers, db, normal_user.id,
-            "Breakfast T", classification="Breakfast",
+            client,
+            normal_user_token_headers,
+            db,
+            normal_user.id,
+            "Breakfast T",
+            classification="Breakfast",
         )
 
         resp = client.post(
@@ -441,7 +477,11 @@ class TestGenerateWithTemplateFilter:
             json={
                 "count": 5,
                 "template_filter": [
-                    {"field": "classification", "operator": "in", "value": "Dinner,Lunch"}
+                    {
+                        "field": "classification",
+                        "operator": "in",
+                        "value": "Dinner,Lunch",
+                    }
                 ],
             },
         )
@@ -457,8 +497,12 @@ class TestGenerateWithTemplateFilter:
         """No filter = existing behavior, all templates eligible."""
         for i in range(3):
             create_template_with_direct_slot(
-                client, normal_user_token_headers, db, normal_user.id,
-                f"Any Template {i}", classification="Dinner",
+                client,
+                normal_user_token_headers,
+                db,
+                normal_user.id,
+                f"Any Template {i}",
+                classification="Dinner",
             )
 
         resp = client.post(

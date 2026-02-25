@@ -11,3 +11,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## [x] Track: Permission & Authorization Model
 *Link: [./conductor/tracks/authz_model_20260217/](./conductor/tracks/authz_model_20260217/)*
+
+---
+
+## [x] Track: Households
+*Link: [./conductor/tracks/households_20260222/](./conductor/tracks/households_20260222/)*

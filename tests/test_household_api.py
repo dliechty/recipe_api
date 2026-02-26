@@ -380,6 +380,97 @@ class TestMembership:
         assert resp.status_code == 400
 
 
+# --- Add Member Tests ---
+
+
+class TestAddMember:
+    def test_admin_can_add_member(self, client: TestClient, db: Session):
+        admin = create_test_user(db, email="hh_addmem_admin@example.com", is_admin=True)
+        user = create_test_user(db, email="hh_addmem_target@example.com")
+        admin_headers = get_auth_headers(client, admin.email)
+
+        hh = create_household_via_api(
+            client, {**admin_headers, "X-Admin-Mode": "true"}, "Add Member House"
+        )
+
+        resp = client.post(
+            f"/households/{hh['id']}/members/{user.id}",
+            headers={**admin_headers, "X-Admin-Mode": "true"},
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["user_id"] == str(user.id)
+
+    def test_non_admin_cannot_add_member(self, client: TestClient, db: Session):
+        user1 = create_test_user(db, email="hh_addmem_nonadmin@example.com")
+        user2 = create_test_user(db, email="hh_addmem_nonadmin2@example.com")
+        h1 = get_auth_headers(client, user1.email)
+
+        hh = create_household_via_api(client, h1, "No Add House")
+
+        resp = client.post(
+            f"/households/{hh['id']}/members/{user2.id}",
+            headers=h1,
+        )
+        assert resp.status_code == 403
+
+    def test_add_member_already_member(self, client: TestClient, db: Session):
+        admin = create_test_user(
+            db, email="hh_addmem_dup_admin@example.com", is_admin=True
+        )
+        user = create_test_user(db, email="hh_addmem_dup_target@example.com")
+        admin_headers = {
+            **get_auth_headers(client, admin.email),
+            "X-Admin-Mode": "true",
+        }
+
+        hh = create_household_via_api(client, admin_headers, "Dup Add House")
+
+        # Add user first time
+        client.post(
+            f"/households/{hh['id']}/members/{user.id}", headers=admin_headers
+        )
+
+        # Add again - should 409
+        resp = client.post(
+            f"/households/{hh['id']}/members/{user.id}", headers=admin_headers
+        )
+        assert resp.status_code == 409
+
+    def test_add_member_user_not_found(self, client: TestClient, db: Session):
+        admin = create_test_user(
+            db, email="hh_addmem_nouser_admin@example.com", is_admin=True
+        )
+        admin_headers = {
+            **get_auth_headers(client, admin.email),
+            "X-Admin-Mode": "true",
+        }
+
+        hh = create_household_via_api(client, admin_headers, "No User House")
+
+        fake_id = str(uuid.uuid4())
+        resp = client.post(
+            f"/households/{hh['id']}/members/{fake_id}", headers=admin_headers
+        )
+        assert resp.status_code == 404
+
+    def test_add_member_household_not_found(self, client: TestClient, db: Session):
+        admin = create_test_user(
+            db, email="hh_addmem_nohh_admin@example.com", is_admin=True
+        )
+        user = create_test_user(db, email="hh_addmem_nohh_target@example.com")
+        admin_headers = {
+            **get_auth_headers(client, admin.email),
+            "X-Admin-Mode": "true",
+        }
+
+        fake_hh_id = str(uuid.uuid4())
+        resp = client.post(
+            f"/households/{fake_hh_id}/members/{user.id}", headers=admin_headers
+        )
+        assert resp.status_code == 404
+
+
 # --- Template Exclusion Tests ---
 
 

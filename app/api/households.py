@@ -222,6 +222,46 @@ def list_members(
     )
 
 
+@router.post(
+    "/{household_id}/members/{user_id}",
+    response_model=schemas.HouseholdMember,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_member(
+    household_id: UUID,
+    user_id: UUID,
+    db: Session = Depends(get_db),
+    ctx: auth.AuthContext = Depends(auth.get_auth_context),
+):
+    """Add a user to a household. Requires admin mode."""
+    if not ctx.is_admin_mode:
+        raise HTTPException(
+            status_code=403, detail="Admin mode required to add members"
+        )
+
+    get_household_or_404(db, household_id)
+
+    # Validate user exists
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    existing = get_membership(db, household_id, user_id)
+    if existing:
+        raise HTTPException(
+            status_code=409, detail="User is already a member of this household"
+        )
+
+    membership = models.HouseholdMembership(
+        household_id=household_id,
+        user_id=user_id,
+    )
+    db.add(membership)
+    db.commit()
+    db.refresh(membership)
+    return membership
+
+
 @router.delete(
     "/{household_id}/members/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,

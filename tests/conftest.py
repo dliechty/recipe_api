@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+os.environ["API_STR"] = ""
 
 from app.db.session import Base, get_db
 from app.main import app

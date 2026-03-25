@@ -3,7 +3,7 @@
 
 import logging.config
 import os
-from fastapi import FastAPI, Request
+from fastapi import APIRouter, FastAPI, Request
 import uvicorn
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -45,7 +45,7 @@ app = FastAPI(
     description="API for managing recipes, users, and meal plans.",
     version="1.0.0",
     root_path=settings.ROOT_PATH,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    openapi_url=f"{settings.API_STR}/openapi.json",
 )
 
 # Add rate limiter to app state and register exception handler
@@ -120,12 +120,18 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # Include API routers
 # This makes the endpoints defined in the 'auth' and 'recipes' modules available.
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(recipes.router, prefix="/recipes", tags=["Recipes"])
-app.include_router(meals.router, prefix="/meals", tags=["Meals"])
-app.include_router(lists.router, prefix="/lists", tags=["Recipe Lists"])
-app.include_router(households.router, prefix="/households", tags=["Households"])
-app.include_router(households.users_router, prefix="/users", tags=["Households"])
+api_router = APIRouter(prefix=settings.API_STR)
+api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+api_router.include_router(recipes.router, prefix="/recipes", tags=["Recipes"])
+api_router.include_router(meals.router, prefix="/meals", tags=["Meals"])
+api_router.include_router(lists.router, prefix="/lists", tags=["Recipe Lists"])
+api_router.include_router(
+    households.router, prefix="/households", tags=["Households"]
+)
+api_router.include_router(
+    households.users_router, prefix="/users", tags=["Households"]
+)
+app.include_router(api_router)
 
 
 @app.get("/", tags=["Root"])

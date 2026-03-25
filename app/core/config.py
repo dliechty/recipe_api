@@ -22,7 +22,7 @@ _INSECURE_PASSWORDS = {
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Recipe Management API"
     ROOT_PATH: str = ""
-    API_V1_STR: str = "/api/v1"
+    API_STR: str = "/api/v1"
     SECRET_KEY: str  # Required - must be set via environment variable
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"

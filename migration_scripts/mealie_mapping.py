@@ -56,3 +56,40 @@ def build_ingredients(recipe) -> list:
             })
             first = False
     return items
+
+
+def build_instructions(recipe) -> list:
+    steps = sorted(recipe.instructions, key=lambda i: i.step_number)
+    return [{"text": s.text} for s in steps]
+
+
+def build_yield(recipe) -> str:
+    amount = format_quantity(recipe.yield_amount)
+    unit = recipe.yield_unit or ""
+    return " ".join(p for p in [amount, unit] if p).strip()
+
+
+def tag_names(recipe) -> list:
+    names = []
+    for value in (recipe.cuisine, recipe.protein, recipe.difficulty):
+        if value:
+            names.append(value.value if hasattr(value, "value") else str(value))
+    return names
+
+
+def build_notes(recipe) -> list:
+    notes = []
+    if recipe.source:
+        notes.append({"title": "Source", "text": recipe.source})
+    for comment in recipe.comments:
+        if comment.text:
+            notes.append({"title": "Note", "text": comment.text})
+    return notes
+
+
+def should_skip_recipe(name: str) -> bool:
+    """Meta-recipes are wrapped in << >> (mirrors migrate_access_recipes.py)."""
+    if not name:
+        return False
+    s = name.strip()
+    return s.startswith("<<") and s.endswith(">>")

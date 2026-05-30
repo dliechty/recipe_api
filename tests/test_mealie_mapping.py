@@ -6,6 +6,11 @@ from migration_scripts.mealie_mapping import (
     format_time,
     build_ingredient_line,
     build_ingredients,
+    build_instructions,
+    build_yield,
+    tag_names,
+    build_notes,
+    should_skip_recipe,
 )
 
 
@@ -77,3 +82,50 @@ def test_build_ingredients_titles_non_main_sections_on_first_line():
     assert items[0] == {"title": None, "note": "2 Eggs", "disableAmount": True, "quantity": None}
     assert items[1] == {"title": None, "note": "1 cup Flour", "disableAmount": True, "quantity": None}
     assert items[2] == {"title": "Frosting", "note": "0.5 cup Butter", "disableAmount": True, "quantity": None}
+
+
+def test_build_instructions_sorted_by_step_number():
+    recipe = SimpleNamespace(instructions=[
+        SimpleNamespace(step_number=2, text="Bake"),
+        SimpleNamespace(step_number=1, text="Mix"),
+    ])
+    assert build_instructions(recipe) == [{"text": "Mix"}, {"text": "Bake"}]
+
+
+def test_build_yield_amount_and_unit():
+    recipe = SimpleNamespace(yield_amount=4.0, yield_unit="servings")
+    assert build_yield(recipe) == "4 servings"
+
+
+def test_build_yield_unit_only():
+    recipe = SimpleNamespace(yield_amount=None, yield_unit="1 loaf")
+    assert build_yield(recipe) == "1 loaf"
+
+
+def test_tag_names_collects_non_null_cuisine_protein_difficulty():
+    recipe = SimpleNamespace(
+        cuisine="Italian", protein="Chicken",
+        difficulty=SimpleNamespace(value="Easy"),
+    )
+    assert tag_names(recipe) == ["Italian", "Chicken", "Easy"]
+
+
+def test_tag_names_skips_nulls():
+    recipe = SimpleNamespace(cuisine=None, protein="Beef", difficulty=None)
+    assert tag_names(recipe) == ["Beef"]
+
+
+def test_build_notes_includes_source_and_comments():
+    recipe = SimpleNamespace(
+        source="Grandma's cookbook",
+        comments=[SimpleNamespace(text="Migrated Note:\n\nUse fresh basil")],
+    )
+    assert build_notes(recipe) == [
+        {"title": "Source", "text": "Grandma's cookbook"},
+        {"title": "Note", "text": "Migrated Note:\n\nUse fresh basil"},
+    ]
+
+
+def test_should_skip_meta_recipe():
+    assert should_skip_recipe("<<Base Sauce>>") is True
+    assert should_skip_recipe("Tomato Sauce") is False

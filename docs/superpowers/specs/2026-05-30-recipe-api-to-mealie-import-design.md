@@ -45,7 +45,9 @@ stays stopped.
 
 ## Mealie API client
 
-A small `httpx`-based client (httpx is already a dependency).
+A small client built on the **stdlib `urllib`** (no new runtime dependencies — `httpx`
+is only a dev dependency in this project, and a one-off importer doesn't warrant adding
+a runtime dep; `urllib` is also trivially mockable in tests).
 
 - **Auth:** long-lived Mealie API token via `MEALIE_API_TOKEN` (Bearer). Base URL
   via `MEALIE_URL` (default `https://recipes.qwertyshoe.com`).

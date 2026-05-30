@@ -29,3 +29,30 @@ def format_time(minutes: Optional[int]) -> Optional[str]:
     if not minutes:
         return None
     return f"{int(minutes)} minutes"
+
+
+def build_ingredient_line(quantity, unit, name, notes) -> str:
+    """'{qty} {unit} {name}, {notes}' — empty parts dropped."""
+    parts = [p for p in [format_quantity(quantity), unit, name] if p]
+    line = " ".join(parts)
+    if notes:
+        line = f"{line}, {notes}"
+    return line
+
+
+def build_ingredients(recipe) -> list:
+    """Mealie recipeIngredient entries (display strings, section titles)."""
+    items = []
+    for component in recipe.components:
+        first = True
+        for ri in sorted(component.ingredients, key=lambda x: x.order):
+            line = build_ingredient_line(ri.quantity, ri.unit, ri.ingredient.name, ri.notes)
+            title = component.name if (first and component.name and component.name != "Main") else None
+            items.append({
+                "title": title,
+                "note": line,
+                "disableAmount": True,
+                "quantity": None,
+            })
+            first = False
+    return items

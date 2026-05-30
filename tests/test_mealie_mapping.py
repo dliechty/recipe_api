@@ -11,6 +11,7 @@ from migration_scripts.mealie_mapping import (
     tag_names,
     build_notes,
     should_skip_recipe,
+    recipe_to_payload,
 )
 
 
@@ -129,3 +130,43 @@ def test_build_notes_includes_source_and_comments():
 def test_should_skip_meta_recipe():
     assert should_skip_recipe("<<Base Sauce>>") is True
     assert should_skip_recipe("Tomato Sauce") is False
+
+
+def _sample_recipe():
+    return SimpleNamespace(
+        name="Tomato Soup",
+        description="Warm and simple",
+        yield_amount=4.0, yield_unit="servings",
+        prep_time_minutes=10, cook_time_minutes=20, total_time_minutes=30,
+        source_url="https://example.com/soup", source="Family recipe",
+        calories=180,
+        cuisine="Italian", protein=None, difficulty=SimpleNamespace(value="Easy"),
+        components=[_component("Main", [_ri(1.0, "can", "Tomatoes", order=0)])],
+        instructions=[SimpleNamespace(step_number=1, text="Simmer")],
+        comments=[],
+    )
+
+
+def test_recipe_to_payload_maps_all_fields():
+    recipe = _sample_recipe()
+    shell = {"id": "abc", "slug": "tomato-soup", "name": "Tomato Soup", "nutrition": {}}
+    cat_refs = [{"id": "c1", "name": "Soup", "slug": "soup"}]
+    tag_refs = [{"id": "t1", "name": "Italian", "slug": "italian"}]
+
+    payload = recipe_to_payload(recipe, shell, cat_refs, tag_refs)
+
+    assert payload["id"] == "abc"  # shell fields preserved
+    assert payload["description"] == "Warm and simple"
+    assert payload["recipeYield"] == "4 servings"
+    assert payload["prepTime"] == "10 minutes"
+    assert payload["performTime"] == "20 minutes"
+    assert payload["totalTime"] == "30 minutes"
+    assert payload["orgURL"] == "https://example.com/soup"
+    assert payload["recipeIngredient"] == [
+        {"title": None, "note": "1 can Tomatoes", "disableAmount": True, "quantity": None}
+    ]
+    assert payload["recipeInstructions"] == [{"text": "Simmer"}]
+    assert payload["recipeCategory"] == cat_refs
+    assert payload["tags"] == tag_refs
+    assert payload["nutrition"]["calories"] == "180"
+    assert payload["notes"] == [{"title": "Source", "text": "Family recipe"}]

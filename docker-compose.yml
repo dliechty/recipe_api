@@ -5,6 +5,7 @@ services:
   api:
     # Build the image from the Dockerfile in the current directory
     build: .
+    restart: unless-stopped
     # Map port 8000 on the host to port 8000 in the container
     ports:
       - "8001:8000"

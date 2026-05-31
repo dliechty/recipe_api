@@ -19,6 +19,64 @@ from migration_scripts.mealie_client import MealieClient
 from migration_scripts import mealie_mapping as m
 
 
+class DryRunResolver:
+    """No-I/O resolver: returns name-only stubs so dry-run can build payloads."""
+
+    def resolve_unit(self, name):
+        if not name or name == "(none)":
+            return None
+        return {"name": name}
+
+    def resolve_food(self, name, action, label):
+        return {"name": name}
+
+
+class MealieRefResolver:
+    """Resolves mapped food/unit names to Mealie refs, creating foods/labels as needed.
+
+    Loads the live foods/units/labels once and caches every lookup, so the 1,096
+    ingredient rows create each new food/label at most once.
+    """
+
+    def __init__(self, client):
+        self.client = client
+        self._foods = {f["name"].lower(): f for f in client.list_foods()}
+        self._units = {u["name"].lower(): u for u in client.list_units()}
+        self._labels = {lab["name"].lower(): lab for lab in client.list_labels()}
+
+    def _label_id(self, label):
+        if not label:
+            return None
+        key = label.lower()
+        if key not in self._labels:
+            self._labels[key] = self.client.create_label(label)
+        return self._labels[key]["id"]
+
+    def resolve_unit(self, name):
+        if not name or name == "(none)":
+            return None
+        unit = self._units.get(name.lower())
+        if unit is None:
+            raise KeyError(f"unit '{name}' not in Mealie; fix unit_map.csv")
+        return {"id": unit["id"], "name": unit["name"]}
+
+    def resolve_food(self, name, action, label):
+        key = name.lower()
+        food = self._foods.get(key)
+        if action == "match":
+            if food is None:
+                raise KeyError(f"food '{name}' not in Mealie; fix food_map.csv")
+            if not food.get("label") and label:
+                label_id = self._label_id(label)
+                food = self.client.update_food(food["id"], {**food, "labelId": label_id})
+                self._foods[key] = food
+        else:  # create
+            if food is None:
+                food = self.client.create_food(name, self._label_id(label))
+                self._foods[key] = food
+        return {"id": food["id"], "name": food["name"]}
+
+
 def load_recipes(session):
     return (
         session.query(Recipe)

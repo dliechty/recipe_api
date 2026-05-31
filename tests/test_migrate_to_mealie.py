@@ -148,5 +148,8 @@ def test_import_recipe_dry_run_builds_structured(capsys):
     fm = {"flour": {"mealie_food": "Flour", "action": "match", "label": "", "flags": ""}}
     um = {"cup": {"mealie_unit": "cup", "flags": ""}}
     result = import_recipe(None, _recipe(), True, True, fm, um, DryRunResolver())
+    out = capsys.readouterr().out
     assert result == "created"
-    assert "Bread" in capsys.readouterr().out
+    assert "[dry-run] Bread" in out
+    assert "1 ingredients" in out
+    assert "servings=2.0" in out

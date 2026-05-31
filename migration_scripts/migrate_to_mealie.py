@@ -1,8 +1,12 @@
 """Import recipe_api recipes into Mealie.
 
 Usage:
-    MEALIE_API_TOKEN=<token> uv run python -m migration_scripts.migrate_to_mealie \
-        [--dry-run] [--no-skip-existing]
+    # preview without touching Mealie
+    uv run python -m migration_scripts.migrate_to_mealie import --dry-run
+
+    # wipe previously-imported recipes, then import with structured ingredients
+    MEALIE_API_TOKEN=<token> uv run python -m migration_scripts.migrate_to_mealie purge
+    MEALIE_API_TOKEN=<token> uv run python -m migration_scripts.migrate_to_mealie import
 """
 
 import argparse
@@ -146,7 +150,7 @@ DEFAULT_FOOD_MAP = os.path.join(os.path.dirname(__file__), "food_map.csv")
 DEFAULT_UNIT_MAP = os.path.join(os.path.dirname(__file__), "unit_map.csv")
 
 
-def _build_client(args):
+def _build_client():
     token = os.environ.get("MEALIE_API_TOKEN")
     if not token:
         raise SystemExit("MEALIE_API_TOKEN is required")
@@ -155,7 +159,7 @@ def _build_client(args):
 
 
 def run_purge(args):
-    client = _build_client(args)
+    client = _build_client()
     session = SessionLocal()
     try:
         recipes = load_recipes(session)
@@ -186,7 +190,7 @@ def run_import(args):
             resolver = DryRunResolver()
             client = None
         else:
-            client = _build_client(args)
+            client = _build_client()
             resolver = MealieRefResolver(client)
 
         print(f"Found {len(recipes)} recipes.")
@@ -224,7 +228,7 @@ def main(argv=None):
     p_import.add_argument("--unit-map", default=DEFAULT_UNIT_MAP)
     p_import.set_defaults(skip_existing=True, func=run_import)
 
-    p_purge = sub.add_parser("purge", help="delete previously imported recipes by slug")
+    p_purge = sub.add_parser("purge", help="delete previously imported recipes by slug (destructive; no dry-run)")
     p_purge.set_defaults(func=run_purge)
 
     args = parser.parse_args(argv)

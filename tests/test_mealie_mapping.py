@@ -214,8 +214,13 @@ def test_recipe_to_payload_maps_all_fields():
     assert payload["recipeServings"] == 4.0
     assert payload["recipeYield"] == ""
     assert payload["prepTime"] == "10 minutes"
+    assert payload["performTime"] == "20 minutes"
+    assert payload["totalTime"] == "30 minutes"
+    assert payload["description"] == "Warm and simple"
+    assert payload["orgURL"] == "https://example.com/soup"
     assert payload["recipeIngredient"][0]["food"]["name"] == "Tomatoes"
     assert payload["recipeIngredient"][0]["disableAmount"] is False
+    assert payload["recipeInstructions"] == [{"text": "Simmer"}]
     assert payload["recipeCategory"] == cat_refs
     assert payload["tags"] == tag_refs
     assert payload["nutrition"]["calories"] == "180"

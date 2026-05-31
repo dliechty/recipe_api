@@ -93,20 +93,28 @@ names are unique in Mealie). Stale IDs cannot rot the files.
 
 ### `food_map.csv` — one row per distinct source food (~367)
 
-| source_food | action | mealie_food | label | flags |
-|---|---|---|---|---|
-| Kale | match | Kale | Produce | |
-| Chipolte peppers in Adobo sauce | match | Chipotle Peppers in Adobo | Canned Goods | typo-fixed |
-| Tomato Paste, 12 oz | match | Tomato Paste | Canned Goods | size-stripped |
-| Rau Marinara Sauce | create | Rau Marinara Sauce | Sauces | unmatched · new-label? |
-| Sweet Baby Ray | match | BBQ Sauce | Condiments | low-confidence |
+| source_food | action | mealie_food | label | note | flags |
+|---|---|---|---|---|---|
+| Kale | match | kale | Vegetables & Greens | | |
+| Chipolte peppers in Adobo sauce | match | chipotle in adobo | Canned Food | | typo-fixed |
+| Dijon Mustard, coarse grained | match | dijon mustard | Condiments | coarse grained | semantic·note |
+| Swanson's Chicken Broth | match | chicken broth | Soups, Stews & stock | Swanson's | semantic·note |
+| Rau Marinara Sauce | create | rau marinara sauce | Sauces, Spreads & dip | | create·proposed-label |
+| Sweet Baby Ray | match | bbq sauce | Condiments | | semantic |
 
 - **action**: `match` (use an existing seeded food) or `create` (no good match → make a new food).
-- **mealie_food**: the target food's exact name. For `create`, the cleaned name to create.
+- **mealie_food**: the target food's exact name (lowercase, matching Mealie's convention).
+  For `create`, the cleaned lowercase singular name to create.
 - **label**: the shopping label. Pre-filled from the seeded food's existing label when it
   has one; otherwise a proposed label (preferring an existing seeded label, else a new one).
-- **flags**: scannable review guide — `low-confidence`, `typo-fixed`, `size-stripped`,
-  `unmatched`, `new-label?` (label not yet in the seed).
+- **note**: *(optional column)* brand/prep text embedded in the source food name
+  (e.g. "coarse grained", "Swanson's", "already grilled & cut") that would otherwise be lost
+  when mapping to a clean food. It is appended to each ingredient's visible Mealie note
+  (after any per-ingredient prep note). Pure size/packaging ("12 oz") is dropped. The loader
+  treats `note` as optional, so a map without the column still works.
+- **flags**: scannable review guide — `exact`, `plural`, `normalized`, `semantic`,
+  `fuzzy-VERIFY`, `create`, `proposed-label`, `note` (a descriptor was preserved),
+  `NEEDS-LABEL`.
 
 ### `unit_map.csv` — one row per distinct source unit (~50)
 
@@ -134,7 +142,8 @@ export, producing structured Mealie ingredient entries instead of display string
   (idempotent: create-or-fetch) and assigns its label, creating the label if missing.
 - **quantity** → the source float as-is; `disableAmount: False` so amounts count toward
   shopping lists.
-- **note** → source `notes` ("Minced", "Optional").
+- **note** → source `notes` ("Minced", "Optional"), with any `food_map` descriptor note
+  ("coarse grained", "Swanson's") appended after it.
 - **`to-taste` / quantity 0** → quantity null, `disableAmount: True`, note "to taste".
 - **originalText** → the old flattened display string, preserved for traceability.
 - Component section titles keep today's behavior (title on the component's first ingredient).

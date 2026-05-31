@@ -1,0 +1,368 @@
+source_food,action,mealie_food,label,note,flags
+Almond extract,match,almond extract,Supplements & Extracts,,exact
+Almonds,match,almond,Nuts & Seeds,,plural·proposed-label
+Amaretto,match,amaretto,"Wine, Beer & Spirits",,exact
+Apples,match,apple,Fruits,,plural·proposed-label
+Asparagus,match,asparagus,Vegetables & Greens,,exact·proposed-label
+Avocado,match,avocado,Fruits,,exact·proposed-label
+Avocado Oil,match,avocado oil,Oils & Fats,,exact
+Baby Bella Mushrooms,create,baby bella mushroom,Mushrooms,,create·proposed-label
+"Baby Peas, frozen",match,pea,Legumes,frozen,semantic·note
+Baby Spinach leaves,match,spinach,Vegetables & Greens,,semantic·proposed-label
+Bacon,match,bacon,Meats,,exact·proposed-label
+Bag of Frozen Meatballs from Costco,create,frozen meatball,Meats,,create·proposed-label
+Baguette,match,baguette,Bread & Salty Snacks,,exact
+Baking Powder,match,baking powder,Baking,,exact·proposed-label
+Baking Soda,match,baking soda,Baking,,exact·proposed-label
+Balsamic vinegar,match,balsamic vinegar,Dressings & Vinegars,,exact
+Banana,match,banana,Fruits,,exact·proposed-label
+Banana Rum,create,banana rum,"Wine, Beer & Spirits",,create·proposed-label
+Barley,match,barley,Grains & Cereals,,exact·proposed-label
+Basil,match,basil,Herbs & Spices,,exact·proposed-label
+Basmatti or Jasmine Rice,match,jasmine rice,Grains & Cereals,,semantic·proposed-label
+Bay Leaf,match,bay leaf,Herbs & Spices,,exact·proposed-label
+Beef Broth,match,beef broth,"Soups, Stews & stock",,exact
+Beef Chuck,create,beef chuck,Meats,,create·proposed-label
+Beef Stew Meat,match,beef stew meat,Meats,,exact·proposed-label
+Bella Mushrooms,create,baby bella mushroom,Mushrooms,,create·proposed-label
+Black Beans,match,black bean,Legumes,,plural
+Black Pepper,match,black pepper,Seasonings & Spice Blends,,exact
+Black peppercorns,match,black pepper,Seasonings & Spice Blends,,semantic
+Blackberries,match,blackberry,Berries,,semantic·proposed-label
+Blue Cheese,match,blue cheese,Cheese,,exact·proposed-label
+Blueberries,match,blueberry,Berries,,semantic·proposed-label
+Blueberry garnish,create,blueberry garnish,Berries,,create·proposed-label
+Bread Crumbs,match,bread crumb,Bread & Salty Snacks,,plural
+Bread Flour,match,bread flour,Baking,,exact·proposed-label
+Breadcrumbs,create,breadcrumb,Bread & Salty Snacks,,create·proposed-label
+Broccoli Flowerettes,create,broccoli floret,Vegetables & Greens,,create·proposed-label
+Brown Mushrooms,create,brown mushroom,Mushrooms,,create·proposed-label
+Brown Sugar,match,brown sugar,Sugar & Sweeteners,,exact·proposed-label
+Brussels Sprouts,match,brussels sprout,Vegetables & Greens,,plural·proposed-label
+Butter,match,butter,Dairy & Eggs,,exact·proposed-label
+Butter Noodles,create,butter noodle,Dairy & Eggs,,create·proposed-label
+Buttermilk,match,buttermilk,Dairy & Eggs,,exact·proposed-label
+Cabbage,match,cabbage,Vegetables & Greens,,exact·proposed-label
+Caesar Dressing,match,caesar dressing,Dressings & Vinegars,,exact
+Canola Oil,match,canola oil,Oils & Fats,,exact
+Capers,match,caper,Canned Food,,plural
+Carrots,match,carrot,Vegetables & Greens,,plural·proposed-label
+Cayenne Pepper,match,cayenne pepper,Herbs & Spices,,exact·proposed-label
+Cayenne Pepper Sauce,create,cayenne pepper sauce,Herbs & Spices,,create·proposed-label
+Celery,match,celery,Vegetables & Greens,,exact·proposed-label
+Cheddar Cheese,match,cheddar cheese,Cheese,,exact·proposed-label
+Chicken Boullion Cube,create,chicken boullion cube,Poultry,,create·proposed-label
+Chicken Breast Halves,match,chicken breast,Poultry,,semantic·proposed-label
+Chicken Breasts,match,chicken breast,Poultry,,plural·proposed-label
+Chicken Broth,match,chicken broth,"Soups, Stews & stock",,exact
+Chicken Stock,match,chicken stock,"Soups, Stews & stock",,exact
+Chicken Thighs,match,chicken thigh,Poultry,,plural·proposed-label
+"Chicken breasts, 6 oz",match,chicken breast,Poultry,,plural·proposed-label
+Chicken or Beef Broth,match,chicken broth,"Soups, Stews & stock",,semantic
+"Chicken, already grilled & cut",create,cooked chicken,Poultry,already grilled & cut,create·proposed-label·note
+"Chicken, cooked",create,cooked chicken,Poultry,,create·proposed-label
+Chile Peppers,match,chile pepper,Herbs & Spices,,plural·proposed-label
+Chili Powder,match,chili powder,Herbs & Spices,,exact·proposed-label
+Chipolte peppers in Adobo sauce,match,chipotle in adobo,Canned Food,,semantic
+"Chocolate Cake mix, Duncan Hines",match,chocolate cake mix,Baking,Duncan Hines,normalized·proposed-label·note
+Cider Vinegar,match,apple cider vinegar,Dressings & Vinegars,,semantic
+Cilantro,match,cilantro,Vegetables & Greens,,exact·proposed-label
+Cinnamon,match,cinnamon,Herbs & Spices,,exact·proposed-label
+Cloves,match,clove,Herbs & Spices,,plural·proposed-label
+Coconut,match,coconut,Nuts & Seeds,,exact·proposed-label
+Cognac or brandy,create,cognac or brandy,"Wine, Beer & Spirits",,create·proposed-label
+Condensed Milk,match,condensed milk,Dairy & Eggs,,exact·proposed-label
+Condensed Tomato Soup,match,tomato soup,"Soups, Stews & stock",,semantic
+Cooking Oil,create,cooking oil,Oils & Fats,,create·proposed-label
+Cooking Spray,match,cooking spray,Oils & Fats,,exact
+Cool Whip topping 60% less fat,create,cool whip,Oils & Fats,,create·proposed-label
+Corn,create,corn,Vegetables & Greens,,create·proposed-label
+Corn Starch,create,corn starch,Baking,,create·proposed-label
+Cornstarch,match,cornstarch,Baking,,exact·proposed-label
+Coutons,match,crouton,Bread & Salty Snacks,,semantic
+Cranberries,match,cranberry,Berries,,semantic·proposed-label
+Cream,match,cream,Dairy & Eggs,,exact·proposed-label
+Cream Cheese,match,cream cheese,Cheese,,exact·proposed-label
+"Cream Cheese, 8 oz",match,cream cheese,Cheese,,normalized·proposed-label
+Cream of Chicken Soup,create,cream of chicken soup,"Soups, Stews & stock",,create·proposed-label
+Cream of Coonut,match,cream of coconut,Beverages,,semantic
+Cream of Wheat,match,cream of wheat,Dairy & Eggs,,exact·proposed-label
+Cremini mushrooms,create,cremini mushroom,Mushrooms,,create·proposed-label
+Crisco,create,crisco,Oils & Fats,,create·proposed-label
+"Crushed pineapple, large",match,pineapple,Fruits,crushed; large,semantic·proposed-label·note
+Crusts,create,crust,Pre-Made Doughs & Wrappers,,create·proposed-label
+Crusty French Bread,create,crusty french bread,Bread & Salty Snacks,,create·proposed-label
+Cruzan Aged light rum,create,cruzan aged light rum,"Wine, Beer & Spirits",,create·proposed-label
+Cumin,match,cumin,Herbs & Spices,,exact·proposed-label
+Cumin Seed,create,cumin seed,Herbs & Spices,,create·proposed-label
+Curry Powder,create,curry powder,Herbs & Spices,,create·proposed-label
+Dark Brown Sugar,match,brown sugar,Sugar & Sweeteners,,semantic·proposed-label
+"Dark red wine, 187 ml bottle",create,dark red wine,"Wine, Beer & Spirits",,create·proposed-label
+Demerra Simple Syrup,create,demerra simple syrup,Sugar & Sweeteners,,create·proposed-label
+Dijon Cream Sauce,create,dijon cream sauce,"Sauces, Spreads & dip",,create·proposed-label
+"Dijon Mustard, coarse grained",match,dijon mustard,Condiments,coarse grained,normalized·note
+"Dijon Mustard, smooth",match,dijon mustard,Condiments,smooth,normalized·note
+Dinner Rolls,create,dinner roll,Bread & Salty Snacks,,create·proposed-label
+Distilled or filtered water,create,distilled or filtered water,Beverages,,create·proposed-label
+Dry Red Wine,match,red wine,"Wine, Beer & Spirits",,semantic
+Dry Sherry Wine,create,dry sherry wine,"Wine, Beer & Spirits",,create·proposed-label
+Dry White Wine,match,white wine,"Wine, Beer & Spirits",,semantic
+Egg,match,egg,Dairy & Eggs,,exact·proposed-label
+Egg Noodles,match,egg noodle,Pasta,,plural
+Egg White,create,egg white,Dairy & Eggs,,create·proposed-label
+Eggs,match,egg,Dairy & Eggs,,plural·proposed-label
+Enchilada Sauce,match,enchilada sauce,"Sauces, Spreads & dip",,exact
+Fat,create,fat,Oils & Fats,,create·proposed-label
+Fennel seeds,match,fennel seed,Herbs & Spices,,plural·proposed-label
+Fettuccine,match,fettuccine,Pasta,,exact
+Filet mignon,create,filet mignon,Meats,,create·proposed-label
+Fish sauce,match,fish sauce,Condiments,,exact
+Flaked Sea Salt,create,flaked sea salt,Herbs & Spices,,create·proposed-label
+Flank Steak,create,flank steak,Meats,,create·proposed-label
+Fleur de sel,match,fleur de sel,Herbs & Spices,,exact·proposed-label
+Flour,match,flour,Baking,,exact·proposed-label
+Flour de sel,match,fleur de sel,Herbs & Spices,,semantic·proposed-label
+French Bread,create,french bread,Bread & Salty Snacks,,create·proposed-label
+French beans,create,french bean,Legumes,,create·proposed-label
+Fresh Ginger,create,fresh ginger,Herbs & Spices,,create·proposed-label
+Fresh Raspberries,match,raspberry,Berries,,semantic·proposed-label
+Fresh Rosemary,match,rosemary,Herbs & Spices,,semantic·proposed-label
+Fresh Thyme,match,thyme,Herbs & Spices,,semantic·proposed-label
+Fresh mint,match,fresh mint,Herbs & Spices,,exact·proposed-label
+Frozen Corn,create,frozen corn,Vegetables & Greens,,create·proposed-label
+Frozen Raspberries,match,raspberry,Berries,,semantic·proposed-label
+"Gala apples, ripe",create,gala apple,Fruits,ripe,create·proposed-label·note
+Garlic,match,garlic,Vegetables & Greens,,exact·proposed-label
+Garlic Powder,match,garlic powder,Vegetables & Greens,,exact·proposed-label
+Garlic salt,create,garlic salt,Herbs & Spices,,create·proposed-label
+Gin,match,gin,"Wine, Beer & Spirits",,exact
+Ginger,create,ginger,Herbs & Spices,,create·proposed-label
+Ginger Root,match,ginger root,Herbs & Spices,,exact·proposed-label
+Graham crackers,match,graham cracker,Desserts & Sweet Snacks,,plural
+Grand Marnier,create,grand marnier,"Wine, Beer & Spirits",,create·proposed-label
+Granulated Sugar,match,sugar,Sugar & Sweeteners,,semantic·proposed-label
+Green Bell Pepper,match,bell pepper,Herbs & Spices,,semantic·proposed-label
+Green beans,match,green bean,Legumes,,plural
+Green onions,create,green onion,Vegetables & Greens,,create·proposed-label
+Green peppercorns,match,green peppercorn,Herbs & Spices,,plural·proposed-label
+Gruyere Cheese,match,gruyere cheese,Cheese,,exact·proposed-label
+Guacamole,match,guacamole,"Sauces, Spreads & dip",,exact
+Haas Avocados,match,avocado,Fruits,,semantic·proposed-label
+Halibut fillets,match,halibut,Fish,,semantic·proposed-label
+Halibut steaks,match,halibut,Fish,,semantic·proposed-label
+Ham Bone,create,ham bone,Meats,,create·proposed-label
+Hamburger,create,hamburger,Meats,,create·proposed-label
+Hamburger Buns,create,hamburger bun,Meats,,create·proposed-label
+Hamburger Patties,match,burger patty,Meats,,semantic·proposed-label
+Hazelnuts,match,hazelnut,Nuts & Seeds,,plural·proposed-label
+Heavy Cream,match,heavy cream,Dairy & Eggs,,exact·proposed-label
+Hickory Smoke Salt,create,hickory smoke salt,Herbs & Spices,,create·proposed-label
+Honey,create,honey,Sugar & Sweeteners,,create·proposed-label
+Ice,create,ice,Beverages,,create·proposed-label
+Instant Chocolate pudding,match,chocolate pudding,Desserts & Sweet Snacks,,semantic
+Instant Vanilla Pudding mix,match,vanilla pudding,Desserts & Sweet Snacks,,semantic
+Isopropyl Alcohol,create,isopropyl alcohol,Supplements & Extracts,,create·proposed-label
+Italian Parmesan cheese,match,parmesan cheese,Cheese,,semantic·proposed-label
+Italian Pecorino cheese,match,pecorino cheese,Cheese,,semantic·proposed-label
+Italian Seasoning,match,italian seasoning,Seasonings & Spice Blends,,exact·proposed-label
+Jalapeno or Serrano Pepper,match,serrano pepper,Herbs & Spices,,semantic·proposed-label
+Kahlua,create,kahlua,"Wine, Beer & Spirits",,create·proposed-label
+Kale,match,kale,Vegetables & Greens,,exact·proposed-label
+Ketchup,match,ketchup,Condiments,,exact
+"Ketchup, large (~60 oz)",match,ketchup,Condiments,large (~60 oz),normalized·note
+Kosher Salt,match,kosher salt,Seasonings & Spice Blends,,exact
+"Lardons, pancetta or bacon",match,bacon,Meats,lardons,pancetta,or bacon,semantic·proposed-label·note
+Leaf Lettuce leaves,match,leaf lettuce,Vegetables & Greens,,semantic·proposed-label
+Lemon,match,lemon,Fruits,,exact·proposed-label
+Lemon Pepper,create,lemon pepper,Herbs & Spices,,create·proposed-label
+Lemon Twist,create,lemon twist,Fruits,,create·proposed-label
+Lemon juice,create,lemon juice,Fruits,,create·proposed-label
+Lemon zest,create,lemon zest,Fruits,,create·proposed-label
+Lentils,match,lentil,Legumes,,plural
+Lettuce,match,lettuce,Vegetables & Greens,,exact·proposed-label
+Liechty BBQ sauce,create,liechty bbq sauce,Condiments,,create·proposed-label
+Light Brown Sugar,match,brown sugar,Sugar & Sweeteners,,semantic·proposed-label
+Light Soy Sauce,match,soy sauce,Condiments,,semantic
+Lime Wedge,create,lime wedge,Fruits,,create·proposed-label
+Lime Zest,create,lime zest,Fruits,,create·proposed-label
+Lime juice,create,lime juice,Fruits,,create·proposed-label
+Limeaid 8oz,create,limeade,Beverages,,create·proposed-label
+Limes,match,lime,Fruits,,plural·proposed-label
+Linguine,match,linguine,Pasta,,exact
+Liquid soap,create,liquid soap,,,create·NEEDS-LABEL
+Macroni,match,macaroni,Pasta,,semantic
+Madeira,match,madeira wine,"Wine, Beer & Spirits",,semantic
+Maple Syrup,match,maple syrup,Sugar & Sweeteners,,exact·proposed-label
+Marinera Sauce,match,marinara sauce,"Sauces, Spreads & dip",,semantic
+Mayonnaise,match,mayonnaise,Dressings & Vinegars,,exact
+McCormick's Taco Seasoning,match,taco seasoning,Seasonings & Spice Blends,McCormick's,semantic·proposed-label·note
+Melted Butter,match,butter,Dairy & Eggs,,semantic·proposed-label
+Mexican Limes,create,mexican lime,Fruits,,create·proposed-label
+Mexican Oregano,match,mexican oregano,Herbs & Spices,,exact·proposed-label
+Mexican shredded cheese mixture,match,mexican cheese blend,Cheese,,semantic·proposed-label
+Mild Chunky Salsa,create,mild chunky salsa,"Sauces, Spreads & dip",,create·proposed-label
+"Mild Italian sausage, uncased",match,sweet italian sausage,Meats,uncased,semantic·proposed-label·note
+Milk,match,milk,Dairy & Eggs,,exact·proposed-label
+Mint leaves,create,mint,Herbs & Spices,,create·proposed-label
+Mozzarella Cheese,match,mozzarella cheese,Cheese,,exact·proposed-label
+Muddled Blueberries,create,muddled blueberry,Berries,,create·proposed-label
+Mushrooms,create,mushroom,Mushrooms,,create·proposed-label
+Mustard,match,mustard,Condiments,,exact
+Non-fat Milk,match,milk,Dairy & Eggs,,semantic·proposed-label
+Nonfat plain yogurt,match,yogurt,Dairy & Eggs,,semantic·proposed-label
+Nutmeg,match,nutmeg,Herbs & Spices,,exact·proposed-label
+Nuts,create,nut,Nuts & Seeds,,create·proposed-label
+Oat bran,match,oat bran,Grains & Cereals,,exact·proposed-label
+Oil,create,oil,Oils & Fats,,create·proposed-label
+Olive Oil,match,olive oil,Oils & Fats,,exact
+Onion,match,onion,Vegetables & Greens,,exact·proposed-label
+Onion Powder,match,onion powder,Vegetables & Greens,,exact·proposed-label
+"Onion, large",match,onion,Vegetables & Greens,large,normalized·proposed-label·note
+Orange,match,orange,Fruits,,exact·proposed-label
+Orange Juice,match,orange juice,Beverages,,exact
+Orange Zest,create,orange zest,Fruits,,create·proposed-label
+Oregano,match,oregano,Herbs & Spices,,exact·proposed-label
+Pan Juices,create,pan juice,Beverages,,create·proposed-label
+Paprika,match,paprika,Herbs & Spices,,exact·proposed-label
+Parmesan Cheese,match,parmesan cheese,Cheese,,exact·proposed-label
+Parmesan Cheese (fresh),match,parmesan cheese,Cheese,,normalized·proposed-label
+Parsley,match,parsley,Vegetables & Greens,,exact·proposed-label
+"Pasta, dried",create,pasta,Pasta,dried,create·proposed-label·note
+"Pasta, fresh",create,pasta,Pasta,fresh,create·proposed-label·note
+Pearl Onions,match,pearl onion,Vegetables & Greens,,plural·proposed-label
+Pecans,match,pecan,Nuts & Seeds,,plural·proposed-label
+Pico de Gallo,match,pico de gallo,"Sauces, Spreads & dip",,exact
+Pie Crusts,match,pie crust,Pre-Made Doughs & Wrappers,,plural·proposed-label
+Pinot Grigio or dry white wine,match,white wine,"Wine, Beer & Spirits",,semantic
+Pinto Beans,match,pinto bean,Legumes,,plural
+Plum or Roma Tomato,create,plum or roma tomato,Fruits,,create·proposed-label
+Pork Chops,match,pork chop,Meats,,plural·proposed-label
+"Pork Loin Roast, bone-in",create,pork loin roast,Meats,bone-in,create·proposed-label·note
+Pork Loin leftovers,create,pork loin,Meats,,create·proposed-label
+"Pork Rib Roast, bone-in",create,pork rib roast,Meats,bone-in,create·proposed-label·note
+Pork Ribs,match,pork rib,Meats,,plural·proposed-label
+Pork Roast,match,pork roast,Meats,,exact·proposed-label
+Pork Spareribs,match,pork spare rib,Meats,,fuzzy-VERIFY·proposed-label
+"Porterhouse steak, dry-aged, 2 inch thick",create,porterhouse steak,Meats,"dry-aged, 2 inch thick",create·proposed-label·note
+Potato Chips,match,potato chip,Bread & Salty Snacks,,plural
+Potatoes,match,potato,Vegetables & Greens,,plural·proposed-label
+Poultry Seasoning,match,poultry seasoning,Seasonings & Spice Blends,,exact·proposed-label
+Powdered Milk,create,powdered milk,Dairy & Eggs,,create·proposed-label
+Prepared Creamy Chipolte Sauce,create,prepared creamy chipotle sauce,"Sauces, Spreads & dip",,create·proposed-label
+Pumpkin,match,pumpkin,Vegetables & Greens,,exact·proposed-label
+Quick rolled oats,match,rolled oat,Grains & Cereals,,semantic·proposed-label
+Raisins,match,raisin,Fruits,,plural·proposed-label
+Raspberries,match,raspberry,Berries,,semantic·proposed-label
+Raspberry Jello,create,raspberry jello,Desserts & Sweet Snacks,,create·proposed-label
+Rau Marinara Sauce,match,marinara sauce,"Sauces, Spreads & dip",,semantic
+Red Bell Pepper,match,bell pepper,Herbs & Spices,,semantic·proposed-label
+Red Chili Beans or Kidney Beans,match,canned kidney bean,Canned Food,,semantic
+Red Onion,match,red onion,Vegetables & Greens,,exact·proposed-label
+Red Pepper,create,red pepper,Herbs & Spices,,create·proposed-label
+Red Pepper flakes,create,red pepper flake,Herbs & Spices,,create·proposed-label
+"Red Tart Cherries, Oregon",create,red tart cherry,Fruits,Oregon,create·proposed-label·note
+Red Wine,match,red wine,"Wine, Beer & Spirits",,exact
+Refried Beans,match,refried bean,Canned Food,,plural
+Rice,match,rice,Grains & Cereals,,exact·proposed-label
+Rice Vinegar,match,rice wine vinegar,Dressings & Vinegars,,semantic
+Rolled oats,match,rolled oat,Grains & Cereals,,plural·proposed-label
+Romaine Lettuce,match,romaine lettuce,Vegetables & Greens,,exact·proposed-label
+Rosemary,match,rosemary,Herbs & Spices,,exact·proposed-label
+Rosemary sprigs,create,rosemary sprig,Herbs & Spices,,create·proposed-label
+SKOR Toffee bits,create,skor toffee bit,Sugar & Sweeteners,,create·proposed-label
+Salad dressing,create,salad dressing,Dressings & Vinegars,,create·proposed-label
+Salmon fillet,match,salmon,Fish,,semantic·proposed-label
+"Salmon, steaks or fillets",match,salmon,Fish,steaks or fillets,normalized·proposed-label·note
+Salsa,match,salsa,"Sauces, Spreads & dip",,exact
+"Salsa Verde, in cans",match,salsa verde,"Sauces, Spreads & dip",,normalized
+Salt,create,salt,Herbs & Spices,,create·proposed-label
+Salt & Pepper,create,salt & pepper,Herbs & Spices,,create·proposed-label
+Sandwich Rolls,create,sandwich roll,Bread & Salty Snacks,,create·proposed-label
+Sauterne or dry white wine,match,white wine,"Wine, Beer & Spirits",,semantic
+Sea Salt,create,sea salt,Herbs & Spices,,create·proposed-label
+Sea Scallop,match,scallop,Seafood & Seaweed,,semantic·proposed-label
+Seedless Grapes,match,grape,Fruits,,semantic·proposed-label
+Semi-sweet Chocolate chips,match,chocolate chip,Desserts & Sweet Snacks,,semantic·proposed-label
+Sesame Oil,match,sesame oil,Oils & Fats,,exact
+Shallots,match,shallot,Vegetables & Greens,,plural·proposed-label
+Sherry,match,sherry,"Wine, Beer & Spirits",,exact
+Shredded Cheese,match,cheese,Cheese,,semantic·proposed-label
+Shredded Coconut,match,shredded coconut,Nuts & Seeds,,exact·proposed-label
+"Shredded chicken, from refrigerated section",create,shredded chicken,Poultry,from refrigerated section,create·proposed-label·note
+Shrimp,match,shrimp,Seafood & Seaweed,,exact·proposed-label
+Simple Syrup,create,simple syrup,Sugar & Sweeteners,,create·proposed-label
+Skirt Steak,create,skirt steak,Meats,,create·proposed-label
+Snapper fillets,create,snapper fillet,Fish,,create·proposed-label
+Soda water,create,soda water,Beverages,,create·proposed-label
+Soft bread crumbs,match,bread crumb,Bread & Salty Snacks,,semantic
+Sour Cream,match,sour cream,Dairy & Eggs,,exact·proposed-label
+Sourdough Starter,match,sourdough starter,Baking,,exact·proposed-label
+Soy sauce,match,soy sauce,Condiments,,exact
+Spinach,match,spinach,Vegetables & Greens,,exact·proposed-label
+Split peas,match,split pea,Legumes,,plural
+Spring Mix Lettuce,create,spring mix lettuce,Vegetables & Greens,,create·proposed-label
+St. Germain Liquor,create,st germain liquor,"Wine, Beer & Spirits",,create·proposed-label
+Stew Meat,match,beef stew meat,Meats,,semantic·proposed-label
+Stewed Tomatoes,match,stewed tomato,"Sauces, Spreads & dip",,plural
+Strawberries,match,strawberry,Berries,,semantic·proposed-label
+Sugar,match,sugar,Sugar & Sweeteners,,exact·proposed-label
+Sugar Peas,create,sugar pea,Sugar & Sweeteners,,create·proposed-label
+Swanson's Chicken Broth,match,chicken broth,"Soups, Stews & stock",Swanson's,semantic·note
+Sweet Baby Ray,match,bbq sauce,Condiments,,semantic
+Sweet Italian Sausage,match,sweet italian sausage,Meats,,exact·proposed-label
+Sweet Onions,create,sweet onion,Vegetables & Greens,,create·proposed-label
+Sweet Potatoes,match,sweet potato,Vegetables & Greens,,plural·proposed-label
+Tall glass with ice,create,tall glass with ice,Beverages,,create·proposed-label
+"Tart Cherries, 15 oz",create,tart cherry,Fruits,,create·proposed-label
+Tequilla,match,tequila,"Wine, Beer & Spirits",,semantic
+Thyme,match,thyme,Herbs & Spices,,exact·proposed-label
+Thyme Sprigs,create,thyme sprig,Herbs & Spices,,create·proposed-label
+Tilapia filets,match,tilapia,Fish,,semantic·proposed-label
+Tomato Juice,match,tomato juice,Beverages,,exact
+Tomato Paste,match,tomato paste,"Sauces, Spreads & dip",,exact
+"Tomato Paste, 12 oz",match,tomato paste,"Sauces, Spreads & dip",,normalized
+Tomato Sauce,match,tomato sauce,"Sauces, Spreads & dip",,exact
+Tomatoes,match,tomato,Vegetables & Greens,,plural·proposed-label
+"Tomatoes, 16 oz can",match,canned tomato,Canned Food,,plural·proposed-label
+Tomatos,match,tomato,Vegetables & Greens,,semantic·proposed-label
+Top Sirlon Steak,create,top sirlon steak,Meats,,create·proposed-label
+Tortilla Chips,match,tortilla chip,Bread & Salty Snacks,,plural
+Tortilla Strips,create,tortilla strip,Pre-Made Doughs & Wrappers,,create·proposed-label
+Tortillas,match,corn tortilla,Bread & Salty Snacks,,semantic
+"Tortillas, soft corn",match,corn tortilla,Bread & Salty Snacks,,semantic·note
+Triple Sec,create,triple sec,"Wine, Beer & Spirits",,create·proposed-label
+Turkey Breast,match,turkey breast,Poultry,,exact·proposed-label
+"Unbaked 9"" Pie Shell",create,pie shell,Pre-Made Doughs & Wrappers,,create·proposed-label
+Unsalted Butter,match,butter,Dairy & Eggs,,semantic·proposed-label
+Unsalted dry-roasted peanuts,match,dry-roasted peanut,Bread & Salty Snacks,,semantic
+Unsweetened Applesauce,match,applesauce,Desserts & Sweet Snacks,,semantic
+Vanilla,create,vanilla,Supplements & Extracts,,create·proposed-label
+Vanilla extract,match,vanilla extract,Supplements & Extracts,,exact·proposed-label
+Vegetable Oil,match,vegetable oil,Oils & Fats,,exact
+Vegetarian Broth,match,vegetable broth,"Soups, Stews & stock",,semantic
+Vinegar,match,vinegar,Dressings & Vinegars,,exact
+Vodka,match,vodka,"Wine, Beer & Spirits",,exact
+Walnuts,match,walnut,Nuts & Seeds,,plural·proposed-label
+Water,create,water,Beverages,,create·proposed-label
+Water Chestnuts,match,water chestnut,Beverages,,plural·proposed-label
+"Water, boiling",create,water,Beverages,boiling,create·proposed-label·note
+Wheat Bread,create,wheat bread,Bread & Salty Snacks,,create·proposed-label
+Wheat germ,match,wheat germ,Grains & Cereals,,exact·proposed-label
+Whie Cranberry Juice,match,cranberry juice,Beverages,,semantic
+Whipping Cream,create,whipping cream,Dairy & Eggs,,create·proposed-label
+White Cake mix,create,white cake mix,Baking,,create·proposed-label
+White Pepper,match,white pepper,Herbs & Spices,,exact·proposed-label
+White wine,match,white wine,"Wine, Beer & Spirits",,exact
+Whole Cranberries,match,cranberry,Berries,,semantic·proposed-label
+Whole Milk,match,milk,Dairy & Eggs,,semantic·proposed-label
+Whole Tomatoes,match,tomato,Vegetables & Greens,,semantic·proposed-label
+Whole Wheat Flour,match,whole-wheat flour,Baking,,normalized·proposed-label
+Whole chicken,match,whole chicken,Poultry,,exact·proposed-label
+Whole kernal Corn,create,whole kernal corn,Vegetables & Greens,,create·proposed-label
+Whole-grain mustard,match,wholegrain mustard,Condiments,,semantic
+Wondra Flour,create,wondra flour,Baking,,create·proposed-label
+Worchestershire Sauce,match,worcestershire sauce,Condiments,,semantic
+Yellow Bell Pepper,match,bell pepper,Herbs & Spices,,semantic·proposed-label
+Yellow cornmeal,match,cornmeal,Baking,,semantic·proposed-label
+Yukon Gold Potatoes,create,yukon gold potato,Vegetables & Greens,,create·proposed-label
+Zucchini,match,zucchini,Vegetables & Greens,,exact·proposed-label

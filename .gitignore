@@ -212,3 +212,5 @@ __marimo__/
 
 # Access db file
 *.accdb
+
+migration_scripts/seed

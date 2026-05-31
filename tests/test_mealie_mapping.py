@@ -245,7 +245,7 @@ def test_load_food_map_parses_rows(tmp_path):
          ["Rau Sauce", "create", "Rau Sauce", "Sauces", "unmatched"]],
     )
     fm = load_food_map(path)
-    assert fm["kale"] == {"mealie_food": "Kale", "action": "match", "label": "Produce", "flags": ""}
+    assert fm["kale"] == {"mealie_food": "Kale", "action": "match", "label": "Produce", "note": "", "flags": ""}
     assert fm["rau sauce"]["action"] == "create"
 
 
@@ -319,3 +319,47 @@ def test_missing_map_entries_empty_when_covered():
     food_map = {"flour": {"mealie_food": "Flour", "action": "match", "label": "", "flags": ""}}
     unit_map = {"cup": {"mealie_unit": "cup", "flags": ""}}
     assert missing_map_entries([recipe], food_map, unit_map) == ([], [])
+
+
+def test_load_food_map_reads_optional_note_column(tmp_path):
+    path = _write_csv(
+        tmp_path, "food_map.csv",
+        ["source_food", "action", "mealie_food", "label", "note", "flags"],
+        [["Dijon Mustard, coarse grained", "match", "dijon mustard", "Condiments", "coarse grained", "semantic"]],
+    )
+    fm = load_food_map(path)
+    assert fm["dijon mustard, coarse grained"]["note"] == "coarse grained"
+
+
+def test_load_food_map_note_defaults_empty_when_column_absent(tmp_path):
+    path = _write_csv(
+        tmp_path, "food_map.csv",
+        ["source_food", "action", "mealie_food", "label", "flags"],
+        [["Kale", "match", "Kale", "Produce", ""]],
+    )
+    fm = load_food_map(path)
+    assert fm["kale"]["note"] == ""
+
+
+def test_structured_ingredient_appends_extra_note():
+    ri = _ri(2.0, "cup", "Flour", "sifted", order=0)
+    entry = build_structured_ingredient(
+        ri, {"id": "u1"}, {"id": "f1"}, None, to_taste=False, extra_note="King Arthur")
+    assert entry["note"] == "sifted, King Arthur"
+
+
+def test_structured_ingredient_extra_note_only():
+    ri = _ri(1.0, "tbsp", "Dijon Mustard", None, order=0)
+    entry = build_structured_ingredient(
+        ri, {"id": "u1"}, {"id": "f1"}, None, to_taste=False, extra_note="coarse grained")
+    assert entry["note"] == "coarse grained"
+
+
+def test_structured_ingredients_threads_food_map_note():
+    recipe = SimpleNamespace(components=[
+        SimpleNamespace(name="Main", ingredients=[_ri(1.0, "can", "Broth", "low sodium", order=0)]),
+    ])
+    food_map = {"broth": {"mealie_food": "broth", "action": "match", "label": "", "note": "Swanson's", "flags": ""}}
+    unit_map = {"can": {"mealie_unit": "can", "flags": ""}}
+    items = build_structured_ingredients(recipe, food_map, unit_map, _FakeResolver())
+    assert items[0]["note"] == "low sodium, Swanson's"

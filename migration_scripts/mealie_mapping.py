@@ -43,9 +43,10 @@ def build_ingredient_line(quantity, unit, name, notes) -> str:
     return line
 
 
-def build_structured_ingredient(ri, unit_ref, food_ref, title, to_taste) -> dict:
+def build_structured_ingredient(ri, unit_ref, food_ref, title, to_taste, extra_note="") -> dict:
     """One Mealie structured ingredient. to_taste / zero-quantity -> unmeasured."""
-    note = ri.notes or ""
+    parts = [p for p in [(ri.notes or "").strip(), (extra_note or "").strip()] if p]
+    note = ", ".join(parts)
     if to_taste or not ri.quantity:
         quantity = None
         disable_amount = True
@@ -80,7 +81,7 @@ def build_structured_ingredients(recipe, food_map, unit_map, resolver) -> list:
             food_ref = resolver.resolve_food(fm["mealie_food"], fm["action"], fm["label"])
             to_taste = "to-taste" in [f.strip() for f in um["flags"].split(",")]
             title = component.name if (first and component.name and component.name != "Main") else None
-            items.append(build_structured_ingredient(ri, unit_ref, food_ref, title, to_taste))
+            items.append(build_structured_ingredient(ri, unit_ref, food_ref, title, to_taste, extra_note=fm.get("note", "")))
             first = False
     return items
 
@@ -182,6 +183,7 @@ def load_food_map(path) -> dict:
             "mealie_food": (row["mealie_food"] or "").strip(),
             "action": action,
             "label": (row["label"] or "").strip(),
+            "note": (row.get("note") or "").strip(),
             "flags": (row["flags"] or "").strip(),
         }
     return out

@@ -5,7 +5,8 @@ from migration_scripts.mealie_mapping import (
     format_quantity,
     format_time,
     build_ingredient_line,
-    build_ingredients,
+    build_structured_ingredient,
+    build_structured_ingredients,
     build_instructions,
     build_servings,
     build_yield,
@@ -68,24 +69,48 @@ def test_build_ingredient_line_to_taste_drops_zero_quantity():
     assert build_ingredient_line(0, "To Taste", "Salt", None) == "To Taste Salt"
 
 
-def test_build_ingredients_single_main_component_has_no_title():
-    recipe = SimpleNamespace(components=[
-        _component("Main", [_ri(1.0, "cup", "Sugar", order=0)]),
-    ])
-    items = build_ingredients(recipe)
-    assert items == [{"title": None, "note": "1 cup Sugar", "disableAmount": True, "quantity": None}]
+class _FakeResolver:
+    def resolve_unit(self, name):
+        return {"id": f"u-{name}", "name": name} if name else None
+
+    def resolve_food(self, name, action, label):
+        return {"id": f"f-{name}", "name": name, "_action": action, "_label": label}
 
 
-def test_build_ingredients_titles_non_main_sections_on_first_line():
+def test_structured_ingredient_normal_amount():
+    ri = _ri(2.0, "cup", "Flour", "sifted", order=0)
+    entry = build_structured_ingredient(
+        ri, {"id": "u1", "name": "cup"}, {"id": "f1", "name": "Flour"}, None, to_taste=False)
+    assert entry == {
+        "title": None, "note": "sifted", "quantity": 2.0,
+        "unit": {"id": "u1", "name": "cup"}, "food": {"id": "f1", "name": "Flour"},
+        "disableAmount": False, "originalText": "2 cup Flour, sifted",
+    }
+
+
+def test_structured_ingredient_to_taste():
+    ri = _ri(0, "To Taste", "Salt", None, order=0)
+    entry = build_structured_ingredient(ri, None, {"id": "f2", "name": "Salt"}, None, to_taste=True)
+    assert entry["quantity"] is None
+    assert entry["disableAmount"] is True
+    assert entry["unit"] is None
+    assert entry["note"] == "to taste"
+    assert entry["food"] == {"id": "f2", "name": "Salt"}
+
+
+def test_structured_ingredients_resolves_maps_and_titles_sections():
     recipe = SimpleNamespace(components=[
         _component("Main", [_ri(1.0, "cup", "Flour", order=1), _ri(2.0, None, "Eggs", order=0)]),
         _component("Frosting", [_ri(0.5, "cup", "Butter", order=0)]),
     ])
-    items = build_ingredients(recipe)
-    # ordered by .order within component; Main has no title; Frosting titled on first line
-    assert items[0] == {"title": None, "note": "2 Eggs", "disableAmount": True, "quantity": None}
-    assert items[1] == {"title": None, "note": "1 cup Flour", "disableAmount": True, "quantity": None}
-    assert items[2] == {"title": "Frosting", "note": "0.5 cup Butter", "disableAmount": True, "quantity": None}
+    food_map = {n.lower(): {"mealie_food": n, "action": "match", "label": "", "flags": ""}
+                for n in ("Flour", "Eggs", "Butter")}
+    unit_map = {"cup": {"mealie_unit": "cup", "flags": ""}, "": {"mealie_unit": "", "flags": ""}}
+    items = build_structured_ingredients(recipe, food_map, unit_map, _FakeResolver())
+    assert items[0]["title"] is None and items[0]["food"]["name"] == "Eggs"
+    assert items[0]["unit"] is None          # None source unit -> no unit
+    assert items[1]["food"]["name"] == "Flour"
+    assert items[2]["title"] == "Frosting"   # non-Main section titled on first line
 
 
 def test_build_instructions_sorted_by_step_number():

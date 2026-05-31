@@ -43,20 +43,44 @@ def build_ingredient_line(quantity, unit, name, notes) -> str:
     return line
 
 
-def build_ingredients(recipe) -> list:
-    """Mealie recipeIngredient entries (display strings, section titles)."""
+def build_structured_ingredient(ri, unit_ref, food_ref, title, to_taste) -> dict:
+    """One Mealie structured ingredient. to_taste / zero-quantity -> unmeasured."""
+    note = ri.notes or ""
+    if to_taste or not ri.quantity:
+        quantity = None
+        disable_amount = True
+        if to_taste and not note:
+            note = "to taste"
+    else:
+        quantity = float(ri.quantity)
+        disable_amount = False
+    return {
+        "title": title,
+        "note": note,
+        "quantity": quantity,
+        "unit": unit_ref,
+        "food": food_ref,
+        "disableAmount": disable_amount,
+        "originalText": build_ingredient_line(ri.quantity, ri.unit, ri.ingredient.name, ri.notes),
+    }
+
+
+def build_structured_ingredients(recipe, food_map, unit_map, resolver) -> list:
+    """Structured Mealie ingredients, resolving food/unit refs via `resolver`.
+
+    Assumes every source food/unit is present in the maps (see missing_map_entries).
+    """
     items = []
     for component in recipe.components:
         first = True
         for ri in sorted(component.ingredients, key=lambda x: x.order):
-            line = build_ingredient_line(ri.quantity, ri.unit, ri.ingredient.name, ri.notes)
+            fm = food_map[ri.ingredient.name.strip().lower()]
+            um = unit_map[(ri.unit or "").strip().lower()]
+            unit_ref = resolver.resolve_unit(um["mealie_unit"])
+            food_ref = resolver.resolve_food(fm["mealie_food"], fm["action"], fm["label"])
+            to_taste = "to-taste" in um["flags"]
             title = component.name if (first and component.name and component.name != "Main") else None
-            items.append({
-                "title": title,
-                "note": line,
-                "disableAmount": True,
-                "quantity": None,
-            })
+            items.append(build_structured_ingredient(ri, unit_ref, food_ref, title, to_taste))
             first = False
     return items
 
@@ -173,7 +197,7 @@ def recipe_to_payload(recipe, shell: dict, category_refs: list, tag_refs: list) 
     payload["performTime"] = format_time(recipe.cook_time_minutes)
     payload["totalTime"] = format_time(recipe.total_time_minutes)
     payload["orgURL"] = recipe.source_url
-    payload["recipeIngredient"] = build_ingredients(recipe)
+    payload["recipeIngredient"] = build_ingredients(recipe)  # noqa: F821 – replaced in Task 8
     payload["recipeInstructions"] = build_instructions(recipe)
     payload["recipeCategory"] = category_refs
     payload["tags"] = tag_refs

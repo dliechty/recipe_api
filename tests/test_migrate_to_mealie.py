@@ -144,6 +144,39 @@ def test_purge_recipes_deletes_each_slug():
     assert deleted == ["bread"]
 
 
+def test_unknown_targets_flags_bad_match_food_and_unit():
+    r = MealieRefResolver(_Client())
+    food_map = {
+        "k": {"mealie_food": "Kale", "action": "match", "label": "", "flags": ""},
+        "u": {"mealie_food": "Unicorn", "action": "match", "label": "", "flags": ""},
+        "rau": {"mealie_food": "Rau Sauce", "action": "create", "label": "Sauces", "flags": ""},
+    }
+    unit_map = {
+        "cup": {"mealie_unit": "cup", "flags": ""},
+        "tbl": {"mealie_unit": "tablspoon", "flags": ""},
+        "none": {"mealie_unit": "", "flags": "to-taste"},
+    }
+    bad_foods, bad_units = r.unknown_targets(food_map, unit_map)
+    assert bad_foods == ["Unicorn"]          # Kale exists; Rau Sauce is create -> excluded
+    assert bad_units == ["tablspoon"]        # cup exists; "" skipped
+
+
+def test_unknown_targets_empty_when_all_present():
+    r = MealieRefResolver(_Client())
+    food_map = {"k": {"mealie_food": "Kale", "action": "match", "label": "", "flags": ""}}
+    unit_map = {"cup": {"mealie_unit": "cup", "flags": ""}}
+    assert r.unknown_targets(food_map, unit_map) == ([], [])
+
+
+def test_purge_recipes_warns_on_missing(capsys):
+    class C:
+        def delete_recipe(self, slug):
+            return False   # nothing found
+
+    assert purge_recipes(C(), [_recipe()]) == 0
+    assert "WARNING" in capsys.readouterr().out
+
+
 def test_import_recipe_dry_run_builds_structured(capsys):
     fm = {"flour": {"mealie_food": "Flour", "action": "match", "label": "", "flags": ""}}
     um = {"cup": {"mealie_unit": "cup", "flags": ""}}

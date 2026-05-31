@@ -48,6 +48,22 @@ class MealieRefResolver:
         self._units = {u["name"].lower(): u for u in client.list_units()}
         self._labels = {lab["name"].lower(): lab for lab in client.list_labels()}
 
+    def unknown_targets(self, food_map, unit_map):
+        """Map targets absent from Mealie: match-action foods and any mapped unit.
+
+        `create`-action foods are excluded — they are expected not to exist yet.
+        Returns (sorted missing food names, sorted missing unit names).
+        """
+        missing_foods = sorted({
+            e["mealie_food"] for e in food_map.values()
+            if e["action"] == "match" and e["mealie_food"].lower() not in self._foods
+        })
+        missing_units = sorted({
+            e["mealie_unit"] for e in unit_map.values()
+            if e["mealie_unit"] and e["mealie_unit"].lower() not in self._units
+        })
+        return missing_foods, missing_units
+
     def _label_id(self, label):
         if not label:
             return None
@@ -140,9 +156,12 @@ def import_recipe(client, recipe, dry_run, skip_existing, food_map, unit_map, re
 def purge_recipes(client, recipes):
     deleted = 0
     for recipe in recipes:
-        if client.delete_recipe(m.slugify(recipe.name)):
+        slug = m.slugify(recipe.name)
+        if client.delete_recipe(slug):
             deleted += 1
             print(f"Deleted: {recipe.name}")
+        else:
+            print(f"WARNING: not found in Mealie (slug '{slug}'): {recipe.name}")
     return deleted
 
 
@@ -192,6 +211,14 @@ def run_import(args):
         else:
             client = _build_client()
             resolver = MealieRefResolver(client)
+            bad_foods, bad_units = resolver.unknown_targets(food_map, unit_map)
+            if bad_foods or bad_units:
+                print("ABORT: map targets not found in Mealie.")
+                if bad_foods:
+                    print(f"  Unknown mealie_food values ({len(bad_foods)}): {bad_foods}")
+                if bad_units:
+                    print(f"  Unknown mealie_unit values ({len(bad_units)}): {bad_units}")
+                return 1
 
         print(f"Found {len(recipes)} recipes.")
         counts = {"created": 0, "skipped": 0, "failed": 0}

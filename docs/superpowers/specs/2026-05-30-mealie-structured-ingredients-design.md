@@ -157,6 +157,47 @@ A **guard** runs before any import: if a source food or unit isn't present in th
 (e.g. a recipe added after the maps were generated), it aborts with the exact missing
 values to add — never a partial import.
 
+## Recipe metadata: yield/servings and tags
+
+Alongside the ingredient work, two recipe-level mappings are corrected. These are
+pure-function changes in `mealie_mapping.py` and need no review files.
+
+### Yield → numeric servings
+
+Today `build_yield` always emits a text yield ("4 servings"), which lands in Mealie's
+free-text yield field. In the source, `yield_unit` is `"servings"` for **all 131
+recipes** and `yield_amount` holds the count.
+
+Rule: when `yield_unit` is empty or `"servings"`, put `yield_amount` into Mealie's
+numeric **servings** field and emit no yield text. Only fall back to a text yield for a
+genuinely non-servings unit (e.g. "loaf"). With the current data this yields a clean
+numeric servings count every time.
+
+The exact Mealie field name is confirmed during implementation — recent Mealie splits a
+numeric `recipeServings` from the text `recipeYield` (with `recipeYieldQuantity`); older
+versions only have the text `recipeYield`.
+
+### Tags → prefixed by source field
+
+Today `tag_names` flattens `cuisine`, `protein`, and `difficulty` into bare tags with no
+way to tell them apart. Replace this with a small `field → prefix` config so each tag
+carries its origin:
+
+| source field | prefix | example | data today |
+|---|---|---|---|
+| `protein` | `Protein:` | `Protein: Beef` | 73 recipes populated |
+| `difficulty` | `Difficulty:` | `Difficulty: Medium` (enum title-cased) | nearly all `Medium` |
+| `cuisine` | `Cuisine:` | `Cuisine: …` | null for all 131 (rule dormant) |
+| `recipe_diets` | `Diet:` | `Diet: …` | table empty (rule dormant) |
+
+- Null/empty fields emit no tag.
+- `difficulty` is a `DifficultyLevel` enum (`MEDIUM/EASY/HARD`) rendered title-cased.
+- `category` is **unchanged** — it stays mapped to Mealie's dedicated `recipeCategory`
+  organizer, not converted to a tag.
+
+The prefixed tag names are run through the existing `get_or_create_tag` path, so Mealie
+creates `Protein: Beef` etc. as needed.
+
 ## Testing
 
 Matches the repo's pytest + pure-function style:
@@ -176,6 +217,8 @@ Matches the repo's pytest + pure-function style:
 2. Generated `food_map.csv` + `unit_map.csv` — reviewed by the user in Stage 3.
 3. Rewritten structured `build_ingredients` + map loader/resolver in `mealie_mapping.py`.
 4. `purge` / `import` CLI verbs on `migrate_to_mealie.py` with a pre-import guard.
-5. Tests for mapping, loading, and apply-resolution.
+5. Rewritten `build_yield` (numeric servings) and `tag_names` (prefixed tags) in
+   `mealie_mapping.py`.
+6. Tests for mapping, loading, apply-resolution, yield/servings, and prefixed tags.
 
 The only manual work is one review pass over two files.

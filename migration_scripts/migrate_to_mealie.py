@@ -110,7 +110,7 @@ def resolve_refs(client, recipe, dry_run):
     return cats, tags
 
 
-def import_recipe(client, recipe, dry_run, skip_existing):
+def import_recipe(client, recipe, dry_run, skip_existing, food_map, unit_map, resolver):
     slug = m.slugify(recipe.name)
     if not dry_run and skip_existing and client.recipe_exists(slug):
         return "skipped"
@@ -118,47 +118,87 @@ def import_recipe(client, recipe, dry_run, skip_existing):
     cats, tags = resolve_refs(client, recipe, dry_run)
 
     if dry_run:
-        payload = m.recipe_to_payload(recipe, {"slug": slug, "name": recipe.name}, cats, tags)
+        payload = m.recipe_to_payload(
+            recipe, {"slug": slug, "name": recipe.name}, cats, tags, food_map, unit_map, resolver)
         print(f"[dry-run] {recipe.name} -> {slug} "
               f"({len(payload['recipeIngredient'])} ingredients, "
-              f"{len(payload['recipeInstructions'])} steps, tags={[t['name'] for t in tags]})")
+              f"{len(payload['recipeInstructions'])} steps, "
+              f"servings={payload['recipeServings']}, tags={[t['name'] for t in tags]})")
         return "created"
 
     new_slug = client.create_recipe(recipe.name)
     shell = client.get_recipe(new_slug)
-    payload = m.recipe_to_payload(recipe, shell, cats, tags)
+    payload = m.recipe_to_payload(recipe, shell, cats, tags, food_map, unit_map, resolver)
     client.update_recipe(new_slug, payload)
     return "created"
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description="Import recipe_api recipes into Mealie")
-    parser.add_argument("--dry-run", action="store_true", help="map and print without calling Mealie")
-    parser.add_argument("--no-skip-existing", dest="skip_existing", action="store_false",
-                        help="import even if a recipe with the same slug already exists")
-    parser.set_defaults(skip_existing=True)
-    args = parser.parse_args(argv)
+def purge_recipes(client, recipes):
+    deleted = 0
+    for recipe in recipes:
+        if client.delete_recipe(m.slugify(recipe.name)):
+            deleted += 1
+            print(f"Deleted: {recipe.name}")
+    return deleted
 
-    client = None
-    if not args.dry_run:
-        token = os.environ.get("MEALIE_API_TOKEN")
-        if not token:
-            parser.error("MEALIE_API_TOKEN is required unless --dry-run")
-        base = os.environ.get("MEALIE_URL", "https://recipes.qwertyshoe.com")
-        client = MealieClient(base, token)
 
-    counts = {"created": 0, "skipped": 0, "failed": 0}
+DEFAULT_FOOD_MAP = os.path.join(os.path.dirname(__file__), "food_map.csv")
+DEFAULT_UNIT_MAP = os.path.join(os.path.dirname(__file__), "unit_map.csv")
+
+
+def _build_client(args):
+    token = os.environ.get("MEALIE_API_TOKEN")
+    if not token:
+        raise SystemExit("MEALIE_API_TOKEN is required")
+    base = os.environ.get("MEALIE_URL", "https://recipes.qwertyshoe.com")
+    return MealieClient(base, token)
+
+
+def run_purge(args):
+    client = _build_client(args)
     session = SessionLocal()
     try:
         recipes = load_recipes(session)
+        count = purge_recipes(client, recipes)
+    finally:
+        session.close()
+    print(f"\nDone. deleted={count}")
+    return 0
+
+
+def run_import(args):
+    food_map = m.load_food_map(args.food_map)
+    unit_map = m.load_unit_map(args.unit_map)
+
+    session = SessionLocal()
+    try:
+        recipes = load_recipes(session)
+        missing_foods, missing_units = m.missing_map_entries(recipes, food_map, unit_map)
+        if missing_foods or missing_units:
+            print("ABORT: maps do not cover all source values.")
+            if missing_foods:
+                print(f"  Missing foods ({len(missing_foods)}): {missing_foods}")
+            if missing_units:
+                print(f"  Missing units ({len(missing_units)}): {missing_units}")
+            return 1
+
+        if args.dry_run:
+            resolver = DryRunResolver()
+            client = None
+        else:
+            client = _build_client(args)
+            resolver = MealieRefResolver(client)
+
         print(f"Found {len(recipes)} recipes.")
+        counts = {"created": 0, "skipped": 0, "failed": 0}
         for recipe in recipes:
             if m.should_skip_recipe(recipe.name):
                 print(f"Skipping meta-recipe: {recipe.name}")
                 counts["skipped"] += 1
                 continue
             try:
-                result = import_recipe(client, recipe, args.dry_run, args.skip_existing)
+                result = import_recipe(client, recipe, args.dry_run, args.skip_existing,
+                                       food_map, unit_map, resolver)
                 counts[result] += 1
                 if result == "skipped":
                     print(f"Already in Mealie, skipping: {recipe.name}")
@@ -170,6 +210,25 @@ def main(argv=None):
 
     print(f"\nDone. created={counts['created']} skipped={counts['skipped']} failed={counts['failed']}")
     return 1 if counts["failed"] else 0
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Import recipe_api recipes into Mealie")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_import = sub.add_parser("import", help="import recipes with structured ingredients")
+    p_import.add_argument("--dry-run", action="store_true", help="map and print without calling Mealie")
+    p_import.add_argument("--no-skip-existing", dest="skip_existing", action="store_false",
+                          help="import even if a recipe with the same slug already exists")
+    p_import.add_argument("--food-map", default=DEFAULT_FOOD_MAP)
+    p_import.add_argument("--unit-map", default=DEFAULT_UNIT_MAP)
+    p_import.set_defaults(skip_existing=True, func=run_import)
+
+    p_purge = sub.add_parser("purge", help="delete previously imported recipes by slug")
+    p_purge.set_defaults(func=run_purge)
+
+    args = parser.parse_args(argv)
+    return args.func(args)
 
 
 if __name__ == "__main__":

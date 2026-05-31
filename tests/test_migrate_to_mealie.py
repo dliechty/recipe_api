@@ -1,6 +1,12 @@
 import pytest
+from types import SimpleNamespace
 
-from migration_scripts.migrate_to_mealie import MealieRefResolver, DryRunResolver
+from migration_scripts.migrate_to_mealie import (
+    MealieRefResolver,
+    DryRunResolver,
+    purge_recipes,
+    import_recipe,
+)
 
 
 class _Client:
@@ -110,3 +116,37 @@ def test_resolve_food_label_assigned_at_most_once():
 
 def test_dry_run_resolver_none_sentinel_unit():
     assert DryRunResolver().resolve_unit("(none)") is None
+
+
+def _recipe():
+    ing = SimpleNamespace(quantity=1.0, unit="cup", notes=None, order=0,
+                          ingredient=SimpleNamespace(name="Flour"))
+    return SimpleNamespace(
+        name="Bread", description="", yield_amount=2.0, yield_unit="servings",
+        prep_time_minutes=None, cook_time_minutes=None, total_time_minutes=None,
+        source_url=None, source=None, calories=None,
+        cuisine=None, protein=None, difficulty=None, diets=[],
+        category=None, comments=[],
+        components=[SimpleNamespace(name="Main", ingredients=[ing])],
+        instructions=[],
+    )
+
+
+def test_purge_recipes_deletes_each_slug():
+    deleted = []
+
+    class C:
+        def delete_recipe(self, slug):
+            deleted.append(slug)
+            return True
+
+    assert purge_recipes(C(), [_recipe()]) == 1
+    assert deleted == ["bread"]
+
+
+def test_import_recipe_dry_run_builds_structured(capsys):
+    fm = {"flour": {"mealie_food": "Flour", "action": "match", "label": "", "flags": ""}}
+    um = {"cup": {"mealie_unit": "cup", "flags": ""}}
+    result = import_recipe(None, _recipe(), True, True, fm, um, DryRunResolver())
+    assert result == "created"
+    assert "Bread" in capsys.readouterr().out

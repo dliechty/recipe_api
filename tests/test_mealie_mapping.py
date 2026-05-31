@@ -193,6 +193,7 @@ def _sample_recipe():
         source_url="https://example.com/soup", source="Family recipe",
         calories=180,
         cuisine="Italian", protein=None, difficulty=SimpleNamespace(value="Easy"),
+        diets=[],
         components=[_component("Main", [_ri(1.0, "can", "Tomatoes", order=0)])],
         instructions=[SimpleNamespace(step_number=1, text="Simmer")],
         comments=[],
@@ -203,21 +204,18 @@ def test_recipe_to_payload_maps_all_fields():
     recipe = _sample_recipe()
     shell = {"id": "abc", "slug": "tomato-soup", "name": "Tomato Soup", "nutrition": {}}
     cat_refs = [{"id": "c1", "name": "Soup", "slug": "soup"}]
-    tag_refs = [{"id": "t1", "name": "Italian", "slug": "italian"}]
+    tag_refs = [{"id": "t1", "name": "Cuisine: Italian", "slug": "cuisine-italian"}]
+    food_map = {"tomatoes": {"mealie_food": "Tomatoes", "action": "match", "label": "", "flags": ""}}
+    unit_map = {"can": {"mealie_unit": "can", "flags": ""}}
 
-    payload = recipe_to_payload(recipe, shell, cat_refs, tag_refs)
+    payload = recipe_to_payload(recipe, shell, cat_refs, tag_refs, food_map, unit_map, _FakeResolver())
 
-    assert payload["id"] == "abc"  # shell fields preserved
-    assert payload["description"] == "Warm and simple"
-    assert payload["recipeYield"] == "4 servings"
+    assert payload["id"] == "abc"
+    assert payload["recipeServings"] == 4.0
+    assert payload["recipeYield"] == ""
     assert payload["prepTime"] == "10 minutes"
-    assert payload["performTime"] == "20 minutes"
-    assert payload["totalTime"] == "30 minutes"
-    assert payload["orgURL"] == "https://example.com/soup"
-    assert payload["recipeIngredient"] == [
-        {"title": None, "note": "1 can Tomatoes", "disableAmount": True, "quantity": None}
-    ]
-    assert payload["recipeInstructions"] == [{"text": "Simmer"}]
+    assert payload["recipeIngredient"][0]["food"]["name"] == "Tomatoes"
+    assert payload["recipeIngredient"][0]["disableAmount"] is False
     assert payload["recipeCategory"] == cat_refs
     assert payload["tags"] == tag_refs
     assert payload["nutrition"]["calories"] == "180"

@@ -200,17 +200,19 @@ def load_unit_map(path) -> dict:
     return out
 
 
-def recipe_to_payload(recipe, shell: dict, category_refs: list, tag_refs: list) -> dict:
+def recipe_to_payload(recipe, shell, category_refs, tag_refs, food_map, unit_map, resolver) -> dict:
     """Merge mapped fields onto the Mealie shell returned by create/get."""
     payload = dict(shell)
     payload["name"] = recipe.name
     payload["description"] = recipe.description or ""
+    servings = build_servings(recipe)
+    payload["recipeServings"] = servings if servings is not None else 0
     payload["recipeYield"] = build_yield(recipe)
     payload["prepTime"] = format_time(recipe.prep_time_minutes)
     payload["performTime"] = format_time(recipe.cook_time_minutes)
     payload["totalTime"] = format_time(recipe.total_time_minutes)
     payload["orgURL"] = recipe.source_url
-    payload["recipeIngredient"] = build_ingredients(recipe)  # noqa: F821 – replaced in Task 8
+    payload["recipeIngredient"] = build_structured_ingredients(recipe, food_map, unit_map, resolver)
     payload["recipeInstructions"] = build_instructions(recipe)
     payload["recipeCategory"] = category_refs
     payload["tags"] = tag_refs

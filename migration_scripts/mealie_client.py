@@ -68,3 +68,42 @@ class MealieClient:
 
     def get_or_create_tag(self, name: str) -> dict:
         return self._get_or_create("tags", "_tag_cache", name)
+
+    # --- foods / units / labels ---
+    def _list(self, path: str) -> list:
+        resp = self._request("GET", path)
+        return resp["items"] if isinstance(resp, dict) else resp
+
+    def list_foods(self) -> list:
+        return self._list("/api/foods?perPage=-1")
+
+    def list_units(self) -> list:
+        return self._list("/api/units?perPage=-1")
+
+    def list_labels(self) -> list:
+        return self._list("/api/groups/labels?perPage=-1")
+
+    def create_food(self, name: str, label_id: str = None) -> dict:
+        body = {"name": name}
+        if label_id:
+            body["labelId"] = label_id
+        return self._request("POST", "/api/foods", body)
+
+    def update_food(self, food_id: str, payload: dict) -> dict:
+        return self._request("PUT", f"/api/foods/{food_id}", payload)
+
+    def create_unit(self, name: str) -> dict:
+        return self._request("POST", "/api/units", {"name": name})
+
+    def create_label(self, name: str) -> dict:
+        return self._request("POST", "/api/groups/labels", {"name": name})
+
+    # --- recipe deletion (for clean re-import) ---
+    def delete_recipe(self, slug: str) -> bool:
+        try:
+            self._request("DELETE", f"/api/recipes/{slug}")
+            return True
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                return False
+            raise

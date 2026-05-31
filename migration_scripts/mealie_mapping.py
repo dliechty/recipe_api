@@ -3,6 +3,7 @@
 No I/O here — everything is unit-testable against in-memory model objects.
 """
 
+import csv
 import re
 from typing import Optional
 
@@ -120,6 +121,44 @@ def should_skip_recipe(name: str) -> bool:
         return False
     s = name.strip()
     return s.startswith("<<") and s.endswith(">>")
+
+
+def _read_rows(path, required):
+    with open(path, newline="", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        fields = set(reader.fieldnames or [])
+        missing = required - fields
+        if missing:
+            raise ValueError(f"{path}: missing columns: {sorted(missing)}")
+        return list(reader)
+
+
+def load_food_map(path) -> dict:
+    out = {}
+    for row in _read_rows(path, {"source_food", "action", "mealie_food", "label", "flags"}):
+        action = (row["action"] or "").strip().lower()
+        if action not in ("match", "create"):
+            raise ValueError(f"{path}: bad action '{row['action']}' for '{row['source_food']}'")
+        out[(row["source_food"] or "").strip().lower()] = {
+            "mealie_food": (row["mealie_food"] or "").strip(),
+            "action": action,
+            "label": (row["label"] or "").strip(),
+            "flags": (row["flags"] or "").strip(),
+        }
+    return out
+
+
+def load_unit_map(path) -> dict:
+    out = {}
+    for row in _read_rows(path, {"source_unit", "mealie_unit", "flags"}):
+        unit = (row["mealie_unit"] or "").strip()
+        if unit == "(none)":
+            unit = ""
+        out[(row["source_unit"] or "").strip().lower()] = {
+            "mealie_unit": unit,
+            "flags": (row["flags"] or "").strip(),
+        }
+    return out
 
 
 def recipe_to_payload(recipe, shell: dict, category_refs: list, tag_refs: list) -> dict:

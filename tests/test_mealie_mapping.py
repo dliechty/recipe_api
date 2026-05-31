@@ -13,6 +13,8 @@ from migration_scripts.mealie_mapping import (
     build_notes,
     should_skip_recipe,
     recipe_to_payload,
+    load_food_map,
+    load_unit_map,
 )
 
 
@@ -194,3 +196,52 @@ def test_recipe_to_payload_maps_all_fields():
     assert payload["tags"] == tag_refs
     assert payload["nutrition"]["calories"] == "180"
     assert payload["notes"] == [{"title": "Source", "text": "Family recipe"}]
+
+
+def _write_csv(tmp_path, name, header, rows):
+    path = tmp_path / name
+    lines = [",".join(header)] + [",".join(r) for r in rows]
+    path.write_text("\n".join(lines) + "\n")
+    return str(path)
+
+
+def test_load_food_map_parses_rows(tmp_path):
+    path = _write_csv(
+        tmp_path, "food_map.csv",
+        ["source_food", "action", "mealie_food", "label", "flags"],
+        [["Kale", "match", "Kale", "Produce", ""],
+         ["Rau Sauce", "create", "Rau Sauce", "Sauces", "unmatched"]],
+    )
+    fm = load_food_map(path)
+    assert fm["kale"] == {"mealie_food": "Kale", "action": "match", "label": "Produce", "flags": ""}
+    assert fm["rau sauce"]["action"] == "create"
+
+
+def test_load_food_map_rejects_bad_action(tmp_path):
+    path = _write_csv(
+        tmp_path, "food_map.csv",
+        ["source_food", "action", "mealie_food", "label", "flags"],
+        [["Kale", "guess", "Kale", "Produce", ""]],
+    )
+    import pytest
+    with pytest.raises(ValueError, match="bad action"):
+        load_food_map(path)
+
+
+def test_load_food_map_rejects_missing_column(tmp_path):
+    path = _write_csv(tmp_path, "food_map.csv",
+                      ["source_food", "action", "mealie_food"], [["Kale", "match", "Kale"]])
+    import pytest
+    with pytest.raises(ValueError, match="missing columns"):
+        load_food_map(path)
+
+
+def test_load_unit_map_treats_none_token_as_empty(tmp_path):
+    path = _write_csv(
+        tmp_path, "unit_map.csv",
+        ["source_unit", "mealie_unit", "flags"],
+        [["Cup", "cup", ""], ["To Taste", "(none)", "to-taste"]],
+    )
+    um = load_unit_map(path)
+    assert um["cup"] == {"mealie_unit": "cup", "flags": ""}
+    assert um["to taste"] == {"mealie_unit": "", "flags": "to-taste"}

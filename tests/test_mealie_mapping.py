@@ -7,6 +7,7 @@ from migration_scripts.mealie_mapping import (
     build_ingredient_line,
     build_ingredients,
     build_instructions,
+    build_servings,
     build_yield,
     tag_names,
     build_notes,
@@ -93,13 +94,28 @@ def test_build_instructions_sorted_by_step_number():
     assert build_instructions(recipe) == [{"text": "Mix"}, {"text": "Bake"}]
 
 
-def test_build_yield_amount_and_unit():
+def test_build_servings_from_servings_unit():
     recipe = SimpleNamespace(yield_amount=4.0, yield_unit="servings")
-    assert build_yield(recipe) == "4 servings"
+    assert build_servings(recipe) == 4.0
 
 
-def test_build_yield_unit_only():
-    recipe = SimpleNamespace(yield_amount=None, yield_unit="1 loaf")
+def test_build_servings_empty_unit_counts_as_servings():
+    recipe = SimpleNamespace(yield_amount=6.0, yield_unit=None)
+    assert build_servings(recipe) == 6.0
+
+
+def test_build_servings_none_for_non_servings_unit():
+    recipe = SimpleNamespace(yield_amount=1.0, yield_unit="loaf")
+    assert build_servings(recipe) is None
+
+
+def test_build_yield_empty_when_servings():
+    recipe = SimpleNamespace(yield_amount=4.0, yield_unit="servings")
+    assert build_yield(recipe) == ""
+
+
+def test_build_yield_text_for_non_servings():
+    recipe = SimpleNamespace(yield_amount=1.0, yield_unit="loaf")
     assert build_yield(recipe) == "1 loaf"
 
 

@@ -63,7 +63,18 @@ def build_instructions(recipe) -> list:
     return [{"text": s.text} for s in steps]
 
 
+def build_servings(recipe):
+    """Return a numeric servings count when the yield is a servings count, else None."""
+    unit = (recipe.yield_unit or "").strip().lower()
+    if unit in ("", "servings", "serving") and recipe.yield_amount:
+        return float(recipe.yield_amount)
+    return None
+
+
 def build_yield(recipe) -> str:
+    """Text yield, only for genuinely non-servings units (else '' — servings is numeric)."""
+    if build_servings(recipe) is not None:
+        return ""
     amount = format_quantity(recipe.yield_amount)
     unit = recipe.yield_unit or ""
     return " ".join(p for p in [amount, unit] if p).strip()

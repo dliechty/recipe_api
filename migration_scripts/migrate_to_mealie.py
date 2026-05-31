@@ -60,20 +60,28 @@ class MealieRefResolver:
             raise KeyError(f"unit '{name}' not in Mealie; fix unit_map.csv")
         return {"id": unit["id"], "name": unit["name"]}
 
+    def _assign_label_if_missing(self, key, food, label):
+        """Assign the proposed label to a food that has none (at most once)."""
+        if not food.get("label") and label:
+            label_id = self._label_id(label)
+            food = self.client.update_food(food["id"], {**food, "labelId": label_id})
+            food["label"] = food.get("label") or {"id": label_id}
+            self._foods[key] = food
+        return food
+
     def resolve_food(self, name, action, label):
         key = name.lower()
         food = self._foods.get(key)
         if action == "match":
             if food is None:
                 raise KeyError(f"food '{name}' not in Mealie; fix food_map.csv")
-            if not food.get("label") and label:
-                label_id = self._label_id(label)
-                food = self.client.update_food(food["id"], {**food, "labelId": label_id})
-                self._foods[key] = food
+            food = self._assign_label_if_missing(key, food, label)
         else:  # create
             if food is None:
                 food = self.client.create_food(name, self._label_id(label))
                 self._foods[key] = food
+            else:
+                food = self._assign_label_if_missing(key, food, label)
         return {"id": food["id"], "name": food["name"]}
 
 

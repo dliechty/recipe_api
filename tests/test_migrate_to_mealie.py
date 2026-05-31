@@ -79,3 +79,34 @@ def test_dry_run_resolver_returns_name_stubs():
     assert r.resolve_unit("cup") == {"name": "cup"}
     assert r.resolve_unit("") is None
     assert r.resolve_food("Kale", "match", "Produce") == {"name": "Kale"}
+
+
+def test_resolve_food_create_existing_assigns_missing_label():
+    client = _Client()
+    r = MealieRefResolver(client)
+    # "Salt" already exists with label None; create action should assign the label, not recreate
+    r.resolve_food("Salt", "create", "Pantry")
+    assert client.created_foods == []         # not recreated
+    assert client.created_labels == ["Pantry"]
+    assert client.updated == ["f2"]
+
+
+def test_resolve_food_create_existing_with_label_no_update():
+    client = _Client()
+    r = MealieRefResolver(client)
+    # "Kale" already exists WITH a label; no update, no create
+    assert r.resolve_food("Kale", "create", "Produce") == {"id": "f1", "name": "Kale"}
+    assert client.created_foods == []
+    assert client.updated == []
+
+
+def test_resolve_food_label_assigned_at_most_once():
+    client = _Client()
+    r = MealieRefResolver(client)
+    r.resolve_food("Salt", "match", "Pantry")
+    r.resolve_food("Salt", "match", "Pantry")   # second call must NOT update again
+    assert client.updated == ["f2"]
+
+
+def test_dry_run_resolver_none_sentinel_unit():
+    assert DryRunResolver().resolve_unit("(none)") is None

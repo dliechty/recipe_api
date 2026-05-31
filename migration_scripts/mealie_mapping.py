@@ -80,11 +80,27 @@ def build_yield(recipe) -> str:
     return " ".join(p for p in [amount, unit] if p).strip()
 
 
+FIELD_PREFIXES = (("cuisine", "Cuisine"), ("protein", "Protein"), ("difficulty", "Difficulty"))
+
+
+def _enum_value(value) -> str:
+    return (value.value if hasattr(value, "value") else str(value)).strip()
+
+
 def tag_names(recipe) -> list:
+    """Prefixed tags by origin field: 'Protein: Beef', 'Difficulty: Medium', etc."""
     names = []
-    for value in (recipe.cuisine, recipe.protein, recipe.difficulty):
-        if value:
-            names.append(value.value if hasattr(value, "value") else str(value))
+    for attr, prefix in FIELD_PREFIXES:
+        value = getattr(recipe, attr, None)
+        if not value:
+            continue
+        raw = _enum_value(value)
+        if raw:
+            names.append(f"{prefix}: {raw}")
+    for diet in getattr(recipe, "diets", None) or []:
+        raw = _enum_value(diet.diet_type) if getattr(diet, "diet_type", None) else ""
+        if raw:
+            names.append(f"Diet: {raw}")
     return names
 
 

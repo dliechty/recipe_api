@@ -119,17 +119,25 @@ def test_build_yield_text_for_non_servings():
     assert build_yield(recipe) == "1 loaf"
 
 
-def test_tag_names_collects_non_null_cuisine_protein_difficulty():
+def test_tag_names_prefixes_each_field():
     recipe = SimpleNamespace(
         cuisine="Italian", protein="Chicken",
-        difficulty=SimpleNamespace(value="Easy"),
+        difficulty=SimpleNamespace(value="Easy"), diets=[],
     )
-    assert tag_names(recipe) == ["Italian", "Chicken", "Easy"]
+    assert tag_names(recipe) == ["Cuisine: Italian", "Protein: Chicken", "Difficulty: Easy"]
 
 
 def test_tag_names_skips_nulls():
-    recipe = SimpleNamespace(cuisine=None, protein="Beef", difficulty=None)
-    assert tag_names(recipe) == ["Beef"]
+    recipe = SimpleNamespace(cuisine=None, protein="Beef", difficulty=None, diets=[])
+    assert tag_names(recipe) == ["Protein: Beef"]
+
+
+def test_tag_names_includes_diets_dormant_when_empty():
+    recipe = SimpleNamespace(
+        cuisine=None, protein=None, difficulty=None,
+        diets=[SimpleNamespace(diet_type=SimpleNamespace(value="vegan"))],
+    )
+    assert tag_names(recipe) == ["Diet: vegan"]
 
 
 def test_build_notes_includes_source_and_comments():

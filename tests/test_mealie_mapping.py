@@ -283,3 +283,17 @@ def test_load_food_map_handles_comma_in_food_name(tmp_path):
     )
     fm = load_food_map(path)
     assert fm["tomato paste, 12 oz"]["mealie_food"] == "Tomato Paste"
+
+
+def test_structured_ingredient_zero_quantity_not_to_taste():
+    ri = _ri(0, "cup", "Sugar", None, order=0)
+    entry = build_structured_ingredient(ri, {"id": "u1"}, {"id": "f1"}, None, to_taste=False)
+    assert entry["quantity"] is None
+    assert entry["disableAmount"] is True
+
+
+def test_structured_ingredient_to_taste_preserves_existing_note():
+    ri = _ri(0, "To Taste", "Pepper", "freshly ground", order=0)
+    entry = build_structured_ingredient(ri, None, {"id": "f3", "name": "Pepper"}, None, to_taste=True)
+    assert entry["note"] == "freshly ground"   # existing note kept, not overwritten with "to taste"
+    assert entry["disableAmount"] is True

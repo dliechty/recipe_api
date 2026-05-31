@@ -78,7 +78,7 @@ def build_structured_ingredients(recipe, food_map, unit_map, resolver) -> list:
             um = unit_map[(ri.unit or "").strip().lower()]
             unit_ref = resolver.resolve_unit(um["mealie_unit"])
             food_ref = resolver.resolve_food(fm["mealie_food"], fm["action"], fm["label"])
-            to_taste = "to-taste" in um["flags"]
+            to_taste = "to-taste" in [f.strip() for f in um["flags"].split(",")]
             title = component.name if (first and component.name and component.name != "Main") else None
             items.append(build_structured_ingredient(ri, unit_ref, food_ref, title, to_taste))
             first = False

@@ -141,6 +141,19 @@ def build_notes(recipe) -> list:
     return notes
 
 
+def missing_map_entries(recipes, food_map, unit_map):
+    """Return (sorted unmapped food names, sorted unmapped unit names) across all recipes."""
+    foods, units = set(), set()
+    for recipe in recipes:
+        for component in recipe.components:
+            for ri in component.ingredients:
+                if ri.ingredient.name.strip().lower() not in food_map:
+                    foods.add(ri.ingredient.name)
+                if (ri.unit or "").strip().lower() not in unit_map:
+                    units.add(ri.unit or "")
+    return sorted(foods), sorted(units)
+
+
 def should_skip_recipe(name: str) -> bool:
     """Meta-recipes are wrapped in << >> (mirrors migrate_access_recipes.py)."""
     if not name:

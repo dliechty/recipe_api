@@ -16,6 +16,7 @@ from migration_scripts.mealie_mapping import (
     recipe_to_payload,
     load_food_map,
     load_unit_map,
+    missing_map_entries,
 )
 
 
@@ -297,3 +298,21 @@ def test_structured_ingredient_to_taste_preserves_existing_note():
     entry = build_structured_ingredient(ri, None, {"id": "f3", "name": "Pepper"}, None, to_taste=True)
     assert entry["note"] == "freshly ground"   # existing note kept, not overwritten with "to taste"
     assert entry["disableAmount"] is True
+
+
+def test_missing_map_entries_reports_unmapped():
+    recipe = SimpleNamespace(components=[
+        _component("Main", [_ri(1.0, "cup", "Flour", order=0), _ri(2.0, "Shot", "Rum", order=1)]),
+    ])
+    food_map = {"flour": {"mealie_food": "Flour", "action": "match", "label": "", "flags": ""}}
+    unit_map = {"cup": {"mealie_unit": "cup", "flags": ""}}
+    foods, units = missing_map_entries([recipe], food_map, unit_map)
+    assert foods == ["Rum"]
+    assert units == ["Shot"]
+
+
+def test_missing_map_entries_empty_when_covered():
+    recipe = SimpleNamespace(components=[_component("Main", [_ri(1.0, "cup", "Flour", order=0)])])
+    food_map = {"flour": {"mealie_food": "Flour", "action": "match", "label": "", "flags": ""}}
+    unit_map = {"cup": {"mealie_unit": "cup", "flags": ""}}
+    assert missing_map_entries([recipe], food_map, unit_map) == ([], [])

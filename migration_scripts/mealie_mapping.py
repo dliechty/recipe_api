@@ -1,6 +1,8 @@
 """Pure functions mapping recipe_api models to Mealie API payloads.
 
-No I/O here — everything is unit-testable against in-memory model objects.
+Mapping helpers are I/O-free and unit-testable against in-memory model objects;
+the CSV map loaders (load_food_map/load_unit_map) additionally read reviewed
+mapping files from disk.
 """
 
 import csv
@@ -124,7 +126,7 @@ def should_skip_recipe(name: str) -> bool:
 
 
 def _read_rows(path, required):
-    with open(path, newline="", encoding="utf-8") as fh:
+    with open(path, newline="", encoding="utf-8-sig") as fh:
         reader = csv.DictReader(fh)
         fields = set(reader.fieldnames or [])
         missing = required - fields

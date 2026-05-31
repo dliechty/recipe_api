@@ -199,9 +199,12 @@ def test_recipe_to_payload_maps_all_fields():
 
 
 def _write_csv(tmp_path, name, header, rows):
+    import csv
     path = tmp_path / name
-    lines = [",".join(header)] + [",".join(r) for r in rows]
-    path.write_text("\n".join(lines) + "\n")
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        writer.writerows(rows)
     return str(path)
 
 
@@ -245,3 +248,13 @@ def test_load_unit_map_treats_none_token_as_empty(tmp_path):
     um = load_unit_map(path)
     assert um["cup"] == {"mealie_unit": "cup", "flags": ""}
     assert um["to taste"] == {"mealie_unit": "", "flags": "to-taste"}
+
+
+def test_load_food_map_handles_comma_in_food_name(tmp_path):
+    path = _write_csv(
+        tmp_path, "food_map.csv",
+        ["source_food", "action", "mealie_food", "label", "flags"],
+        [["Tomato Paste, 12 oz", "match", "Tomato Paste", "Canned Goods", "size-stripped"]],
+    )
+    fm = load_food_map(path)
+    assert fm["tomato paste, 12 oz"]["mealie_food"] == "Tomato Paste"
